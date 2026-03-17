@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import attendanceRoutes from './routes/attendanceRoutes'; // Import your new routes
+import adminRoutes from './routes/adminRoutes'; // Import admin routes
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/attendance', attendanceRoutes); // Now 'app' will be recognized!
+app.use('/api/admin', adminRoutes); // Admin routes
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
