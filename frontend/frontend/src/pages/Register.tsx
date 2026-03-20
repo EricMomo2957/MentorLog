@@ -7,12 +7,13 @@ const Register = () => {
         full_name: '',
         email: '',
         password: '',
-        role: 'student' // Default role for Eric's MentorLog
+        role: 'student' // Default remains student
     });
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Updated to handle both Input and Select elements
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
@@ -26,9 +27,8 @@ const Register = () => {
                 navigate('/login');
             }
         } catch (err: unknown) {
-            // Check if the error is from Axios to safely access its properties
             if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.message || 'Registration failed. Check your backend.');
+                setError(err.response?.data?.message || 'Registration failed.');
             } else {
                 setError('An unexpected error occurred.');
             }
@@ -59,6 +59,20 @@ const Register = () => {
                         <label className="block text-sm font-medium mb-1">Password</label>
                         <input type="password" name="password" placeholder="••••••••" onChange={handleChange} required 
                             className="w-full p-3 rounded-lg bg-[#0f172a] border border-slate-600 focus:border-blue-500 outline-none transition-all" />
+                    </div>
+
+                    {/* New Role Selection Dropdown */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Register As</label>
+                        <select 
+                            name="role" 
+                            value={formData.role} 
+                            onChange={handleChange}
+                            className="w-full p-3 rounded-lg bg-[#0f172a] border border-slate-600 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer"
+                        >
+                            <option value="student">Student</option>
+                            <option value="admin">Admin</option>
+                        </select>
                     </div>
                     
                     <button type="submit" 

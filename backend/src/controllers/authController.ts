@@ -22,11 +22,19 @@ export const login = async (req: Request, res: Response) => {
             { expiresIn: '1h' }
         );
 
-        res.json({ token, user: { id: user.id, name: user.full_name, role: user.role } });
+        // Updated to match your frontend logic
+        res.status(200).json({ 
+            token, 
+            role: user.role, 
+            full_name: user.full_name 
+        });
+
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 // ===================Registration controller=======================
 
 export const register = async (req: Request, res: Response) => {

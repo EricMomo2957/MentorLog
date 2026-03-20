@@ -19,11 +19,24 @@ const Login = () => {
         setError('');
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+            
             if (response.status === 200) {
-                // Store the JWT token so the user stays logged in
-                localStorage.setItem('token', response.data.token);
-                alert('Login Successful!');
-                navigate('/dashboard'); // Change this to your main page later
+                // 1. Destructure the data from your backend response
+                const { token, role, full_name } = response.data;
+
+                // 2. Store user info in localStorage
+                localStorage.setItem('token', token);
+                localStorage.setItem('role', role);
+                localStorage.setItem('userName', full_name);
+
+                alert(`Welcome back, ${full_name}!`);
+
+                // 3. Conditional Redirection based on Role
+                if (role === 'admin') {
+                    navigate('/admin-dashboard');
+                } else {
+                    navigate('/student-dashboard');
+                }
             }
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
