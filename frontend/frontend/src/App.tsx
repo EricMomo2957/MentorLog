@@ -3,9 +3,9 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Simple placeholder components for testing
-const AdminDashboard = () => <div className="p-10 text-white"><h1>Welcome Admin</h1></div>;
-const StudentDashboard = () => <div className="p-10 text-white"><h1>Welcome Student</h1></div>;
+// These imports correctly point to your new organized folders
+import AdminDashboard from './pages/admin/AdminDashboard';
+import StudentDashboard from './pages/student/StudentDashboard';
 
 function App() {
   return (
@@ -24,7 +24,7 @@ function App() {
             } 
         />
 
-        {/* Both can enter, or specify 'student' if needed */}
+        {/* Only Students can enter here */}
         <Route 
             path="/student-dashboard" 
             element={
@@ -34,6 +34,7 @@ function App() {
             } 
         />
 
+        {/* Default redirect to login */}
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
