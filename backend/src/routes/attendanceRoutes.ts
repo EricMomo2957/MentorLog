@@ -1,10 +1,14 @@
-import express from 'express';
-import { timeIn, timeOut } from '../controllers/attendanceController';
-import { verifyToken } from '../middleware/authMiddleware'; // Import the guard
+import { Router } from 'express';
+import { toggleAttendance, getAllAttendance, getWeeklyReport } from '../controllers/attendanceController';
 
-const router = express.Router();
 
-router.post('/time-in', verifyToken, timeIn);
-router.post('/time-out',verifyToken, timeOut);
+const router = Router();
+
+// This creates the /api/attendance/toggle endpoint
+router.post('/toggle', toggleAttendance);
+
+// Admin action: Get all logs
+router.get('/all', getAllAttendance);
+router.get('/weekly-report', getWeeklyReport);
 
 export default router;

@@ -1,56 +1,83 @@
 import { Request, Response } from 'express';
-import pool from '../config/db';
+import db from '../config/db'; // Adjust based on your db export
 
-export const timeIn = async (req: Request, res: Response) => {
-    const { user_id } = req.body; // In the future, we will get this from the JWT token
+export const toggleAttendance = async (req: Request, res: Response) => {
+    const { userId, action } = req.body;
 
     try {
-        // 1. Check if student already timed in today
-        const [existing]: any = await pool.query(
-            'SELECT * FROM attendance WHERE user_id = ? AND date = CURDATE() AND time_out IS NULL',
-            [user_id]
-        );
+        if (action === 'clock-in') {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
 
-        if (existing.length > 0) {
-            return res.status(400).json({ message: 'You have already timed in for today.' });
+            // Mark as 'Late' if after 8:15 AM
+            let attendanceStatus = 'Present';
+            if (hour > 8 || (hour === 8 && minute > 15)) {
+                attendanceStatus = 'Late';
+            }
+
+            const [result]: any = await db.execute(
+                'INSERT INTO attendance (user_id, clock_in, status, is_active) VALUES (?, NOW(), ?, TRUE)',
+                [userId, attendanceStatus]
+            );
+            return res.json({ success: true, status: attendanceStatus, id: result.insertId });
+        } 
+        
+        if (action === 'clock-out') {
+            await db.execute(
+                'UPDATE attendance SET clock_out = NOW(), is_active = FALSE WHERE user_id = ? AND is_active = TRUE',
+                [userId]
+            );
+            return res.json({ success: true, message: "Clocked out" });
         }
-
-        // 2. Insert new record
-        await pool.query(
-            'INSERT INTO attendance (user_id, date, time_in, status) VALUES (?, CURDATE(), CURTIME(), "Present")',
-            [user_id]
-        );
-
-        res.status(201).json({ message: 'Time In recorded successfully!' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error during Time In.' });
+        res.status(500).json({ error: "Database error" });
     }
 };
 
-export const timeOut = async (req: Request, res: Response) => {
-    const { user_id } = req.body;
-
+// Add this to your existing attendanceController.ts
+export const getAllAttendance = async (req: Request, res: Response) => {
     try {
-        // 1. Find the active session for today
-        const [activeSession]: any = await pool.query(
-            'SELECT id FROM attendance WHERE user_id = ? AND date = CURDATE() AND time_out IS NULL',
-            [user_id]
-        );
+        const [rows] = await db.execute(`
+            SELECT 
+                a.id, 
+                u.full_name as student_name, 
+                a.clock_in, 
+                a.clock_out, 
+                a.status, 
+                a.is_active
+            FROM attendance a
+            JOIN users u ON a.user_id = u.id
+            ORDER BY a.created_at DESC
+        `);
 
-        if (activeSession.length === 0) {
-            return res.status(404).json({ message: 'No active Time In found for today.' });
-        }
-
-        // 2. Update the record with Time Out
-        await pool.query(
-            'UPDATE attendance SET time_out = CURTIME() WHERE id = ?',
-            [activeSession[0].id]
-        );
-
-        res.status(200).json({ message: 'Time Out recorded successfully!' });
+        return res.json({ success: true, data: rows });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error during Time Out.' });
+        console.error("Fetch error:", error);
+        res.status(500).json({ error: "Database error" });
+    }
+};
+
+export const getWeeklyReport = async (req: Request, res: Response) => {
+    try {
+        const [rows]: any = await db.execute(`
+            SELECT 
+                u.full_name as student_name, 
+                SUM(TIMESTAMPDIFF(MINUTE, a.clock_in, a.clock_out)) / 60 as total_hours,
+                COUNT(CASE WHEN a.status = 'Late' THEN 1 END) as late_count,
+                COUNT(a.id) as total_days
+            FROM users u
+            JOIN attendance a ON u.id = a.user_id
+            WHERE a.clock_out IS NOT NULL 
+              AND a.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            GROUP BY u.id
+            ORDER BY total_hours DESC
+        `);
+
+        return res.json({ success: true, data: rows });
+    } catch (error) {
+        console.error("Weekly Report Error:", error);
+        res.status(500).json({ error: "Failed to generate weekly report" });
     }
 };

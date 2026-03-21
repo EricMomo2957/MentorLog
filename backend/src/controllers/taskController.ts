@@ -33,3 +33,29 @@ export const getMyTasks = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error fetching your tasks.' });
     }
 };
+
+// src/controllers/taskController.ts
+export const getAllTasks = async (req: Request, res: Response) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT 
+                t.id, 
+                t.title,
+                t.task_description, 
+                t.status,
+                t.due_date, 
+                u.full_name as student_name 
+            FROM tasks t
+            JOIN users u ON t.user_id = u.id
+            ORDER BY t.id DESC
+        `);
+        
+        res.status(200).json({
+            success: true,
+            data: rows
+        });
+    } catch (error) {
+        console.error("Error fetching all tasks:", error);
+        res.status(500).json({ success: false, message: 'Error fetching task logs.' });
+    }
+};
