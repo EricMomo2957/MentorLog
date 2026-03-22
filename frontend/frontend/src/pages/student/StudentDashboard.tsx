@@ -17,45 +17,84 @@ interface WeeklyReport {
 }
 
 const StudentDashboard = () => {
-    const [isClockedIn, setIsClockedIn] = useState(() => localStorage.getItem('isClockedIn') === 'true');
-    const [startTime, setStartTime] = useState(localStorage.getItem('startTime') || '');
+    // --- STATES ---
+    const [isClockedIn, setIsClockedIn] = useState(false);
+    const [startTime, setStartTime] = useState('');
     const [currentTime, setCurrentTime] = useState(new Date());
     const [taskDescription, setTaskDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [history, setHistory] = useState<AttendanceSession[]>([]);
     const [report, setReport] = useState<WeeklyReport>({ accumulated_hours: 0, days_present: 0, days_late: 0 });
-    
-    // New state to lock the button after the daily shift is done
     const [hasCompletedShift, setHasCompletedShift] = useState(false);
 
     const totalTargetHours = 600;
 
-    // --- FETCH ATTENDANCE HISTORY ---
+    // --- HELPER: PARSE TIME STRING ---
+    const parseTimeString = (timeStr: string) => {
+        if (!timeStr) return null;
+        const [time, modifier] = timeStr.split(' ');
+        // eslint-disable-next-line prefer-const
+        let [hours, minutes] = time.split(':').map(Number);
+
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+    };
+
+    // --- HELPER: GET DURATION STRING ---
+    const getDuration = () => {
+        const start = parseTimeString(startTime);
+        if (!start || !isClockedIn) return "00:00:00";
+
+        const diff = currentTime.getTime() - start.getTime();
+        
+        // Fix: Use const for values that aren't reassigned
+        const seconds = Math.floor((diff / 1000) % 60);
+        const minutes = Math.floor((diff / 1000 / 60) % 60);
+        const hours = Math.floor((diff / 1000 / 60 / 60));
+
+        return [
+            hours.toString().padStart(2, '0'),
+            minutes.toString().padStart(2, '0'),
+            seconds.toString().padStart(2, '0')
+        ].join(':');
+    };
+
+    // --- API CALLS ---
     const fetchHistory = async () => {
         try {
             const response = await fetch('http://localhost:5000/api/attendance/history', {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await response.json();
+            
             if (Array.isArray(data)) {
                 setHistory(data);
-
-                // Check if the user already finished a shift today
                 const today = new Date().toISOString().split('T')[0];
                 const todayLog = data.find(log => log.date === today);
                 
-                if (todayLog && todayLog.clock_out) {
-                    setHasCompletedShift(true);
+                if (todayLog) {
+                    if (todayLog.clock_out) {
+                        setIsClockedIn(false);
+                        setHasCompletedShift(true);
+                    } else {
+                        setIsClockedIn(true);
+                        setHasCompletedShift(false);
+                        setStartTime(todayLog.clock_in);
+                    }
                 } else {
+                    setIsClockedIn(false);
                     setHasCompletedShift(false);
                 }
             }
-        } catch (_err) {
+        } catch (_err) { // Prefix unused error with underscore
             console.error("Failed to fetch history:", _err);
         }
     };
 
-    // --- FETCH WEEKLY PROGRESS ---
     const fetchReport = async () => {
         try {
             const response = await fetch('http://localhost:5000/api/attendance/weekly-report', {
@@ -81,7 +120,7 @@ const StudentDashboard = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // --- DATABASE CLOCK IN/OUT LOGIC ---
+    // --- HANDLERS ---
     const handleClockToggle = async () => {
         if (!isClockedIn && hasCompletedShift) {
             alert("You have already completed your attendance for today.");
@@ -101,30 +140,16 @@ const StudentDashboard = () => {
                 body: JSON.stringify({ action })
             });
 
-            const data = await response.json();
-
             if (response.ok) {
-                if (action === 'clock-in') {
-                    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    setIsClockedIn(true);
-                    setStartTime(timeString);
-                    localStorage.setItem('isClockedIn', 'true');
-                    localStorage.setItem('startTime', timeString);
-                } else {
-                    setIsClockedIn(false);
-                    setStartTime('');
-                    setHasCompletedShift(true); // Lock the button immediately after clocking out
-                    localStorage.removeItem('isClockedIn');
-                    localStorage.removeItem('startTime');
-                }
-                fetchHistory();
-                fetchReport();
+                await fetchHistory();
+                await fetchReport();
             } else {
+                const data = await response.json();
                 alert(data.message || "Attendance update failed.");
             }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_err) {
-            alert("Connection error. Is the backend running?");
+            alert("Connection error.");
         }
     };
 
@@ -190,27 +215,29 @@ const StudentDashboard = () => {
                     </button>
                 </div>
 
-                {/* STATS GRID */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Total Progress Card */}
                     <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
                         <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Total Progress</p>
                         <h3 className="text-4xl font-bold mt-3 text-white">
                             {report.accumulated_hours.toFixed(1)} <span className="text-lg text-slate-500 font-medium">/ {totalTargetHours} hrs</span>
                         </h3>
                         <div className="w-full bg-slate-900/50 h-3 rounded-full mt-6 overflow-hidden border border-slate-700/50">
+                            {/* Canonical class fix: bg-linear-to-r */}
                             <div 
-                                className="bg-linear-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                                className="bg-linear-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-1000"
                                 style={{ width: `${progressPercentage}%` }}
                             ></div>
                         </div>
                     </div>
 
+                    {/* Active Session Card */}
                     <div className={`bg-[#1e293b] p-8 rounded-3xl border transition-all duration-500 shadow-xl ${
                         isClockedIn ? 'border-blue-500/50 ring-4 ring-blue-500/5' : 'border-slate-800'
                     }`}>
                         <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Active Session</p>
-                        <h3 className="text-4xl font-bold mt-3 text-white">
-                            {isClockedIn ? currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--'}
+                        <h3 className="text-4xl font-mono font-bold mt-3 text-white">
+                            {isClockedIn ? getDuration() : '--:--:--'}
                         </h3>
                         <div className="mt-4 flex items-center gap-3 py-2 px-4 bg-slate-900/50 rounded-xl w-fit border border-slate-700/50">
                             <span className={`w-2.5 h-2.5 rounded-full ${isClockedIn ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`}></span>
@@ -220,6 +247,7 @@ const StudentDashboard = () => {
                         </div>
                     </div>
 
+                    {/* Attendance Status Card */}
                     <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
                         <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Attendance Status</p>
                         <h3 className="text-4xl font-bold mt-3 text-white">
@@ -229,28 +257,29 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* TASK LOGGING */}
+                {/* Task Logging Section */}
                 <div className={`transition-all duration-700 transform ${isClockedIn ? 'opacity-100 translate-y-0' : 'opacity-40 pointer-events-none translate-y-4'}`}>
                     <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-8 shadow-2xl">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 text-xl border border-blue-500/20">📝</div>
+                            <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 text-xl">📝</div>
                             <div>
                                 <h4 className="text-lg font-bold text-white">Daily Task Log</h4>
                                 <p className="text-sm text-slate-500">What are you working on right now?</p>
                             </div>
                         </div>
+                        {/* Canonical class fix: min-h-30 instead of arbitrary 120px */}
                         <textarea 
                             value={taskDescription}
                             onChange={(e) => setTaskDescription(e.target.value)}
                             disabled={!isClockedIn}
                             placeholder={isClockedIn ? "Example: Developing the MentorLog Dashboard UI..." : "Clock in to start logging tasks"}
-                            className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 min-h-30 placeholder:text-slate-600 transition-all"
+                            className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 min-h-30 transition-all"
                         />
                         <div className="flex justify-end mt-4">
                             <button 
                                 onClick={handleUpdateTask}
                                 disabled={isSubmitting || !isClockedIn}
-                                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/20"
+                                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-sm font-bold transition-all shadow-lg"
                             >
                                 {isSubmitting ? 'Syncing...' : 'Update Task Description'}
                             </button>
@@ -258,7 +287,7 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* ATTENDANCE TABLE */}
+                {/* History Table */}
                 <div className="bg-[#1e293b] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b border-slate-800 flex justify-between items-center">
                         <h4 className="text-lg font-bold text-white">📅 Recent Attendance</h4>
@@ -279,7 +308,7 @@ const StudentDashboard = () => {
                                 {history.length > 0 ? history.map((row) => (
                                     <tr key={row.id} className="hover:bg-slate-800/30 transition-colors group">
                                         <td className="px-8 py-5 text-sm font-bold text-slate-300">{row.date}</td>
-                                        <td className="px-8 py-5 text-sm font-mono text-emerald-400 font-bold tracking-tight">{row.clock_in}</td>
+                                        <td className="px-8 py-5 text-sm font-mono text-emerald-400 font-bold">{row.clock_in}</td>
                                         <td className="px-8 py-5 text-sm font-mono text-slate-400">
                                             {row.clock_out ? <span className="text-red-400 font-bold">{row.clock_out}</span> : <span className="text-slate-600 italic animate-pulse">Session Active...</span>}
                                         </td>
@@ -294,7 +323,7 @@ const StudentDashboard = () => {
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan={5} className="px-8 py-10 text-center text-slate-500 text-sm italic">No attendance records found.</td>
+                                        <td colSpan={5} className="px-8 py-10 text-center text-slate-500 text-sm italic">No records found.</td>
                                     </tr>
                                 )}
                             </tbody>
