@@ -1,5 +1,10 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import db from '../config/db';
+
+// Helper interface for the request with user info
+interface AuthRequest extends Request {
+    user?: { id: number };
+}
 
 export const toggleAttendance = async (req: any, res: Response) => {
     const userId = req.user.id;
@@ -7,8 +12,6 @@ export const toggleAttendance = async (req: any, res: Response) => {
 
     try {
         if (action === 'clock-in') {
-            // 1. STRICT CHECK: Does any record exist for this user today?
-            // This prevents a second "Begin Shift" after they have already clocked out for the day.
             const [existingRecord]: any = await db.execute(
                 'SELECT id FROM attendance WHERE user_id = ? AND date = CURDATE() LIMIT 1',
                 [userId]
@@ -20,17 +23,16 @@ export const toggleAttendance = async (req: any, res: Response) => {
                 });
             }
 
-            // 2. Late logic: If after 8:15 AM
             const now = new Date();
             const hour = now.getHours();
             const minute = now.getMinutes();
             let status = 'Present';
 
+            // Late logic: If after 8:15 AM
             if (hour > 8 || (hour === 8 && minute > 15)) {
                 status = 'Late';
             }
 
-            // 3. Insert new record (Note: CURDATE() ensures the 'date' column is today)
             await db.execute(
                 'INSERT INTO attendance (user_id, date, clock_in, status, is_active) VALUES (?, CURDATE(), NOW(), ?, 1)',
                 [userId, status]
@@ -40,8 +42,6 @@ export const toggleAttendance = async (req: any, res: Response) => {
         } 
         
         if (action === 'clock-out') {
-            // 1. Calculate hours and update record in one query
-            // We search for the record that is specifically marked as 'is_active = 1'
             const [result]: any = await db.execute(`
                 UPDATE attendance 
                 SET clock_out = NOW(), 
@@ -62,26 +62,34 @@ export const toggleAttendance = async (req: any, res: Response) => {
     }
 };
 
-export const getAllAttendance = async (req: any, res: Response) => {
-    try {
-        const userId = req.user.id;
-        const [rows]: any = await db.execute(`
-            SELECT 
-                id, 
-                DATE_FORMAT(date, '%Y-%m-%d') as date, 
-                TIME_FORMAT(clock_in, '%h:%i %p') as clock_in, 
-                TIME_FORMAT(clock_out, '%h:%i %p') as clock_out, 
-                status,
-                total_hours
-            FROM attendance 
-            WHERE user_id = ? 
-            ORDER BY date DESC, clock_in DESC
-        `, [userId]);
+export const getAllAttendance = async (_req: Request, res: Response) => {
+    const sql = `
+        SELECT a.*, u.full_name as student_name 
+        FROM attendance a 
+        JOIN users u ON a.user_id = u.id 
+        ORDER BY a.date DESC
+    `;
 
-        res.json(rows);
-    } catch (error) {
-        console.error("Fetch Error:", error);
-        res.status(500).json({ error: "Failed to fetch attendance history" });
+    try {
+        // FIXED: Using await db.execute instead of callbacks to match your db config
+        const [results] = await db.execute(sql);
+        res.status(200).json({ success: true, data: results });
+    } catch (err) {
+        console.error("Database error:", err);
+        res.status(500).json({ success: false, message: "Database error" });
+    }
+};
+
+export const getStudentStats = async (req: Request, res: Response) => {
+    const { userId } = req.params;
+    const sql = "SELECT * FROM attendance WHERE user_id = ?";
+
+    try {
+        // FIXED: Using await db.execute and passing userId in the array
+        const [results] = await db.execute(sql, [userId]);
+        res.json({ success: true, data: results });
+    } catch (err: any) {
+        res.status(500).json({ success: false, error: err.message });
     }
 };
 
@@ -99,6 +107,7 @@ export const getWeeklyReport = async (req: any, res: Response) => {
 
         res.json(rows[0]);
     } catch (error) {
+        console.error("Report Error:", error);
         res.status(500).json({ error: "Failed to generate report" });
     }
 };
