@@ -6,10 +6,12 @@ import {
 } from 'recharts';
 import TaskFeed from './TaskFeed';
 
+// Updated interface to match your phpMyAdmin structure
 interface User {
     id: number;
     full_name: string;
     email: string;
+    password?: string; // Included but usually not used in frontend
     role: 'admin' | 'student';
     created_at: string;
 }
@@ -42,41 +44,46 @@ const AdminDashboard = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchAllData = useCallback(async () => {
-        setIsLoading(true);
-        const token = localStorage.getItem('token');
-        const headers = { 'Authorization': `Bearer ${token}` };
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+    const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
 
-        try {
-            const [userRes, attRes, taskRes] = await Promise.all([
-                fetch('http://localhost:5000/api/users/all', { headers }),
-                fetch('http://localhost:5000/api/attendance/all', { headers }),
-                fetch('http://localhost:5000/api/tasks/all', { headers })
-            ]);
+    try {
+        const [userRes, attRes, taskRes] = await Promise.all([
+            // FIXED: Added /admin to the user route
+            fetch('http://localhost:5000/api/admin/users/all', { headers }), 
+            fetch('http://localhost:5000/api/attendance/all', { headers }),
+            fetch('http://localhost:5000/api/tasks/all', { headers })
+        ]);
 
-            const userData = await userRes.json();
-            const attData = await attRes.json();
-            const taskData = await taskRes.json();
+        const userData = await userRes.json();
+        const attData = await attRes.json();
+        const taskData = await taskRes.json();
 
-            if (userData.success) setUsers(userData.data);
-            // Matches our new backend structure: { success: true, data: results }
-            if (attData.success) setLogs(attData.data);
-            if (taskData.success) setTasks(taskData.data);
-            
-        } catch (err) {
-            console.error("Error fetching dashboard data:", err);
-        } finally {
-            // Slight delay for smooth UI transition
-            setTimeout(() => setIsLoading(false), 400);
-        }
-    }, []);
-
+        // Check if data exists in the .data property (matching your controller's structure)
+        if (userData.success) setUsers(userData.data || []);
+        if (attData.success) setLogs(attData.data || []);
+        if (taskData.success) setTasks(taskData.data || []);
+        
+    } catch (err) {
+        console.error("Dashboard Fetch Error:", err);
+    } finally {
+        setTimeout(() => setIsLoading(false), 400);
+    }
+}, []);
     useEffect(() => {
         fetchAllData();
     }, [fetchAllData]);
 
-    // Derived Data for UI
+    // Derived Stats
+    const totalUsers = users.length;
+    const totalTasks = tasks.length;
     const activeCount = logs.filter(log => log.is_active === true || Number(log.is_active) === 1).length;
     
+    // Fixed:attendanceStats is now used
     const attendanceStats = [
         { name: 'Present', value: logs.filter(l => l.status === 'Present').length },
         { name: 'Late', value: logs.filter(l => l.status === 'Late').length },
@@ -84,7 +91,6 @@ const AdminDashboard = () => {
         { name: 'Excused', value: logs.filter(l => l.status === 'Excused').length },
     ].filter(item => item.value > 0);
 
-    // Group tasks by student for the Bar Chart
     const taskBarData = Object.values(tasks.reduce((acc: Record<string, {name: string, tasks: number}>, curr) => {
         const displayName = curr.student_name ? curr.student_name.split(' ')[0] : 'Unknown';
         acc[curr.student_name] = { 
@@ -99,7 +105,6 @@ const AdminDashboard = () => {
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Calculate overall attendance rate
     const totalPresentAndLate = logs.filter(l => l.status === 'Present' || l.status === 'Late').length;
     const attendanceRate = logs.length > 0 ? ((totalPresentAndLate / logs.length) * 100).toFixed(0) : 0;
 
@@ -125,14 +130,16 @@ const AdminDashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 {[
-                    { label: 'Total Users', val: users.length, color: 'text-blue-500' },
-                    { label: 'Total Tasks', val: tasks.length, color: 'text-purple-500' },
+                    { label: 'Total Users', val: totalUsers, color: 'text-blue-500' },
+                    { label: 'Total Tasks', val: totalTasks, color: 'text-purple-500' },
                     { label: 'Active Now', val: activeCount, color: 'text-emerald-500' },
                     { label: 'Attendance Rate', val: `${attendanceRate}%`, color: 'text-amber-500' }
                 ].map((stat, i) => (
                     <div key={i} className="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 shadow-xl">
                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
-                        <h4 className={`text-3xl font-bold mt-2 ${stat.color}`}>{stat.val}</h4>
+                        <h4 className={`text-3xl font-bold mt-2 ${stat.color}`}>
+                            {isLoading ? '...' : stat.val}
+                        </h4>
                     </div>
                 ))}
             </div>
@@ -142,36 +149,40 @@ const AdminDashboard = () => {
                     <h3 className="text-white font-bold mb-6 flex items-center gap-2 text-sm uppercase tracking-wider">
                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Attendance Distribution
                     </h3>
-                    <ResponsiveContainer width="100%" height="85%">
-                        {attendanceStats.length > 0 ? (
-                            <PieChart>
-                                <Pie data={attendanceStats} innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
-                                    {attendanceStats.map((_, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                                    ))}
-                                </Pie>
-                                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', color: '#fff' }} />
-                                <Legend verticalAlign="bottom" height={36}/>
-                            </PieChart>
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-slate-500 italic text-sm">No data recorded</div>
-                        )}
-                    </ResponsiveContainer>
+                    <div className="h-62.5 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            {attendanceStats.length > 0 ? (
+                                <PieChart>
+                                    <Pie data={attendanceStats} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                        {attendanceStats.map((_, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', color: '#fff' }} />
+                                    <Legend verticalAlign="bottom" height={36}/>
+                                </PieChart>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-slate-500 italic text-sm">No data recorded</div>
+                            )}
+                        </ResponsiveContainer>
+                    </div>
                 </div>
 
                 <div className="bg-[#1e293b] p-6 rounded-3xl border border-slate-800 h-96 shadow-2xl">
                     <h3 className="text-white font-bold mb-6 flex items-center gap-2 text-sm uppercase tracking-wider">
                         <span className="w-2 h-2 bg-purple-500 rounded-full"></span> Task Submissions
                     </h3>
-                    <ResponsiveContainer width="100%" height="85%">
-                        <BarChart data={taskBarData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                            <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip cursor={{fill: '#2d3748'}} contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px' }} />
-                            <Bar dataKey="tasks" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <div className="h-62.5 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={taskBarData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                                <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                <Tooltip cursor={{fill: '#2d3748'}} contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px' }} />
+                                <Bar dataKey="tasks" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 

@@ -32,14 +32,21 @@ const StudentDashboard = () => {
     // --- HELPER: PARSE TIME STRING ---
     const parseTimeString = (timeStr: string) => {
         if (!timeStr) return null;
-        const [time, modifier] = timeStr.split(' ');
-        // eslint-disable-next-line prefer-const
-        let [hours, minutes] = time.split(':').map(Number);
-
-        if (modifier === 'PM' && hours < 12) hours += 12;
-        if (modifier === 'AM' && hours === 12) hours = 0;
-
+        
         const date = new Date();
+        const parts = timeStr.split(' ');
+        const timePart = parts[0];
+        const modifier = parts[1]; 
+
+        const timeSplit = timePart.split(':').map(Number);
+        let hours = timeSplit[0];
+        const minutes = timeSplit[1];
+
+        if (modifier) {
+            if (modifier === 'PM' && hours < 12) hours += 12;
+            if (modifier === 'AM' && hours === 12) hours = 0;
+        }
+
         date.setHours(hours, minutes, 0, 0);
         return date;
     };
@@ -50,8 +57,8 @@ const StudentDashboard = () => {
         if (!start || !isClockedIn) return "00:00:00";
 
         const diff = currentTime.getTime() - start.getTime();
+        if (diff < 0) return "00:00:00"; 
         
-        // Fix: Use const for values that aren't reassigned
         const seconds = Math.floor((diff / 1000) % 60);
         const minutes = Math.floor((diff / 1000 / 60) % 60);
         const hours = Math.floor((diff / 1000 / 60 / 60));
@@ -73,8 +80,8 @@ const StudentDashboard = () => {
             
             if (Array.isArray(data)) {
                 setHistory(data);
-                const today = new Date().toISOString().split('T')[0];
-                const todayLog = data.find(log => log.date === today);
+                const todayStr = new Date().toLocaleDateString('en-CA'); 
+                const todayLog = data.find(log => log.date.startsWith(todayStr));
                 
                 if (todayLog) {
                     if (todayLog.clock_out) {
@@ -90,7 +97,7 @@ const StudentDashboard = () => {
                     setHasCompletedShift(false);
                 }
             }
-        } catch (_err) { // Prefix unused error with underscore
+        } catch (_err) {
             console.error("Failed to fetch history:", _err);
         }
     };
@@ -186,6 +193,7 @@ const StudentDashboard = () => {
     return (
         <StudentLayout>
             <div className="max-w-6xl mx-auto space-y-8 pb-10 px-4">
+                {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-black text-white tracking-tight">
@@ -215,15 +223,14 @@ const StudentDashboard = () => {
                     </button>
                 </div>
 
+                {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Total Progress Card */}
                     <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
                         <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Total Progress</p>
                         <h3 className="text-4xl font-bold mt-3 text-white">
                             {report.accumulated_hours.toFixed(1)} <span className="text-lg text-slate-500 font-medium">/ {totalTargetHours} hrs</span>
                         </h3>
                         <div className="w-full bg-slate-900/50 h-3 rounded-full mt-6 overflow-hidden border border-slate-700/50">
-                            {/* Canonical class fix: bg-linear-to-r */}
                             <div 
                                 className="bg-linear-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-1000"
                                 style={{ width: `${progressPercentage}%` }}
@@ -231,7 +238,6 @@ const StudentDashboard = () => {
                         </div>
                     </div>
 
-                    {/* Active Session Card */}
                     <div className={`bg-[#1e293b] p-8 rounded-3xl border transition-all duration-500 shadow-xl ${
                         isClockedIn ? 'border-blue-500/50 ring-4 ring-blue-500/5' : 'border-slate-800'
                     }`}>
@@ -247,7 +253,6 @@ const StudentDashboard = () => {
                         </div>
                     </div>
 
-                    {/* Attendance Status Card */}
                     <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
                         <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Attendance Status</p>
                         <h3 className="text-4xl font-bold mt-3 text-white">
@@ -257,7 +262,7 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Task Logging Section */}
+                {/* Task Logging */}
                 <div className={`transition-all duration-700 transform ${isClockedIn ? 'opacity-100 translate-y-0' : 'opacity-40 pointer-events-none translate-y-4'}`}>
                     <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-8 shadow-2xl">
                         <div className="flex items-center gap-4 mb-6">
@@ -267,7 +272,6 @@ const StudentDashboard = () => {
                                 <p className="text-sm text-slate-500">What are you working on right now?</p>
                             </div>
                         </div>
-                        {/* Canonical class fix: min-h-30 instead of arbitrary 120px */}
                         <textarea 
                             value={taskDescription}
                             onChange={(e) => setTaskDescription(e.target.value)}
