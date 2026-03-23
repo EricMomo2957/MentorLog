@@ -14,33 +14,44 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
 
     try {
         if (action === 'clock-in') {
+            // Check if ANY record exists for today (Active or Completed)
             const [rows]: any = await db.execute(
-                'SELECT id FROM attendance WHERE user_id = ? AND date = CURDATE() LIMIT 1',
+                'SELECT id, clock_out FROM attendance WHERE user_id = ? AND date = CURDATE() LIMIT 1',
                 [userId]
             );
 
+            // If a record exists for today
             if (rows && rows.length > 0) {
-                return res.status(400).json({ message: "Attendance already logged for today." });
+                // If they already clocked out, they are done for the day
+                if (rows[0].clock_out !== null) {
+                    return res.status(400).json({ message: "Attendance already completed for today." });
+                }
+                // If clock_out is null, they are already clocked in
+                return res.status(400).json({ message: "You are already clocked in." });
             }
 
+            // Logic for Late vs Present
             const now = new Date();
             const hour = now.getHours();
             const minute = now.getMinutes();
             let status = 'Present';
 
+            // Late if after 8:15 AM
             if (hour > 8 || (hour === 8 && minute > 15)) {
                 status = 'Late';
             }
 
-            // 1. Capture the timestamp so we can send it back to the frontend
-            const clockInTime = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' });
+            const clockInTime = now.toLocaleTimeString('en-US', { 
+                hour12: true, 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
 
             await db.execute(
                 'INSERT INTO attendance (user_id, date, clock_in, status, is_active) VALUES (?, CURDATE(), NOW(), ?, 1)',
                 [userId, status]
             );
 
-            // 2. Return the clock_in time so the frontend timer can start immediately
             return res.json({ 
                 success: true, 
                 status, 
@@ -49,6 +60,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
         } 
         
         if (action === 'clock-out') {
+            // Only update if there is an active session (is_active = 1) for today
             const [result]: any = await db.execute(`
                 UPDATE attendance 
                 SET clock_out = NOW(), 
@@ -58,7 +70,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
             `, [userId]);
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({ message: "No active session found for today." });
+                return res.status(404).json({ message: "No active session found to clock out." });
             }
 
             return res.json({ success: true, message: "Clocked out successfully" });

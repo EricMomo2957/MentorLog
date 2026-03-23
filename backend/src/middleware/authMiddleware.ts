@@ -3,6 +3,12 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
+// Define the shape of your JWT payload
+interface DecodedToken {
+    id: number;
+    role?: string;
+}
+
 // This is your current verification function
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
     const token = req.header('Authorization')?.split(' ')[1];
@@ -24,21 +30,20 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
  * Refined 'protect' middleware
  * This ensures the token is valid before allowing access to Admin/Student routes
  */
-export const protect = async (req: any, res: any, next: NextFunction) => {
+export const protect = async (req: any, res: Response, next: NextFunction) => {
     let token;
     
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            // Get token from header
             token = req.headers.authorization.split(' ')[1];
 
-            // Verify token
-            const decoded = jwt.verify(token, JWT_SECRET);
+            // Verify token and cast to our interface
+            const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
 
-            // Add user from payload to request object
+            // Attach to request
             req.user = decoded;
 
-            next();
+            return next(); // Use return to ensure no further execution
         } catch (error) {
             return res.status(401).json({ message: 'Not authorized, token failed' });
         }

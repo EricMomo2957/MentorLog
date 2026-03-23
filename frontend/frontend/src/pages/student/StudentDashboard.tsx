@@ -80,21 +80,22 @@ const StudentDashboard = () => {
             
             if (Array.isArray(data)) {
                 setHistory(data);
+                
+                // Get today's date in YYYY-MM-DD format
                 const todayStr = new Date().toLocaleDateString('en-CA'); 
                 const todayLog = data.find(log => log.date.startsWith(todayStr));
                 
                 if (todayLog) {
                     if (todayLog.clock_out) {
+                        // Shift is fully finished
                         setIsClockedIn(false);
                         setHasCompletedShift(true);
                     } else {
+                        // There is an active session (Clock In exists, but no Clock Out)
                         setIsClockedIn(true);
                         setHasCompletedShift(false);
                         setStartTime(todayLog.clock_in);
                     }
-                } else {
-                    setIsClockedIn(false);
-                    setHasCompletedShift(false);
                 }
             }
         } catch (_err) {
@@ -129,36 +130,53 @@ const StudentDashboard = () => {
 
     // --- HANDLERS ---
     const handleClockToggle = async () => {
-        if (!isClockedIn && hasCompletedShift) {
-            alert("You have already completed your attendance for today.");
-            return;
-        }
+    // 1. Guard clause for UI-side prevention
+    if (!isClockedIn && hasCompletedShift) {
+        alert("You have already completed your attendance for today.");
+        return;
+    }
 
-        const action = isClockedIn ? 'clock-out' : 'clock-in';
-        if (isClockedIn && !window.confirm("Are you sure you want to clock out?")) return;
+    const action = isClockedIn ? 'clock-out' : 'clock-in';
+    
+    // 2. User confirmation for clock-out
+    if (isClockedIn && !window.confirm("Are you sure you want to clock out?")) return;
 
-        try {
-            const response = await fetch(`http://localhost:5000/api/attendance/toggle`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ action })
-            });
+    try {
+        const response = await fetch(`http://localhost:5000/api/attendance/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ action })
+        });
 
-            if (response.ok) {
-                await fetchHistory();
-                await fetchReport();
+        const data = await response.json();
+
+        if (response.ok) {
+            if (action === 'clock-in') {
+                setIsClockedIn(true);
+                setStartTime(data.clock_in); 
+                setHasCompletedShift(false);
             } else {
-                const data = await response.json();
-                alert(data.message || "Attendance update failed.");
+                setIsClockedIn(false);
+                setHasCompletedShift(true);
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (_err) {
-            alert("Connection error.");
+            
+            // Refresh tables and reports
+            fetchHistory();
+            fetchReport();
+        } else {
+            // 3. CRITICAL SYNC: If the backend says the state is wrong, 
+            // refresh history to force the UI to match the database.
+            alert(data.message || "Attendance update failed.");
+            fetchHistory(); 
         }
-    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
+        alert("Connection error. Please check your internet.");
+    }
+};
 
     const handleUpdateTask = async () => {
         if (!taskDescription.trim()) return alert("Please enter a task description.");
@@ -206,13 +224,12 @@ const StudentDashboard = () => {
                     
                     <button 
                         onClick={handleClockToggle}
+                        // Only disable if the shift is completely finished for the day
                         disabled={!isClockedIn && hasCompletedShift}
-                        className={`group relative overflow-hidden px-10 py-4 rounded-2xl font-black uppercase tracking-wider transition-all duration-300 shadow-2xl ${
-                            !isClockedIn && hasCompletedShift
-                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                            : isClockedIn 
-                                ? 'bg-red-500/10 border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white' 
-                                : 'bg-emerald-500 text-slate-900 hover:bg-emerald-400 hover:-translate-y-1'
+                        className={`... ${
+                            isClockedIn 
+                                ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white' 
+                                : 'bg-emerald-500 text-slate-900'
                         }`}
                     >
                         <span className="relative z-10 flex items-center gap-2">
@@ -314,7 +331,11 @@ const StudentDashboard = () => {
                                         <td className="px-8 py-5 text-sm font-bold text-slate-300">{row.date}</td>
                                         <td className="px-8 py-5 text-sm font-mono text-emerald-400 font-bold">{row.clock_in}</td>
                                         <td className="px-8 py-5 text-sm font-mono text-slate-400">
-                                            {row.clock_out ? <span className="text-red-400 font-bold">{row.clock_out}</span> : <span className="text-slate-600 italic animate-pulse">Session Active...</span>}
+                                            {row.clock_out ? (
+                                                <span className="text-red-400 font-bold">{row.clock_out}</span>
+                                            ) : (
+                                                <span className="text-slate-600 italic animate-pulse">Session Active...</span>
+                                            )}
                                         </td>
                                         <td className="px-8 py-5 text-sm font-mono text-slate-300">
                                             {row.total_hours ? `${Number(row.total_hours).toFixed(2)}h` : '--'}
