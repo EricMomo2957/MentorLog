@@ -7,7 +7,6 @@ interface AuthRequest extends Request {
 }
 
 export const toggleAttendance = async (req: AuthRequest, res: Response) => {
-    // Check if user exists before accessing .id to prevent server crash
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
@@ -21,9 +20,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
             );
 
             if (rows && rows.length > 0) {
-                return res.status(400).json({ 
-                    message: "Attendance already logged for today." 
-                });
+                return res.status(400).json({ message: "Attendance already logged for today." });
             }
 
             const now = new Date();
@@ -31,17 +28,24 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
             const minute = now.getMinutes();
             let status = 'Present';
 
-            // 8:15 AM Grace Period logic
             if (hour > 8 || (hour === 8 && minute > 15)) {
                 status = 'Late';
             }
+
+            // 1. Capture the timestamp so we can send it back to the frontend
+            const clockInTime = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' });
 
             await db.execute(
                 'INSERT INTO attendance (user_id, date, clock_in, status, is_active) VALUES (?, CURDATE(), NOW(), ?, 1)',
                 [userId, status]
             );
 
-            return res.json({ success: true, status });
+            // 2. Return the clock_in time so the frontend timer can start immediately
+            return res.json({ 
+                success: true, 
+                status, 
+                clock_in: clockInTime 
+            });
         } 
         
         if (action === 'clock-out') {
@@ -112,5 +116,27 @@ export const getWeeklyReport = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error("Report Error:", error);
         res.status(500).json({ error: "Failed to generate report" });
+    }
+};
+
+// Add this to your attendanceController.ts for the Student's personal history
+export const getMyAttendanceHistory = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+
+    // Safety check: If userId is undefined, don't even try the database
+    if (!userId) {
+        return res.status(401).json({ message: "Not authorized" });
+    }
+
+    try {
+        // Wrap [userId] in an array to satisfy the 'ExecuteValues' type
+        const [rows] = await db.execute(
+            'SELECT * FROM attendance WHERE user_id = ? ORDER BY date DESC LIMIT 10',
+            [userId] 
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("History Error:", error);
+        res.status(500).json({ message: "Error fetching your history" });
     }
 };
