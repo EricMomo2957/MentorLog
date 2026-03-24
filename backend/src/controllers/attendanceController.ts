@@ -15,6 +15,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
     try {
         if (action === 'clock-in') {
             // Check if ANY record exists for today (Active or Completed)
+            // In toggleAttendance clock-in check:
             const [rows]: any = await db.execute(
                 'SELECT id, clock_out FROM attendance WHERE user_id = ? AND date = CURDATE() LIMIT 1',
                 [userId]
