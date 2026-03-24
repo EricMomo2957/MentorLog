@@ -10,11 +10,12 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         navigate('/login');
     };
 
-    const navLinks = [
-        { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
-        { path: '/manage-attendance', label: 'Student Attendance', icon: '📅' },
-        { path: '/reports', label: 'Weekly Reports', icon: '📈' },
-    ];
+            const navLinks = [
+            { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
+            { path: '/manage-attendance', label: 'Student Attendance', icon: '📅' },
+            { path: '/reports', label: 'Weekly Reports', icon: '📈' },
+            { path: '/admin-settings', label: 'Settings', icon: '⚙️' }, // New Link
+        ];
 
     return (
         <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
