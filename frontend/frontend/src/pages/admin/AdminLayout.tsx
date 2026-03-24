@@ -10,19 +10,19 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         navigate('/login');
     };
 
-            const navLinks = [
-            { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
-            { path: '/manage-attendance', label: 'Student Attendance', icon: '📅' },
-            { path: '/reports', label: 'Weekly Reports', icon: '📈' },
-            { path: '/admin-settings', label: 'Settings', icon: '⚙️' }, // New Link
-        ];
+    const navLinks = [
+        { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
+        { path: '/manage-attendance', label: 'Student Attendance', icon: '📅' },
+        { path: '/reports', label: 'Weekly Reports', icon: '📈' },
+        { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
+    ];
 
     return (
         <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
             {/* --- SIDEBAR --- */}
             <aside className="w-72 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50">
                 {/* Brand Logo */}
-                <div className="mb-12 px-2">
+                <div className="mb-10 px-2">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 font-black">
                             ML
@@ -48,14 +48,14 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 </div>
 
                 {/* Navigation Menu */}
-                <nav className="flex-1 space-y-2">
+                <nav className="flex-1 space-y-1.5">
                     {navLinks.map((link) => {
                         const isActive = location.pathname === link.path;
                         return (
                             <Link 
                                 key={link.path}
                                 to={link.path} 
-                                className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group overflow-hidden ${
+                                className={`relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group overflow-hidden ${
                                     isActive 
                                     ? 'text-white bg-blue-600/10' 
                                     : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
@@ -63,10 +63,10 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                             >
                                 {/* Active Indicator Bar */}
                                 {isActive && (
-                                    <div className="absolute left-0 top-3 bottom-3 w-1 bg-blue-500 rounded-r-full shadow-[0_0_10px_#3b82f6]" />
+                                    <div className="absolute left-0 top-2 bottom-2 w-1 bg-blue-500 rounded-r-full shadow-[0_0_10px_#3b82f6]" />
                                 )}
 
-                                <span className={`text-xl transition-all duration-300 ${
+                                <span className={`text-lg transition-all duration-300 ${
                                     isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'grayscale group-hover:grayscale-0'
                                 }`}>
                                     {link.icon}
@@ -96,7 +96,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
             {/* --- MAIN CONTENT --- */}
             <main className="flex-1 min-w-0 bg-linear-to-br from-[#020617] via-[#0f172a] to-[#020617] relative">
-                {/* Background Decor - Fixed canonical classes to clear VS Code Errors */}
+                {/* Background Decor */}
                 <div className="absolute top-0 right-0 w-125 h-125 bg-blue-600/5 blur-[120px] rounded-full -mr-64 -mt-64 pointer-events-none" />
                 
                 <div className="relative max-w-7xl mx-auto p-8 lg:p-12 min-h-screen">
