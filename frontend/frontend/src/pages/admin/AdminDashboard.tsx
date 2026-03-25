@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import AdminLayout from './AdminLayout';
 import { 
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, 
     BarChart, Bar, XAxis, YAxis, CartesianGrid 
@@ -11,7 +10,7 @@ interface User {
     id: number;
     full_name: string;
     email: string;
-    password?: string; // Included but usually not used in frontend
+    password?: string;
     role: 'admin' | 'student';
     created_at: string;
 }
@@ -44,36 +43,35 @@ const AdminDashboard = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchAllData = useCallback(async () => {
-    setIsLoading(true);
-    const token = localStorage.getItem('token');
-    const headers = { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    };
+        setIsLoading(true);
+        const token = localStorage.getItem('token');
+        const headers = { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
 
-    try {
-        const [userRes, attRes, taskRes] = await Promise.all([
-            // FIXED: Added /admin to the user route
-            fetch('http://localhost:5000/api/admin/users/all', { headers }), 
-            fetch('http://localhost:5000/api/attendance/all', { headers }),
-            fetch('http://localhost:5000/api/tasks/all', { headers })
-        ]);
+        try {
+            const [userRes, attRes, taskRes] = await Promise.all([
+                fetch('http://localhost:5000/api/admin/users/all', { headers }), 
+                fetch('http://localhost:5000/api/attendance/all', { headers }),
+                fetch('http://localhost:5000/api/tasks/all', { headers })
+            ]);
 
-        const userData = await userRes.json();
-        const attData = await attRes.json();
-        const taskData = await taskRes.json();
+            const userData = await userRes.json();
+            const attData = await attRes.json();
+            const taskData = await taskRes.json();
 
-        // Check if data exists in the .data property (matching your controller's structure)
-        if (userData.success) setUsers(userData.data || []);
-        if (attData.success) setLogs(attData.data || []);
-        if (taskData.success) setTasks(taskData.data || []);
-        
-    } catch (err) {
-        console.error("Dashboard Fetch Error:", err);
-    } finally {
-        setTimeout(() => setIsLoading(false), 400);
-    }
-}, []);
+            if (userData.success) setUsers(userData.data || []);
+            if (attData.success) setLogs(attData.data || []);
+            if (taskData.success) setTasks(taskData.data || []);
+            
+        } catch (err) {
+            console.error("Dashboard Fetch Error:", err);
+        } finally {
+            setTimeout(() => setIsLoading(false), 400);
+        }
+    }, []);
+
     useEffect(() => {
         fetchAllData();
     }, [fetchAllData]);
@@ -83,7 +81,6 @@ const AdminDashboard = () => {
     const totalTasks = tasks.length;
     const activeCount = logs.filter(log => log.is_active === true || Number(log.is_active) === 1).length;
     
-    // Fixed:attendanceStats is now used
     const attendanceStats = [
         { name: 'Present', value: logs.filter(l => l.status === 'Present').length },
         { name: 'Late', value: logs.filter(l => l.status === 'Late').length },
@@ -109,7 +106,8 @@ const AdminDashboard = () => {
     const attendanceRate = logs.length > 0 ? ((totalPresentAndLate / logs.length) * 100).toFixed(0) : 0;
 
     return (
-        <AdminLayout>
+        <>
+            {/* Header Section */}
             <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-white tracking-tight">
@@ -128,6 +126,7 @@ const AdminDashboard = () => {
                 </button>
             </div>
 
+            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 {[
                     { label: 'Total Users', val: totalUsers, color: 'text-blue-500' },
@@ -144,12 +143,13 @@ const AdminDashboard = () => {
                 ))}
             </div>
 
+            {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <div className="bg-[#1e293b] p-6 rounded-3xl border border-slate-800 h-96 shadow-2xl">
                     <h3 className="text-white font-bold mb-6 flex items-center gap-2 text-sm uppercase tracking-wider">
                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Attendance Distribution
                     </h3>
-                    <div className="h-62.5 w-full">
+                    <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             {attendanceStats.length > 0 ? (
                                 <PieChart>
@@ -172,7 +172,7 @@ const AdminDashboard = () => {
                     <h3 className="text-white font-bold mb-6 flex items-center gap-2 text-sm uppercase tracking-wider">
                         <span className="w-2 h-2 bg-purple-500 rounded-full"></span> Task Submissions
                     </h3>
-                    <div className="h-62.5 w-full">
+                    <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={taskBarData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
@@ -186,6 +186,7 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
+            {/* Bottom Section: User Directory & Task Feed */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center justify-between">
@@ -234,7 +235,7 @@ const AdminDashboard = () => {
                     <TaskFeed tasks={tasks} />
                 </div>
             </div>
-        </AdminLayout>
+        </>
     );
 };
 
