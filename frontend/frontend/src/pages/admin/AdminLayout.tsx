@@ -1,7 +1,7 @@
+import React from 'react'; // Added React import for types
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import TaskFeed from './TaskFeed'; 
 
-// 1. Define the Task interface to match your DB and TaskFeed component
 interface Task {
     id: number;
     user_id: number;
@@ -14,7 +14,7 @@ interface Task {
 
 interface AdminLayoutProps {
     children: React.ReactNode;
-    tasks?: Task[]; // Fixed: Replaced any[] with Task[]
+    tasks?: Task[]; 
 }
 
 const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
@@ -28,18 +28,17 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
     };
 
     const navLinks = [
-    { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
-    { path: '/manage-attendance', label: 'Student Attendance', icon: '📅' },
-    { path: '/manage-tasks', label: 'Tasks', icon: '📝' }, // New Task Link
-    { path: '/weekly-reports', label: 'Weekly Reports', icon: '📈' }, 
-    { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
-];
+        { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
+        { path: '/manage-attendance', label: 'Student Attendance', icon: '📅' },
+        { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
+        { path: '/weekly-reports', label: 'Weekly Reports', icon: '📈' }, 
+        { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
+    ];
 
     return (
         <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
             {/* --- SIDEBAR --- */}
             <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50">
-                {/* Brand Logo & Profile Section */}
                 <div className="mb-10 px-2 shrink-0">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 font-black">
@@ -62,7 +61,6 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                     </div>
                 </div>
 
-                {/* Navigation Menu */}
                 <nav className="space-y-1.5 mb-8 shrink-0">
                     {navLinks.map((link) => {
                         const isActive = location.pathname === link.path;
@@ -83,12 +81,10 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                 </nav>
 
                 {/* --- TASK FEED INTEGRATION --- */}
-                {/* Added overflow-hidden to allow the TaskFeed's internal scroll to work correctly */}
                 <div className="flex-1 min-h-0 mb-6 overflow-hidden">
                     <TaskFeed tasks={tasks} />
                 </div>
 
-                {/* Logout Button */}
                 <div className="pt-6 border-t border-slate-800/60 shrink-0">
                     <button onClick={handleLogout} className="w-full flex items-center justify-between px-5 py-3.5 rounded-xl text-sm font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group border border-transparent hover:border-red-500/20">
                         <div className="flex items-center gap-3">
@@ -101,7 +97,6 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                 </div>
             </aside>
 
-            {/* --- MAIN CONTENT --- */}
             <main className="flex-1 min-w-0 bg-linear-to-br from-[#020617] via-[#0f172a] to-[#020617] relative overflow-y-auto">
                 <div className="absolute top-0 right-0 w-125 h-125 bg-blue-600/5 blur-[120px] rounded-full -mr-64 -mt-64 pointer-events-none" />
                 <div className="relative max-w-7xl mx-auto p-8 lg:p-12 min-h-screen">
