@@ -8,6 +8,7 @@ import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageAttendance from './pages/admin/ManageAttendance';
 import AdminSettings from './pages/admin/AdminSettings';
+import WeeklyReports from './pages/admin/WeeklyReports';
 
 // Student Imports
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -65,6 +66,17 @@ function App() {
               <StudentDashboard />
             </ProtectedRoute>
           } 
+        />
+
+        <Route
+          path= "/weekly-reports"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout>
+                <WeeklyReports />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
         />
 
         {/* Fallback for undefined routes */}

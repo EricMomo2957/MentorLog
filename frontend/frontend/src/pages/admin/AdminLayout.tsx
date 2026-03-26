@@ -13,7 +13,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     const navLinks = [
         { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
         { path: '/manage-attendance', label: 'Student Attendance', icon: '📅' },
-        { path: '/reports', label: 'Weekly Reports', icon: '📈' },
+        // Updated path to match App.tsx route
+        { path: '/weekly-reports', label: 'Weekly Reports', icon: '📈' }, 
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
     ];
 
