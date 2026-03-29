@@ -38,8 +38,8 @@ const ManageTasks = () => {
             setLoading(true);
             try {
                 const [studentRes, taskRes] = await Promise.all([
-                    fetch('http://localhost/mentorlog-api/get-students.php'),
-                    fetch('http://localhost/mentorlog-api/get-tasks.php')
+                    fetch('http://localhost/mentorlog/php-bridge/get-students.php'),
+                    fetch('http://localhost/mentorlog/php-bridge/get-tasks.php')
                 ]);
 
                 if (studentRes.ok && taskRes.ok) {
@@ -66,7 +66,7 @@ const ManageTasks = () => {
         const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
 
         try {
-            const response = await fetch('http://localhost/mentorlog-api/update-task.php', {
+            const response = await fetch('http://localhost/mentorlog/php-bridge/update-task.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -87,8 +87,8 @@ const ManageTasks = () => {
     const handleSaveTask = async (e: React.FormEvent) => {
         e.preventDefault();
         const endpoint = editingTask 
-            ? 'http://localhost/mentorlog-api/update-task.php' 
-            : 'http://localhost/mentorlog-api/create-task.php';
+            ? 'http://localhost/mentorlog/php-bridge/update-task.php' 
+            : 'http://localhost/mentorlog/php-bridge/create-task.php';
 
         try {
             const response = await fetch(endpoint, {
@@ -101,7 +101,7 @@ const ManageTasks = () => {
             });
 
             if (response.ok) {
-                const refresh = await fetch('http://localhost/mentorlog-api/get-tasks.php');
+                const refresh = await fetch('http://localhost/mentorlog/php-bridge/get-tasks.php');
                 const newData = await refresh.json();
                 setTasks(newData);
                 closeModal();
@@ -117,7 +117,7 @@ const ManageTasks = () => {
         if (!window.confirm("Permanently delete this task?")) return;
 
         try {
-            const response = await fetch(`http://localhost/mentorlog-api/delete-task.php?id=${id}`, { 
+            const response = await fetch(`http://localhost/mentorlog/php-bridge/delete-task.php?id=${id}`, { 
                 method: 'DELETE' 
             });
             

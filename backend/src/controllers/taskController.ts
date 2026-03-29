@@ -59,3 +59,18 @@ export const getAllTasks = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: 'Error fetching task logs.' });
     }
 };
+
+export const getStudentTasks = async (req: Request, res: Response) => {
+    // Usually, req.user is populated by your authMiddleware
+    const studentId = (req as any).user.id; 
+
+    try {
+        const [rows] = await pool.execute(
+            'SELECT * FROM tasks WHERE user_id = ? ORDER BY due_date ASC',
+            [studentId]
+        );
+        res.status(200).json(rows);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching student tasks', error });
+    }
+};
