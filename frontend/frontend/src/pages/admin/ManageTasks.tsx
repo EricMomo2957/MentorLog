@@ -59,12 +59,36 @@ const ManageTasks = () => {
         fetchDatabaseData();
     }, []);
 
-    // 2. Handle Save (Add or Update)
+    // 2. Quick Toggle Status logic
+    const toggleStatus = async (task: Task) => {
+        const statusOrder: Task['status'][] = ['Pending', 'In-Progress', 'Completed'];
+        const currentIndex = statusOrder.indexOf(task.status);
+        const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+
+        try {
+            const response = await fetch('http://localhost/mentorlog-api/update-task.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...task,
+                    status: nextStatus
+                })
+            });
+
+            if (response.ok) {
+                setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
+            }
+        } catch (err) {
+            console.error("Quick toggle failed:", err);
+        }
+    };
+
+    // 3. Handle Save (Add or Update)
     const handleSaveTask = async (e: React.FormEvent) => {
         e.preventDefault();
         const endpoint = editingTask 
-    ? 'http://localhost/mentorlog-api/update-task.php' 
-    : 'http://localhost/mentorlog-api/create-task.php';
+            ? 'http://localhost/mentorlog-api/update-task.php' 
+            : 'http://localhost/mentorlog-api/create-task.php';
 
         try {
             const response = await fetch(endpoint, {
@@ -77,7 +101,7 @@ const ManageTasks = () => {
             });
 
             if (response.ok) {
-                const refresh = await fetch('http://localhost/mentorlog-api/get-tasks.php')
+                const refresh = await fetch('http://localhost/mentorlog-api/get-tasks.php');
                 const newData = await refresh.json();
                 setTasks(newData);
                 closeModal();
@@ -88,14 +112,21 @@ const ManageTasks = () => {
         }
     };
 
-    // 3. Handle Delete
+    // 4. Handle Delete
     const handleDelete = async (id: number) => {
         if (!window.confirm("Permanently delete this task?")) return;
 
         try {
-            const response = await fetch(`/api/delete-task.php?id=${id}`, { method: 'DELETE' });
-            if (response.ok) {
+            const response = await fetch(`http://localhost/mentorlog-api/delete-task.php?id=${id}`, { 
+                method: 'DELETE' 
+            });
+            
+            const result = await response.json();
+
+            if (result.success) {
                 setTasks(prev => prev.filter(t => t.id !== id));
+            } else {
+                alert("Error: " + result.error);
             }
         } catch (err) {
             console.error("Delete failed:", err);
@@ -191,9 +222,12 @@ const ManageTasks = () => {
                                         <p className="text-[9px] mt-2 font-bold text-slate-600 uppercase tracking-widest">Due: {task.due_date}</p>
                                     </td>
                                     <td className="px-8 py-6 text-center">
-                                        <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border ${getStatusStyle(task.status)}`}>
+                                        <button 
+                                            onClick={() => toggleStatus(task)}
+                                            className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-90 hover:brightness-110 ${getStatusStyle(task.status)}`}
+                                        >
                                             {task.status}
-                                        </span>
+                                        </button>
                                     </td>
                                     <td className="px-8 py-6 text-center">
                                         <div className="flex justify-center gap-2">
@@ -219,23 +253,23 @@ const ManageTasks = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase text-slate-500 font-black tracking-widest ml-1">Assign To</label>
-                                <select 
-                                    required
-                                    className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 text-white text-sm focus:border-blue-500 outline-none appearance-none cursor-pointer"
-                                    value={formData.user_id}
-                                    onChange={(e) => setFormData({...formData, user_id: e.target.value})}
-                                >
-                                    <option value="">Select a Student</option>
-                                    {students.length > 0 ? (
-                                        students.map(s => (
-                                            <option key={s.id} value={s.id}>
-                                                {s.full_name || `User #${s.id}`} 
-                                            </option>
-                                        ))
-                                    ) : (
-                                        <option disabled>No students found</option>
-                                    )}
-                                </select>
+                                    <select 
+                                        required
+                                        className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 text-white text-sm focus:border-blue-500 outline-none appearance-none cursor-pointer"
+                                        value={formData.user_id}
+                                        onChange={(e) => setFormData({...formData, user_id: e.target.value})}
+                                    >
+                                        <option value="">Select a Student</option>
+                                        {students.length > 0 ? (
+                                            students.map(s => (
+                                                <option key={s.id} value={s.id}>
+                                                    {s.full_name || `User #${s.id}`} 
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option disabled>No students found</option>
+                                        )}
+                                    </select>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase text-slate-500 font-black tracking-widest ml-1">Deadline</label>
