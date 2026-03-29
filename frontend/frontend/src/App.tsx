@@ -14,6 +14,7 @@ import ManageTasks from './pages/admin/ManageTasks';
 
 // Student Imports
 import StudentDashboard from './pages/student/StudentDashboard';
+import MyTasks from './pages/student/MyTasks'; // <--- Added this import
 
 // Define the interface to stay type-safe
 interface Task {
@@ -28,7 +29,7 @@ interface Task {
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // This resolves the 'unused variable' errors and populates your sidebar
+  // Sync sidebar tasks for Admin View
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -116,6 +117,26 @@ function App() {
           element={
             <ProtectedRoute requiredRole="student">
               <StudentDashboard />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* My Tasks Route - Added for tasks.tsx */}
+        <Route 
+          path="/tasks" 
+          element={
+            <ProtectedRoute requiredRole="student">
+              <MyTasks />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Attendance Route Placeholder (To prevent 404 from Layout) */}
+        <Route 
+          path="/my-attendance" 
+          element={
+            <ProtectedRoute requiredRole="student">
+              <div className="p-10 text-white">Attendance Feature Coming Soon...</div>
             </ProtectedRoute>
           } 
         />

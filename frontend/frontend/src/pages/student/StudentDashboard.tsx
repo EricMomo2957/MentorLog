@@ -27,7 +27,7 @@ interface WeeklyReport {
 
 const StudentDashboard = () => {
     // --- SETTINGS ---
-    const PHP_BRIDGE_URL = 'http://localhost/mentorlog-api'; 
+    const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge'; 
     const NODE_API_URL = 'http://localhost:5000/api'; 
 
     // --- STATES ---
@@ -41,7 +41,19 @@ const StudentDashboard = () => {
     const [report, setReport] = useState<WeeklyReport>({ accumulated_hours: 0, days_present: 0, days_late: 0 });
     const [hasCompletedShift, setHasCompletedShift] = useState(false);
 
+    // --- UI FEEDBACK STATES ---
+    const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
     const totalTargetHours = 600;
+
+    // --- TOAST AUTO-HIDE ---
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
 
     // --- HELPER: PARSE TIME STRING ---
     const parseTimeString = (timeStr: string) => {
@@ -82,11 +94,11 @@ const StudentDashboard = () => {
     const fetchAssignedTasks = async () => {
         try {
             const userId = localStorage.getItem('userId');
-            const response = await fetch(`${PHP_BRIDGE_URL}/get-my-tasks.php?student_id=${userId}`);
+            const response = await fetch(`${PHP_BRIDGE_URL}/get-my-tasks.php?user_id=${userId}`);
             const data = await response.json();
             if (Array.isArray(data)) setAssignedTasks(data);
         } catch (_err) {
-            console.error("Failed to fetch assigned tasks via PHP bridge:", _err);
+            console.error("Failed to fetch tasks via PHP bridge:", _err);
         }
     };
 
@@ -144,22 +156,30 @@ const StudentDashboard = () => {
 
     // --- HANDLERS ---
     const handleStatusUpdate = async (taskId: number, newStatus: string) => {
+        setUpdatingTaskId(taskId);
         try {
             const response = await fetch(`${PHP_BRIDGE_URL}/update-task-status.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ taskId, status: newStatus })
             });
-            if (response.ok) fetchAssignedTasks();
+            if (response.ok) {
+                setToast({ message: "Task marked as completed!", type: 'success' });
+                await fetchAssignedTasks();
+            } else {
+                setToast({ message: "Failed to update task.", type: 'error' });
+            }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_err) {
-            alert("Failed to update status via PHP bridge.");
+            setToast({ message: "Server connection error.", type: 'error' });
+        } finally {
+            setUpdatingTaskId(null);
         }
     };
 
     const handleClockToggle = async () => {
         if (!isClockedIn && hasCompletedShift) {
-            alert("You have already completed your attendance for today.");
+            setToast({ message: "Shift already completed for today.", type: 'error' });
             return;
         }
         const action = isClockedIn ? 'clock-out' : 'clock-in';
@@ -180,26 +200,28 @@ const StudentDashboard = () => {
                     setIsClockedIn(true);
                     setStartTime(data.clock_in);
                     setHasCompletedShift(false);
+                    setToast({ message: "Clocked in successfully!", type: 'success' });
                 } else {
                     setIsClockedIn(false);
                     setHasCompletedShift(true);
+                    setToast({ message: "Clocked out successfully!", type: 'success' });
                 }
                 fetchHistory();
                 fetchReport();
             } else {
-                alert(data.message || "Attendance update failed.");
+                setToast({ message: data.message || "Attendance update failed.", type: 'error' });
             }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_err) {
-            alert("Connection error.");
+            setToast({ message: "Connection error.", type: 'error' });
         }
     };
 
     const handleUpdateTask = async () => {
-        if (!taskDescription.trim()) return alert("Please enter a task description.");
+        if (!taskDescription.trim()) return setToast({ message: "Please enter a description.", type: 'error' });
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${NODE_API_URL}/tasks/update`, {
+            const response = await fetch(`${NODE_API_URL}/tasks/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -207,26 +229,45 @@ const StudentDashboard = () => {
                 },
                 body: JSON.stringify({
                     title: "Daily OJT Update",
-                    task_description: taskDescription,
-                    status: 'In-Progress'
-                })
+                    task_description: taskDescription
+                }),
             });
             if (response.ok) {
-                alert("Task updated successfully!");
+                setToast({ message: "Daily log submitted!", type: 'success' });
                 setTaskDescription('');
+                fetchAssignedTasks(); 
+            } else {
+                const data = await response.json();
+                setToast({ message: data.message, type: 'error' });
             }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (_err) {
-            alert("Connection error.");
+        } catch (error) {
+            setToast({ message: "Connection error.", type: 'error' });
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    const urgentTasks = assignedTasks
+        .filter(task => task.status !== 'Completed')
+        .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+        .slice(0, 3);
+
     const progressPercentage = Math.min((report.accumulated_hours / totalTargetHours) * 100, 100);
 
     return (
         <StudentLayout>
+            {/* TOAST NOTIFICATION */}
+            {toast && (
+                <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-2xl shadow-2xl border transition-all animate-bounce ${
+                    toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-red-500/10 border-red-500 text-red-500'
+                }`}>
+                    <p className="font-bold flex items-center gap-2">
+                        {toast.type === 'success' ? '✅' : '❌'} {toast.message}
+                    </p>
+                </div>
+            )}
+
             <div className="max-w-6xl mx-auto space-y-8 pb-10 px-4">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
@@ -279,31 +320,44 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Assigned Tasks (PHP Bridge) */}
+                {/* Priority Assigned Tasks */}
                 <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-8 shadow-2xl">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 bg-emerald-600/10 rounded-2xl flex items-center justify-center text-emerald-500 text-xl">📋</div>
-                        <div>
-                            <h4 className="text-lg font-bold text-white">Assigned Tasks</h4>
-                            <p className="text-sm text-slate-500">Official tasks from the Admin</p>
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        {assignedTasks.length > 0 ? assignedTasks.map((task) => (
-                            <div key={task.id} className="bg-slate-900/40 border border-slate-700/50 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                <div className="space-y-1">
-                                    <h5 className="text-white font-bold">{task.title}</h5>
-                                    <p className="text-slate-400 text-sm">{task.task_description}</p>
-                                    <p className="text-xs text-slate-500 font-mono">Deadline: {task.due_date}</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${task.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>{task.status}</span>
-                                    {task.status !== 'Completed' && (
-                                        <button onClick={() => handleStatusUpdate(task.id, 'Completed')} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all">Mark Done</button>
-                                    )}
-                                </div>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 text-xl">🔥</div>
+                            <div>
+                                <h4 className="text-lg font-bold text-white">Priority Tasks</h4>
+                                <p className="text-sm text-slate-500">Most urgent assignments</p>
                             </div>
-                        )) : <p className="text-slate-500 text-sm italic text-center py-4">No tasks assigned yet.</p>}
+                        </div>
+                        <a href="/tasks" className="text-xs font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest">View All Tasks →</a>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {urgentTasks.length > 0 ? urgentTasks.map((task) => (
+                            <div key={task.id} className={`bg-slate-900/40 border border-slate-700/50 p-5 rounded-2xl flex flex-col justify-between group hover:border-amber-500/30 transition-all ${updatingTaskId === task.id ? 'opacity-50 grayscale' : ''}`}>
+                                <div>
+                                    <div className="flex justify-between items-start mb-2">
+                                         <p className="text-[10px] text-amber-400 font-black uppercase font-mono">Due: {task.due_date}</p>
+                                         <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    </div>
+                                    <h5 className="text-white font-bold mb-1 line-clamp-1">{task.title}</h5>
+                                    <p className="text-slate-400 text-xs line-clamp-2 mb-4">{task.task_description}</p>
+                                </div>
+                                <button 
+                                    onClick={() => handleStatusUpdate(task.id, 'Completed')} 
+                                    disabled={updatingTaskId !== null}
+                                    className="w-full py-2 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white text-[10px] font-black uppercase rounded-lg transition-all flex justify-center items-center gap-2"
+                                >
+                                    {updatingTaskId === task.id ? (
+                                        <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                    ) : 'Quick Complete'}
+                                </button>
+                            </div>
+                        )) : (
+                            <div className="col-span-3 py-10 text-center bg-slate-900/20 rounded-2xl border border-dashed border-slate-800">
+                                <p className="text-slate-500 text-sm italic">No urgent tasks at the moment. Great job!</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -322,7 +376,7 @@ const StudentDashboard = () => {
                             onChange={(e) => setTaskDescription(e.target.value)}
                             disabled={!isClockedIn}
                             placeholder={isClockedIn ? "Example: Developing the Dashboard UI..." : "Clock in to start logging tasks"}
-                            className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-200 focus:outline-none focus:border-blue-500 min-h-30"
+                            className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-200 focus:outline-none focus:border-blue-500 min-h-32"
                         />
                         <div className="flex justify-end mt-4">
                             <button onClick={handleUpdateTask} disabled={isSubmitting || !isClockedIn} className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-sm font-bold transition-all shadow-lg">

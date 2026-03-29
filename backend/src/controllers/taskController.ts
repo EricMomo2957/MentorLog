@@ -1,40 +1,67 @@
 import { Request, Response } from 'express';
 import pool from '../config/db';
 
-export const submitTask = async (req: Request, res: Response) => {
-    // user_id comes from our verifyToken middleware
-    const { task_description } = req.body;
-    const user_id = (req as any).user.id; 
+// Define a custom interface that extends Express Request
+// This fixes the TypeScript "Property 'user' does not exist" errors
+interface AuthRequest extends Request {
+    user?: {
+        id: number;
+        role: string;
+        full_name?: string;
+    };
+}
+
+/**
+ * 1. Submit a Task Report (Self-submission by Student)
+ */
+export const submitTask = async (req: AuthRequest, res: Response) => {
+    const { task_description, title } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
-        // 1. Insert the task linked to the user and today's date
+        // Insert linking to user and today's date
         await pool.query(
-            'INSERT INTO tasks (user_id, task_description, date) VALUES (?, ?, CURDATE())',
-            [user_id, task_description]
+            'INSERT INTO tasks (user_id, title, task_description, status, due_date) VALUES (?, ?, ?, "Pending", CURDATE())',
+            [userId, title || 'Daily Task Report', task_description]
         );
 
         res.status(201).json({ message: 'Task report submitted successfully!' });
     } catch (error) {
-        console.error(error);
+        console.error("Error in submitTask:", error);
         res.status(500).json({ message: 'Error submitting task report.' });
     }
 };
 
-export const getMyTasks = async (req: Request, res: Response) => {
-    const user_id = (req as any).user.id;
+/**
+ * 2. Get Tasks for the Logged-in Student (Personal View)
+ */
+export const getMyTasks = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
         const [rows] = await pool.query(
-            'SELECT * FROM tasks WHERE user_id = ? ORDER BY date DESC',
-            [user_id]
+            'SELECT * FROM tasks WHERE user_id = ? ORDER BY due_date DESC',
+            [userId]
         );
         res.status(200).json(rows);
     } catch (error) {
+        console.error("Error in getMyTasks:", error);
         res.status(500).json({ message: 'Error fetching your tasks.' });
     }
 };
 
-// src/controllers/taskController.ts
+/**
+ * 3. Get All Tasks (Admin/Mentor View)
+ * Joins with users table to get the student's name
+ */
 export const getAllTasks = async (req: Request, res: Response) => {
     try {
         const [rows] = await pool.query(`
@@ -55,22 +82,29 @@ export const getAllTasks = async (req: Request, res: Response) => {
             data: rows
         });
     } catch (error) {
-        console.error("Error fetching all tasks:", error);
+        console.error("Error in getAllTasks:", error);
         res.status(500).json({ success: false, message: 'Error fetching task logs.' });
     }
 };
 
-export const getStudentTasks = async (req: Request, res: Response) => {
-    // Usually, req.user is populated by your authMiddleware
-    const studentId = (req as any).user.id; 
+/**
+ * 4. General Task Fetching (Alias/Utility)
+ */
+export const getTasks = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     try {
-        const [rows] = await pool.execute(
-            'SELECT * FROM tasks WHERE user_id = ? ORDER BY due_date ASC',
-            [studentId]
+        const [rows] = await pool.query(
+            'SELECT * FROM tasks WHERE user_id = ? ORDER BY id DESC',
+            [userId]
         );
         res.status(200).json(rows);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching student tasks', error });
+        console.error("Error in getTasks:", error);
+        res.status(500).json({ message: 'Error fetching tasks.' });
     }
 };

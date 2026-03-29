@@ -17,17 +17,24 @@ const Login = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
             
             if (response.status === 200) {
-                // 1. Destructure the data from your backend response
-                const { token, role, full_name } = response.data;
+                // Debugging: See exactly what the backend returns
+                console.log("Login Response Data:", response.data);
 
-                // 2. Store user info in localStorage
+                // 1. Destructure including 'id' (or 'userId' depending on your backend)
+                const { token, role, full_name, id } = response.data;
+
+                // 2. Store all necessary info in localStorage
                 localStorage.setItem('token', token);
                 localStorage.setItem('role', role);
                 localStorage.setItem('userName', full_name);
+                
+                // This ensures the Student Dashboard fetchAssignedTasks() finds the ID
+                localStorage.setItem('userId', id); 
 
                 alert(`Welcome back, ${full_name}!`);
 
@@ -54,22 +61,40 @@ const Login = () => {
                     Welcome Back
                 </h2>
                 
-                {error && <p className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-lg mb-4 text-sm">{error}</p>}
+                {error && (
+                    <p className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-lg mb-4 text-sm">
+                        {error}
+                    </p>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-medium mb-1">Email Address</label>
-                        <input type="email" name="email" placeholder="eric@example.com" onChange={handleChange} required 
-                            className="w-full p-3 rounded-lg bg-[#0f172a] border border-slate-600 focus:border-blue-500 outline-none transition-all" />
+                        <label className="block text-sm font-medium mb-1 text-slate-300">Email Address</label>
+                        <input 
+                            type="email" 
+                            name="email" 
+                            placeholder="eric@example.com" 
+                            onChange={handleChange} 
+                            required 
+                            className="w-full p-3 rounded-lg bg-[#0f172a] border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
+                        />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1">Password</label>
-                        <input type="password" name="password" placeholder="••••••••" onChange={handleChange} required 
-                            className="w-full p-3 rounded-lg bg-[#0f172a] border border-slate-600 focus:border-blue-500 outline-none transition-all" />
+                        <label className="block text-sm font-medium mb-1 text-slate-300">Password</label>
+                        <input 
+                            type="password" 
+                            name="password" 
+                            placeholder="••••••••" 
+                            onChange={handleChange} 
+                            required 
+                            className="w-full p-3 rounded-lg bg-[#0f172a] border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
+                        />
                     </div>
                     
-                    <button type="submit" 
-                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mt-4 transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20">
+                    <button 
+                        type="submit" 
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mt-4 transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20"
+                    >
                         Sign In
                     </button>
                 </form>
