@@ -14,7 +14,9 @@ import ManageTasks from './pages/admin/ManageTasks';
 
 // Student Imports
 import StudentDashboard from './pages/student/StudentDashboard';
-import MyTasks from './pages/student/MyTasks'; // <--- Added this import
+import MyTasks from './pages/student/MyTasks'; 
+import StudentProfile from './pages/student/StudentProfile';
+import StudentSettings from './pages/student/StudentSettings';
 
 // Define the interface to stay type-safe
 interface Task {
@@ -33,7 +35,6 @@ function App() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        // Update this URL to match your actual backend endpoint
         const response = await fetch('http://localhost:5000/api/tasks');
         if (response.ok) {
           const data = await response.json();
@@ -121,7 +122,6 @@ function App() {
           } 
         />
 
-        {/* My Tasks Route - Added for tasks.tsx */}
         <Route 
           path="/tasks" 
           element={
@@ -131,12 +131,32 @@ function App() {
           } 
         />
 
-        {/* Attendance Route Placeholder (To prevent 404 from Layout) */}
+        <Route 
+          path="/student-profile" 
+          element={
+            <ProtectedRoute requiredRole="student">
+              <StudentProfile />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/settings" 
+          element={
+            <ProtectedRoute requiredRole="student">
+              <StudentSettings />
+            </ProtectedRoute>
+          } 
+        />
+
         <Route 
           path="/my-attendance" 
           element={
             <ProtectedRoute requiredRole="student">
-              <div className="p-10 text-white">Attendance Feature Coming Soon...</div>
+              <div className="p-10 text-white bg-[#0f172a] min-h-screen">
+                <h1 className="text-3xl font-black mb-4">My Attendance</h1>
+                <p className="text-slate-400">Attendance Feature Coming Soon...</p>
+              </div>
             </ProtectedRoute>
           } 
         />
