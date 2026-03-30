@@ -108,3 +108,28 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: 'Error fetching tasks.' });
     }
 };
+
+/**
+ * 5. Admin Assigns a Task to a Specific Student
+ */
+export const assignTask = async (req: Request, res: Response) => {
+    // We get 'student_id' from the Admin's form/modal
+    const { student_id, title, task_description, due_date } = req.body;
+
+    // Validation: Ensure we have a student ID and a description
+    if (!student_id || !task_description) {
+        return res.status(400).json({ message: 'Student ID and Task Description are required.' });
+    }
+
+    try {
+        await pool.query(
+            'INSERT INTO tasks (user_id, title, task_description, status, due_date) VALUES (?, ?, ?, "Pending", ?)',
+            [student_id, title || 'New Assignment', task_description, due_date || new Date()]
+        );
+
+        res.status(201).json({ success: true, message: 'Task assigned to student successfully!' });
+    } catch (error) {
+        console.error("Error in assignTask:", error);
+        res.status(500).json({ success: false, message: 'Error assigning task.' });
+    }
+};

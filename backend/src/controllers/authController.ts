@@ -22,9 +22,10 @@ export const login = async (req: Request, res: Response) => {
             { expiresIn: '1h' }
         );
 
-        // Updated to match your frontend logic
+        // Updated with the "Missing Link" (user.id)
         res.status(200).json({ 
             token, 
+            id: user.id, // Now Clara's ID will be sent to the frontend
             role: user.role, 
             full_name: user.full_name 
         });
@@ -35,7 +36,7 @@ export const login = async (req: Request, res: Response) => {
     }
 };
 
-// ===================Registration controller=======================
+// =================== Registration controller =======================
 
 export const register = async (req: Request, res: Response) => {
     const { full_name, email, password, role } = req.body;
