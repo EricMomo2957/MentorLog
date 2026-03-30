@@ -108,20 +108,35 @@ const StudentDashboard = () => {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await response.json();
-            if (Array.isArray(data)) {
+            
+            if (Array.isArray(data) && data.length > 0) {
                 setHistory(data);
+
+                // 1. Get today's date in YYYY-MM-DD format
                 const todayStr = new Date().toLocaleDateString('en-CA');
-                const todayLog = data.find(log => log.date.startsWith(todayStr));
-                if (todayLog) {
-                    if (todayLog.clock_out) {
+
+                // 2. Filter all logs for today and sort by ID descending (latest first)
+                const todayLogs = data
+                    .filter(log => log.date.startsWith(todayStr))
+                    .sort((a, b) => b.id - a.id);
+
+                if (todayLogs.length > 0) {
+                    const latestLog = todayLogs[0]; // Look at the most recent action
+
+                    if (latestLog.clock_out) {
                         setIsClockedIn(false);
                         setHasCompletedShift(true);
                     } else {
                         setIsClockedIn(true);
                         setHasCompletedShift(false);
-                        setStartTime(todayLog.clock_in);
+                        setStartTime(latestLog.clock_in);
                     }
+                } else {
+                    setIsClockedIn(false);
+                    setHasCompletedShift(false);
                 }
+            } else {
+                setHistory([]); // Set empty if no data
             }
         } catch (_err) {
             console.error("Failed to fetch history:", _err);
@@ -177,12 +192,14 @@ const StudentDashboard = () => {
         }
     };
 
-    const handleClockToggle = async () => {
-        if (!isClockedIn && hasCompletedShift) {
+    const handleClockToggle = async (actionOverride?: 'resume') => {
+        const action = actionOverride || (isClockedIn ? 'clock-out' : 'clock-in');
+
+        if (!isClockedIn && hasCompletedShift && action !== 'resume') {
             setToast({ message: "Shift already completed for today.", type: 'error' });
             return;
         }
-        const action = isClockedIn ? 'clock-out' : 'clock-in';
+
         if (isClockedIn && !window.confirm("Are you sure you want to clock out?")) return;
 
         try {
@@ -194,9 +211,15 @@ const StudentDashboard = () => {
                 },
                 body: JSON.stringify({ action })
             });
+
             const data = await response.json();
+
             if (response.ok) {
-                if (action === 'clock-in') {
+                if (action === 'resume') {
+                    setHasCompletedShift(false);
+                    setIsClockedIn(true);
+                    setToast({ message: "Shift resumed!", type: 'success' });
+                } else if (action === 'clock-in') {
                     setIsClockedIn(true);
                     setStartTime(data.clock_in);
                     setHasCompletedShift(false);
@@ -279,17 +302,30 @@ const StudentDashboard = () => {
                             {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                         </p>
                     </div>
-                    <button 
-                        onClick={handleClockToggle}
-                        disabled={!isClockedIn && hasCompletedShift}
-                        className={`px-6 py-3 rounded-xl font-bold transition-all shadow-lg ${
-                            isClockedIn 
-                                ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white' 
-                                : 'bg-emerald-500 text-slate-900'
-                        }`}
-                    >
-                        {!isClockedIn && hasCompletedShift ? '✅ Shift Completed' : isClockedIn ? '⏹ End Shift' : '▶ Begin Shift'}
-                    </button>
+                    
+                    <div className="flex gap-3">
+                        {hasCompletedShift && !isClockedIn && (
+                            <button 
+                                onClick={() => handleClockToggle('resume')}
+                                className="px-6 py-3 rounded-xl font-bold bg-amber-500/10 text-amber-500 border border-amber-500/50 hover:bg-amber-500 hover:text-slate-900 transition-all shadow-lg"
+                            >
+                                🔄 Resume Shift
+                            </button>
+                        )}
+                        <button 
+                            onClick={() => handleClockToggle()}
+                            disabled={!isClockedIn && hasCompletedShift}
+                            className={`px-6 py-3 rounded-xl font-bold transition-all shadow-lg ${
+                                isClockedIn 
+                                    ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white' 
+                                    : hasCompletedShift 
+                                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                                        : 'bg-emerald-500 text-slate-900 hover:scale-105'
+                            }`}
+                        >
+                            {!isClockedIn && hasCompletedShift ? '✅ Shift Completed' : isClockedIn ? '⏹ End Shift' : '▶ Begin Shift'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stats Cards */}
