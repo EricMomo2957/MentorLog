@@ -22,23 +22,30 @@ const Login = () => {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
             
             if (response.status === 200) {
-                // Debugging: See exactly what the backend returns
+                // Debugging: Crucial to see the object structure in the Console
                 console.log("Login Response Data:", response.data);
 
-                // 1. Destructure including 'id' (or 'userId' depending on your backend)
-                const { token, role, full_name, id } = response.data;
+                // 1. Extract data - handling multiple common naming conventions
+                const { token, role, full_name, id, user_id, user } = response.data;
 
-                // 2. Store all necessary info in localStorage
+                // 2. Determine which ID to use (checks id, then user_id, then nested user.id)
+                const finalUserId = id || user_id || (user && user.id);
+
+                if (!finalUserId) {
+                    console.error("Warning: No User ID found in response. Tasks will not load.");
+                }
+
+                // 3. Store all necessary info in localStorage
                 localStorage.setItem('token', token);
                 localStorage.setItem('role', role);
                 localStorage.setItem('userName', full_name);
                 
-                // This ensures the Student Dashboard fetchAssignedTasks() finds the ID
-                localStorage.setItem('userId', id); 
+                // This is the specific key that MyTasks.tsx looks for
+                localStorage.setItem('userId', String(finalUserId));
 
                 alert(`Welcome back, ${full_name}!`);
 
-                // 3. Conditional Redirection based on Role
+                // 4. Conditional Redirection based on Role
                 if (role === 'admin') {
                     navigate('/admin-dashboard');
                 } else {

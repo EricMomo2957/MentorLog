@@ -86,32 +86,44 @@ const ManageTasks = () => {
     // 3. Handle Save (Add or Update)
     const handleSaveTask = async (e: React.FormEvent) => {
         e.preventDefault();
-        const endpoint = editingTask 
-            ? 'http://localhost/mentorlog/php-bridge/update-task.php' 
-            : 'http://localhost/mentorlog/php-bridge/create-task.php';
+        
+        const isEditing = !!editingTask;
+        // SWITCH TO PHP BRIDGE: Use the same port as your fetches for consistency
+        const url = isEditing 
+            ? `http://localhost/mentorlog/php-bridge/update-task.php` 
+            : 'http://localhost/mentorlog/php-bridge/assign-task.php';
 
         try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
+            const response = await fetch(url, {
+                method: 'POST', // PHP usually prefers POST for these bridges
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...formData,
-                    id: editingTask?.id 
+                    id: editingTask?.id, // Only needed for updates
+                    user_id: parseInt(formData.user_id), 
+                    title: formData.title,
+                    task_description: formData.task_description,
+                    due_date: formData.due_date,
+                    status: formData.status
                 })
             });
 
-            if (response.ok) {
+            const result = await response.json();
+
+            if (result.success) {
+                // Re-fetch tasks to update the UI
                 const refresh = await fetch('http://localhost/mentorlog/php-bridge/get-tasks.php');
                 const newData = await refresh.json();
                 setTasks(newData);
                 closeModal();
+                alert(isEditing ? "Task updated!" : "Task assigned successfully!");
+            } else {
+                alert(`Error: ${result.error}`);
             }
         } catch (err) {
             console.error("Save error:", err);
-            alert("Error saving task to database.");
+            alert("Connection to PHP bridge failed.");
         }
     };
-
     // 4. Handle Delete
     const handleDelete = async (id: number) => {
         if (!window.confirm("Permanently delete this task?")) return;
