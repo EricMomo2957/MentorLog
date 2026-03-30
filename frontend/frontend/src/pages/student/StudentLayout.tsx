@@ -2,23 +2,17 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 const StudentLayout = ({ children }: { children: React.ReactNode }) => {
     const navigate = useNavigate();
-    const location = useLocation(); // To highlight active links
+    const location = useLocation(); 
     
-    // Use the logged-in student's name
     const userName = localStorage.getItem('userName') || 'Student';
 
     const handleLogout = () => {
         if (window.confirm("Are you sure you want to log out?")) {
-            // This removes EVERYTHING: token, role, userName, and userId
             localStorage.clear(); 
-            
-            // Optional: If you use window.location.href instead of navigate, 
-            // it forces a full page reload which clears any remaining React state.
             navigate('/login');
         }
     };
 
-    // Helper to check if a link is active
     const isActive = (path: string) => location.pathname === path;
 
     return (
@@ -34,6 +28,9 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                 </div>
 
                 <nav className="flex-1 space-y-2">
+                    {/* Main Navigation Group */}
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Menu</p>
+                    
                     <Link to="/student-dashboard" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
                         isActive('/student-dashboard') 
                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
@@ -57,11 +54,32 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                     }`}>
                         📝 My Tasks
                     </Link>
+
+                    {/* Account Settings Group */}
+                    <div className="pt-6 mt-6 border-t border-slate-800">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Account</p>
+                        
+                        <Link to="/student-profile" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
+                            isActive('/student-profile') 
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
+                            : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
+                        }`}>
+                            👤 My Profile
+                        </Link>
+
+                        <Link to="/settings" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
+                            isActive('/settings') 
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
+                            : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
+                        }`}>
+                            ⚙️ Settings
+                        </Link>
+                    </div>
                 </nav>
 
                 <button 
                     onClick={handleLogout} 
-                    className="mt-auto flex items-center justify-center gap-3 p-3 w-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all text-sm font-bold border border-red-500/20"
+                    className="mt-8 flex items-center justify-center gap-3 p-3 w-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all text-sm font-bold border border-red-500/20"
                 >
                     <span className="text-lg">🚪</span> Logout
                 </button>
