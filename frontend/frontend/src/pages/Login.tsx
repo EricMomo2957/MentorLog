@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
+// 1. IMPORT YOUR LOGO ASSET
+// Make sure your logo file is in src/assets and the name matches
+import mentorLogLogo from '../assets/mentorlogOption.png'; 
+
 const Login = () => {
     const [formData, setFormData] = useState({
         email: '',
@@ -22,30 +26,16 @@ const Login = () => {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
             
             if (response.status === 200) {
-                // Debugging: Crucial to see the object structure in the Console
                 console.log("Login Response Data:", response.data);
 
-                // 1. Extract data - handling multiple common naming conventions
                 const { token, role, full_name, id, user_id, user } = response.data;
-
-                // 2. Determine which ID to use (checks id, then user_id, then nested user.id)
                 const finalUserId = id || user_id || (user && user.id);
 
-                if (!finalUserId) {
-                    console.error("Warning: No User ID found in response. Tasks will not load.");
-                }
-
-                // 3. Store all necessary info in localStorage
                 localStorage.setItem('token', token);
                 localStorage.setItem('role', role);
                 localStorage.setItem('userName', full_name);
-                
-                // This is the specific key that MyTasks.tsx looks for
                 localStorage.setItem('userId', String(finalUserId));
 
-                alert(`Welcome back, ${full_name}!`);
-
-                // 4. Conditional Redirection based on Role
                 if (role === 'admin') {
                     navigate('/admin-dashboard');
                 } else {
@@ -62,53 +52,72 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0f172a] text-white font-sans">
-            <div className="bg-[#1e293b] p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700">
-                <h2 className="text-3xl font-bold mb-6 text-center bg-linear-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-                    Welcome Back
-                </h2>
+        <div className="min-h-screen flex items-center justify-center bg-[#0f172a] text-white font-sans px-4">
+            <div className="bg-[#1e293b] p-10 rounded-3xl shadow-2xl w-full max-w-md border border-slate-700 relative overflow-hidden group">
+                
+                {/* LOGO HEADER SECTION */}
+                <div className="flex flex-col items-center mb-8 relative z-10 text-center">
+                    <div className="w-24 h-24 rounded-2xl flex items-center justify-center p-2 mb-4 bg-slate-900/50 border border-slate-700 shadow-inner group-hover:border-emerald-500/50 transition-colors duration-500">
+                        <img 
+                            src={mentorLogLogo} 
+                            alt="MentorLog Logo" 
+                            className="w-full h-full object-contain" 
+                        />
+                    </div>
+                    <h2 className="text-3xl font-black bg-linear-to-r from-emerald-400 via-blue-400 to-emerald-400 bg-clip-text text-transparent tracking-tight">
+                        MENTOR<span className="text-white">LOG</span>
+                    </h2>
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+                        OJT Management System
+                    </p>
+                </div>
                 
                 {error && (
-                    <p className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-lg mb-4 text-sm">
-                        {error}
-                    </p>
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-shake">
+                        <span>⚠️</span> {error}
+                    </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-300">Email Address</label>
+                {/* FIXED: Form tags properly opened and closed */}
+                <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Email Address</label>
                         <input 
                             type="email" 
                             name="email" 
-                            placeholder="eric@example.com" 
+                            placeholder="name@university.edu" 
                             onChange={handleChange} 
                             required 
-                            className="w-full p-3 rounded-lg bg-[#0f172a] border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
+                            className="w-full p-3.5 rounded-xl bg-[#0f172a] border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-700 text-sm" 
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-300">Password</label>
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Password</label>
                         <input 
                             type="password" 
                             name="password" 
                             placeholder="••••••••" 
                             onChange={handleChange} 
                             required 
-                            className="w-full p-3 rounded-lg bg-[#0f172a] border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
+                            className="w-full p-3.5 rounded-xl bg-[#0f172a] border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-700 text-sm" 
                         />
                     </div>
                     
                     <button 
                         type="submit" 
-                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mt-4 transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20"
+                        className="w-full bg-linear-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-black uppercase tracking-widest py-4 rounded-xl mt-4 transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-emerald-500/10"
                     >
                         Sign In
                     </button>
                 </form>
 
-                <p className="mt-6 text-center text-slate-400 text-sm">
-                    Don't have an account? <Link to="/register" className="text-blue-400 hover:underline">Register here</Link>
+                <p className="mt-8 text-center text-slate-500 text-xs relative z-10">
+                    Don't have an account? <Link to="/register" className="text-emerald-400 font-bold hover:text-blue-400 transition-colors">Register here</Link>
                 </p>
+
+                {/* DECORATIVE BACKGROUND ELEMENTS */}
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-600/10 transition-all duration-700"></div>
+                <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-emerald-600/10 transition-all duration-700"></div>
             </div>
         </div>
     );
