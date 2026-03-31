@@ -55,34 +55,41 @@ const StudentDashboard = () => {
         }
     }, [toast]);
 
-    // --- HELPER: PARSE TIME STRING ---
+    // --- HELPER: PARSE TIME STRING (FIXED ESLINT ERRORS) ---
     const parseTimeString = (timeStr: string) => {
         if (!timeStr) return null;
-        const date = new Date();
-        const parts = timeStr.split(' ');
-        const timePart = parts[0];
-        const modifier = parts[1];
-        const timeSplit = timePart.split(':').map(Number);
-        let hours = timeSplit[0];
-        const minutes = timeSplit[1];
+        
+        const now = new Date();
+        const match = timeStr.match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)?/i);
+        
+        if (!match) return null;
+
+        // FIXED: Using const for destructuring as these are never reassigned
+        const [ , hours, minutes, seconds, modifier] = match;
+        let h = parseInt(hours, 10);
+        const m = parseInt(minutes, 10);
+        const s = parseInt(seconds || "0", 10);
 
         if (modifier) {
-            if (modifier === 'PM' && hours < 12) hours += 12;
-            if (modifier === 'AM' && hours === 12) hours = 0;
+            const mod = modifier.toUpperCase();
+            if (mod === 'PM' && h < 12) h += 12;
+            if (mod === 'AM' && h === 12) h = 0;
         }
 
-        date.setHours(hours, minutes, 0, 0);
-        return date;
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s);
     };
 
     const getDuration = () => {
         const start = parseTimeString(startTime);
         if (!start || !isClockedIn) return "00:00:00";
+        
         const diff = currentTime.getTime() - start.getTime();
         if (diff < 0) return "00:00:00";
+        
         const seconds = Math.floor((diff / 1000) % 60);
         const minutes = Math.floor((diff / 1000 / 60) % 60);
         const hours = Math.floor((diff / 1000 / 60 / 60));
+        
         return [
             hours.toString().padStart(2, '0'),
             minutes.toString().padStart(2, '0'),
@@ -97,11 +104,13 @@ const StudentDashboard = () => {
             const response = await fetch(`${PHP_BRIDGE_URL}/get-my-tasks.php?user_id=${userId}`);
             const data = await response.json();
             if (Array.isArray(data)) setAssignedTasks(data);
-        } catch (_err) {
-            console.error("Failed to fetch tasks via PHP bridge:", _err);
+        } catch {
+            // Removed unused variable to satisfy ESLint
+            console.error("Failed to fetch tasks via PHP bridge.");
         }
     };
 
+    // --- UPDATED FETCH HISTORY ---
     const fetchHistory = async () => {
         try {
             const response = await fetch(`${NODE_API_URL}/attendance/history`, {
@@ -109,40 +118,28 @@ const StudentDashboard = () => {
             });
             const data = await response.json();
             
-            if (Array.isArray(data) && data.length > 0) {
+            if (Array.isArray(data)) {
                 setHistory(data);
+                
+                // Check for an active session (where clock_out is null)
+                const activeSession = data.find(log => log.clock_out === null);
 
-                // 1. Get today's date in YYYY-MM-DD format
-                const todayStr = new Date().toLocaleDateString('en-CA');
-
-                // 2. Filter all logs for today and sort by ID descending (latest first)
-                const todayLogs = data
-                    .filter(log => log.date.startsWith(todayStr))
-                    .sort((a, b) => b.id - a.id);
-
-                if (todayLogs.length > 0) {
-                    const latestLog = todayLogs[0]; // Look at the most recent action
-
-                    if (latestLog.clock_out) {
-                        setIsClockedIn(false);
-                        setHasCompletedShift(true);
-                    } else {
-                        setIsClockedIn(true);
-                        setHasCompletedShift(false);
-                        setStartTime(latestLog.clock_in);
-                    }
+                if (activeSession) {
+                    setIsClockedIn(true);
+                    setHasCompletedShift(false);
+                    setStartTime(activeSession.clock_in);
                 } else {
                     setIsClockedIn(false);
-                    setHasCompletedShift(false);
+                    // If there's a log from today but it's finished, mark as completed
+                    const todayStr = new Date().toLocaleDateString('en-CA');
+                    const finishedToday = data.some(log => log.date.startsWith(todayStr) && log.clock_out !== null);
+                    setHasCompletedShift(finishedToday);
                 }
-            } else {
-                setHistory([]); // Set empty if no data
             }
-        } catch (_err) {
-            console.error("Failed to fetch history:", _err);
+        } catch {
+            console.error("Failed to fetch history.");
         }
     };
-
     const fetchReport = async () => {
         try {
             const response = await fetch(`${NODE_API_URL}/attendance/weekly-report`, {
@@ -156,8 +153,8 @@ const StudentDashboard = () => {
                     days_late: data.days_late || 0
                 });
             }
-        } catch (_err) {
-            console.error("Connection error:", _err);
+        } catch {
+            console.error("Connection error during report fetch.");
         }
     };
 
@@ -184,14 +181,14 @@ const StudentDashboard = () => {
             } else {
                 setToast({ message: "Failed to update task.", type: 'error' });
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (_err) {
+        } catch {
             setToast({ message: "Server connection error.", type: 'error' });
         } finally {
             setUpdatingTaskId(null);
         }
     };
 
+    // --- UPDATED CLOCK TOGGLE HANDLER ---
     const handleClockToggle = async (actionOverride?: 'resume') => {
         const action = actionOverride || (isClockedIn ? 'clock-out' : 'clock-in');
 
@@ -218,28 +215,32 @@ const StudentDashboard = () => {
                 if (action === 'resume') {
                     setHasCompletedShift(false);
                     setIsClockedIn(true);
+                    // Ensure we get the start time when resuming
+                    if (data.clock_in) setStartTime(data.clock_in); 
                     setToast({ message: "Shift resumed!", type: 'success' });
                 } else if (action === 'clock-in') {
                     setIsClockedIn(true);
-                    setStartTime(data.clock_in);
+                    // CRITICAL: Set the start time from the DB response immediately
+                    setStartTime(data.clock_in); 
                     setHasCompletedShift(false);
                     setToast({ message: "Clocked in successfully!", type: 'success' });
                 } else {
                     setIsClockedIn(false);
                     setHasCompletedShift(true);
+                    setStartTime(''); // Clear timer on clock out
                     setToast({ message: "Clocked out successfully!", type: 'success' });
                 }
-                fetchHistory();
-                fetchReport();
+                
+                // Refresh history immediately so the table updates
+                await fetchHistory();
+                await fetchReport();
             } else {
                 setToast({ message: data.message || "Attendance update failed.", type: 'error' });
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (_err) {
+        } catch {
             setToast({ message: "Connection error.", type: 'error' });
         }
     };
-
     const handleUpdateTask = async () => {
         if (!taskDescription.trim()) return setToast({ message: "Please enter a description.", type: 'error' });
         setIsSubmitting(true);
@@ -263,8 +264,7 @@ const StudentDashboard = () => {
                 const data = await response.json();
                 setToast({ message: data.message, type: 'error' });
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
+        } catch {
             setToast({ message: "Connection error.", type: 'error' });
         } finally {
             setIsSubmitting(false);
@@ -280,7 +280,6 @@ const StudentDashboard = () => {
 
     return (
         <StudentLayout>
-            {/* TOAST NOTIFICATION */}
             {toast && (
                 <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-2xl shadow-2xl border transition-all animate-bounce ${
                     toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-red-500/10 border-red-500 text-red-500'
@@ -292,7 +291,6 @@ const StudentDashboard = () => {
             )}
 
             <div className="max-w-6xl mx-auto space-y-8 pb-10 px-4">
-                {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-black text-white tracking-tight">
@@ -328,7 +326,6 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
                         <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Total Progress</p>
@@ -356,7 +353,6 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Priority Assigned Tasks */}
                 <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-8 shadow-2xl">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-4">
@@ -397,7 +393,6 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Task Logging (Node.js) */}
                 <div className={`transition-all duration-700 transform ${isClockedIn ? 'opacity-100 translate-y-0' : 'opacity-40 pointer-events-none translate-y-4'}`}>
                     <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-8 shadow-2xl">
                         <div className="flex items-center gap-4 mb-6">
@@ -422,7 +417,6 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* History Table */}
                 <div className="bg-[#1e293b] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b border-slate-800 flex justify-between items-center">
                         <h4 className="text-lg font-bold text-white">📅 Recent Attendance</h4>
