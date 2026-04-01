@@ -31,17 +31,26 @@ const StudentProfile = () => {
 
     const fetchProfile = async () => {
         const userId = localStorage.getItem('userId');
+        if (!userId) {
+            console.error("No userId found in localStorage");
+            setLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch(`${PHP_BRIDGE_URL}/get-profile.php?user_id=${userId}`);
             const data = await res.json();
-            if (data.success) {
+            
+            if (data.success && data.user) {
                 setProfile(data.user);
-                // Initialize form data with current profile values
+                // Sync form data with the latest data from DB
                 setFormData({
-                    full_name: data.user.full_name,
-                    email: data.user.email,
-                    phone: data.user.phone || ''
+                    full_name: data.user.full_name || '',
+                    email: data.user.email || '',
+                    phone: data.user.phone !== 'Not provided' ? data.user.phone : ''
                 });
+            } else {
+                console.error("Failed to load profile:", data.message);
             }
         } catch (err) {
             console.error("Error fetching profile:", err);
@@ -61,16 +70,20 @@ const StudentProfile = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId, ...formData })
             });
+            
             const data = await res.json();
+            
             if (data.success) {
                 alert("Profile updated successfully!");
                 setIsEditModalOpen(false);
-                fetchProfile(); // Refresh data
+                // Re-fetch to ensure UI shows exactly what is in the Database
+                await fetchProfile(); 
             } else {
                 alert(data.message || "Update failed.");
             }
         } catch (err) {
             console.error("Update error:", err);
+            alert("An error occurred while saving.");
         } finally {
             setIsSaving(false);
         }
@@ -102,11 +115,19 @@ const StudentProfile = () => {
                         </div>
 
                         <div className="text-center md:text-left space-y-2">
-                            <h1 className="text-4xl font-black text-white tracking-tight">{profile?.full_name}</h1>
-                            <p className="text-emerald-400 font-bold tracking-widest uppercase text-xs">{profile?.course} — Year {profile?.year_level}</p>
+                            <h1 className="text-4xl font-black text-white tracking-tight">
+                                {profile?.full_name || "Student Name"}
+                            </h1>
+                            <p className="text-emerald-400 font-bold tracking-widest uppercase text-xs">
+                                {profile?.course} — Year {profile?.year_level}
+                            </p>
                             <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-                                <span className="px-4 py-1.5 bg-slate-900/50 border border-slate-700 rounded-full text-xs font-bold text-slate-400">ID: {profile?.student_id}</span>
-                                <span className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-bold text-emerald-500">Active OJT</span>
+                                <span className="px-4 py-1.5 bg-slate-900/50 border border-slate-700 rounded-full text-xs font-bold text-slate-400">
+                                    ID: {profile?.student_id}
+                                </span>
+                                <span className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-bold text-emerald-500">
+                                    Active OJT
+                                </span>
                             </div>
                         </div>
 
@@ -161,43 +182,43 @@ const StudentProfile = () => {
 
             {/* EDIT PROFILE MODAL */}
             {isEditModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-[#1e293b] w-full max-w-md rounded-4xl border border-slate-700 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[#1e293b] w-full max-w-md rounded-4xl border border-slate-700 shadow-2xl overflow-hidden">
                         <div className="p-8">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-black text-white">Edit Profile</h3>
-                                <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">✕</button>
+                                <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
                             </div>
 
                             <form onSubmit={handleUpdate} className="space-y-5">
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 ml-1">Full Name</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Full Name</label>
                                     <input 
                                         type="text"
                                         required
-                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 transition-all"
                                         value={formData.full_name}
                                         onChange={(e) => setFormData({...formData, full_name: e.target.value})}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 ml-1">Email Address</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Email Address</label>
                                     <input 
                                         type="email"
                                         required
-                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 transition-all"
                                         value={formData.email}
                                         onChange={(e) => setFormData({...formData, email: e.target.value})}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 ml-1">Phone Number</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Phone Number</label>
                                     <input 
                                         type="text"
                                         placeholder="e.g. 0912 345 6789"
-                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 transition-all"
                                         value={formData.phone}
                                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
                                     />
@@ -207,14 +228,14 @@ const StudentProfile = () => {
                                     <button 
                                         type="button"
                                         onClick={() => setIsEditModalOpen(false)}
-                                        className="flex-1 px-4 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all"
+                                        className="flex-1 px-4 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-700"
                                     >
                                         Cancel
                                     </button>
                                     <button 
                                         type="submit"
                                         disabled={isSaving}
-                                        className="flex-1 px-4 py-3 bg-emerald-500 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                        className="flex-1 px-4 py-3 bg-emerald-500 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 disabled:opacity-50 shadow-lg shadow-emerald-500/20"
                                     >
                                         {isSaving ? 'Saving...' : 'Save Changes'}
                                     </button>

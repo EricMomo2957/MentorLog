@@ -1,5 +1,5 @@
 <?php
-// 1. HEADERS - Essential for React/Vite communication
+// 1. SET HEADERS
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -11,44 +11,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// 2. DATABASE CONNECTION
-$host = "localhost";
-$db_name = "mentorlog_db"; // Ensure this matches your actual DB name
-$username = "root";
-$password = "";
+include_once 'db_connection.php'; // Uses your mysqli $conn
 
-try {
-    $conn = new PDO("mysql:host=$host;dbname=$db_name", $username, $password);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    echo json_encode(["success" => false, "message" => "Connection failed: " . $e->getMessage()]);
-    exit();
-}
-
-// 3. GET JSON INPUT
+// 2. GET JSON INPUT
 $data = json_decode(file_get_contents("php://input"));
 
+// Check if basic required fields are present
 if (
-    !empty($data->user_id) &&
-    !empty($data->full_name) &&
+    !empty($data->user_id) && 
+    !empty($data->full_name) && 
     !empty($data->email)
 ) {
-    try {
-        // 4. PREPARE SQL
-        // We update full_name and email (from users table) and phone (if it exists in your profile/users table)
-        $query = "UPDATE users 
-                  SET full_name = :full_name, 
-                      email = :email, 
-                      phone = :phone 
-                  WHERE id = :id";
+    // 3. PREPARE THE SQL STATEMENT
+    // Note: If you haven't added the 'phone' column to your table yet, 
+    // run: ALTER TABLE users ADD COLUMN phone VARCHAR(20) NULL AFTER email;
+    $sql = "UPDATE users SET full_name = ?, email = ?, phone = ? WHERE id = ?";
+    
+    $stmt = $conn->prepare($sql);
 
-        $stmt = $conn->prepare($query);
-
-        // Sanitize and Bind
-        $stmt->bindParam(':full_name', $data->full_name);
-        $stmt->bindParam(':email', $data->email);
-        $stmt->bindParam(':phone', $data->phone);
-        $stmt->bindParam(':id', $data->user_id);
+    if ($stmt) {
+        // "sssi" means string, string, string, integer
+        $phone = isset($data->phone) ? $data->phone : "";
+        $stmt->bind_param("sssi", $data->full_name, $data->email, $phone, $data->user_id);
 
         if ($stmt->execute()) {
             echo json_encode([
@@ -58,19 +42,22 @@ if (
         } else {
             echo json_encode([
                 "success" => false, 
-                "message" => "Unable to update profile."
+                "message" => "Failed to update record: " . $stmt->error
             ]);
         }
-    } catch(Exception $e) {
+        $stmt->close();
+    } else {
         echo json_encode([
             "success" => false, 
-            "message" => "Error: " . $e->getMessage()
+            "message" => "Database prepare error: " . $conn->error
         ]);
     }
 } else {
     echo json_encode([
         "success" => false, 
-        "message" => "Incomplete data. Required: user_id, full_name, email."
+        "message" => "Incomplete data. User ID, Name, and Email are required."
     ]);
 }
+
+$conn->close();
 ?>
