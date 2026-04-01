@@ -16,7 +16,7 @@ if (!$user_id) {
 
 // 2. Prepare the statement using mysqli
 // Note: If 'phone' doesn't exist in your table yet, remove it from the SELECT
-$sql = "SELECT full_name, email, role FROM users WHERE id = ? LIMIT 1";
+$sql = "SELECT fullname, email, role FROM users WHERE id = ? LIMIT 1";
 $stmt = $conn->prepare($sql);
 
 if ($stmt) {

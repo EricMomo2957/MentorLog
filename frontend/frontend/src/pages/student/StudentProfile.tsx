@@ -16,7 +16,6 @@ const StudentProfile = () => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     
-    // MODAL & FORM STATES
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         full_name: '',
@@ -31,8 +30,10 @@ const StudentProfile = () => {
 
     const fetchProfile = async () => {
         const userId = localStorage.getItem('userId');
+        console.log("Fetching profile for User ID:", userId);
+
         if (!userId) {
-            console.error("No userId found in localStorage");
+            console.error("No userId found in localStorage. Please log in again.");
             setLoading(false);
             return;
         }
@@ -41,19 +42,31 @@ const StudentProfile = () => {
             const res = await fetch(`${PHP_BRIDGE_URL}/get-profile.php?user_id=${userId}`);
             const data = await res.json();
             
+            console.log("Database Response:", data); // Check your console to see if data arrives
+
             if (data.success && data.user) {
-                setProfile(data.user);
-                // Sync form data with the latest data from DB
-                setFormData({
-                    full_name: data.user.full_name || '',
+                // We map 'fullname' from DB to 'full_name' for React state
+                const mappedUser: UserProfile = {
+                    full_name: data.user.fullname || data.user.full_name || 'No Name',
                     email: data.user.email || '',
-                    phone: data.user.phone !== 'Not provided' ? data.user.phone : ''
+                    phone: data.user.phone && data.user.phone !== 'Not provided' ? data.user.phone : '',
+                    student_id: data.user.student_id || `ID-${userId}`,
+                    course: data.user.course || 'BS Information Technology',
+                    year_level: data.user.year_level || '4',
+                    ojt_hours_required: data.user.ojt_hours_required || 600
+                };
+
+                setProfile(mappedUser);
+                setFormData({
+                    full_name: mappedUser.full_name,
+                    email: mappedUser.email,
+                    phone: mappedUser.phone
                 });
             } else {
-                console.error("Failed to load profile:", data.message);
+                console.error("Backend Error:", data.message);
             }
         } catch (err) {
-            console.error("Error fetching profile:", err);
+            console.error("Fetch Error (check if XAMPP is running):", err);
         } finally {
             setLoading(false);
         }
@@ -76,14 +89,13 @@ const StudentProfile = () => {
             if (data.success) {
                 alert("Profile updated successfully!");
                 setIsEditModalOpen(false);
-                // Re-fetch to ensure UI shows exactly what is in the Database
                 await fetchProfile(); 
             } else {
                 alert(data.message || "Update failed.");
             }
         } catch (err) {
             console.error("Update error:", err);
-            alert("An error occurred while saving.");
+            alert("Connection error. Is your PHP server online?");
         } finally {
             setIsSaving(false);
         }
@@ -100,7 +112,6 @@ const StudentProfile = () => {
     return (
         <StudentLayout>
             <div className="max-w-5xl mx-auto space-y-8 pb-12 px-4">
-                {/* Profile Header Card */}
                 <div className="relative overflow-hidden bg-[#1e293b] rounded-[2.5rem] border border-slate-800 shadow-2xl">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/10 blur-[100px] -mr-32 -mt-32"></div>
                     
@@ -116,7 +127,7 @@ const StudentProfile = () => {
 
                         <div className="text-center md:text-left space-y-2">
                             <h1 className="text-4xl font-black text-white tracking-tight">
-                                {profile?.full_name || "Student Name"}
+                                {profile?.full_name}
                             </h1>
                             <p className="text-emerald-400 font-bold tracking-widest uppercase text-xs">
                                 {profile?.course} — Year {profile?.year_level}
@@ -142,7 +153,6 @@ const StudentProfile = () => {
                     </div>
                 </div>
 
-                {/* Detail Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-1 space-y-6">
                         <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
@@ -180,7 +190,6 @@ const StudentProfile = () => {
                 </div>
             </div>
 
-            {/* EDIT PROFILE MODAL */}
             {isEditModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-[#1e293b] w-full max-w-md rounded-4xl border border-slate-700 shadow-2xl overflow-hidden">
@@ -225,18 +234,8 @@ const StudentProfile = () => {
                                 </div>
 
                                 <div className="pt-4 flex gap-3">
-                                    <button 
-                                        type="button"
-                                        onClick={() => setIsEditModalOpen(false)}
-                                        className="flex-1 px-4 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-700"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button 
-                                        type="submit"
-                                        disabled={isSaving}
-                                        className="flex-1 px-4 py-3 bg-emerald-500 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 disabled:opacity-50 shadow-lg shadow-emerald-500/20"
-                                    >
+                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 px-4 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-700">Cancel</button>
+                                    <button type="submit" disabled={isSaving} className="flex-1 px-4 py-3 bg-emerald-500 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 disabled:opacity-50 shadow-lg shadow-emerald-500/20">
                                         {isSaving ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
