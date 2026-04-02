@@ -8,11 +8,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageAttendance from './pages/admin/ManageAttendance';
-import ManageStudents from './pages/admin/ManageStudents'; 
+import ManageStudents from './pages/admin/ManageStudents'; // <--- ADDED THIS
 import AdminSettings from './pages/admin/AdminSettings';
 import WeeklyReports from './pages/admin/WeeklyReports';
 import ManageTasks from './pages/admin/ManageTasks'; 
-import AdminProfile from './pages/admin/AdminProfile'; // <--- NEW IMPORT
 
 // Student Imports
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -24,7 +23,6 @@ import StudentSettings from './pages/student/StudentSettings';
 interface Task {
   id: number;
   user_id: number;
-  student_name?: string;
   title: string;
   task_description: string;
   status: 'Pending' | 'In-Progress' | 'Completed';
@@ -60,28 +58,72 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
 
         {/* --- Admin Protected Routes --- */}
-        {/* Simplified using .map() to avoid repeating ProtectedRoute/AdminLayout logic */}
-        {[
-          { path: "/admin-dashboard", element: <AdminDashboard /> },
-          { path: "/manage-students", element: <ManageStudents /> },
-          { path: "/manage-attendance", element: <ManageAttendance /> },
-          { path: "/manage-tasks", element: <ManageTasks /> },
-          { path: "/weekly-reports", element: <WeeklyReports /> },
-          { path: "/admin-profile", element: <AdminProfile /> }, 
-          { path: "/admin-settings", element: <AdminSettings /> },
-        ].map((route) => (
-          <Route 
-            key={route.path}
-            path={route.path} 
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout tasks={tasks}>
-                  {route.element}
-                </AdminLayout>
-              </ProtectedRoute>
-            } 
-          />
-        ))}
+        <Route 
+          path="/admin-dashboard" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout tasks={tasks}>
+                <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* NEW MANAGE STUDENTS ROUTE */}
+        <Route 
+          path="/manage-students" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout tasks={tasks}>
+                <ManageStudents />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/manage-attendance" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout tasks={tasks}>
+                <ManageAttendance />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/manage-tasks" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout tasks={tasks}>
+                <ManageTasks />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/weekly-reports"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout tasks={tasks}>
+                <WeeklyReports />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route 
+          path="/admin-settings" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout tasks={tasks}>
+                <AdminSettings />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
 
         {/* --- Student Protected Routes --- */}
         <Route 
