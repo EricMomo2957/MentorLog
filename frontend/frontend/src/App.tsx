@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageAttendance from './pages/admin/ManageAttendance';
+import ManageStudents from './pages/admin/ManageStudents'; // <--- ADDED THIS
 import AdminSettings from './pages/admin/AdminSettings';
 import WeeklyReports from './pages/admin/WeeklyReports';
 import ManageTasks from './pages/admin/ManageTasks'; 
@@ -63,6 +64,18 @@ function App() {
             <ProtectedRoute requiredRole="admin">
               <AdminLayout tasks={tasks}>
                 <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* NEW MANAGE STUDENTS ROUTE */}
+        <Route 
+          path="/manage-students" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout tasks={tasks}>
+                <ManageStudents />
               </AdminLayout>
             </ProtectedRoute>
           } 

@@ -1,8 +1,27 @@
 import { Request, Response } from 'express';
-import pool from '../config/db';
 import db from '../config/db';
 
-// 1. Existing function for summary/stats
+/**
+ * 1. FETCH ALL USERS (New)
+ * Specifically for the Admin Dashboard User Directory
+ * GET: /api/admin/users/all
+ */
+export const getAllUsers = async (req: Request, res: Response) => {
+    try {
+        const [rows]: any = await db.execute(
+            'SELECT id, full_name, email, role, created_at FROM users ORDER BY created_at DESC'
+        );
+        res.status(200).json({ success: true, data: rows });
+    } catch (error) {
+        console.error("Fetch All Users Error:", error);
+        res.status(500).json({ success: false, message: "Error fetching all users" });
+    }
+};
+
+/**
+ * 2. DASHBOARD SUMMARY
+ * Used for detailed charts/summary cards
+ */
 export const getStudentSummary = async (req: Request, res: Response) => {
     try {
         const query = `
@@ -17,31 +36,66 @@ export const getStudentSummary = async (req: Request, res: Response) => {
             GROUP BY u.id, u.full_name, u.email
         `;
 
-        const [rows] = await pool.query(query);
-        res.status(200).json(rows);
+        const [rows] = await db.execute(query);
+        res.status(200).json({ success: true, data: rows });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error fetching dashboard summary' });
+        console.error("Dashboard Summary Error:", error);
+        res.status(500).json({ success: false, message: 'Error fetching dashboard summary' });
     }
 };
 
-// 2. NEW function to feed the "Total Users" and "User Directory" in AdminDashboard
-export const getAllUsers = async (req: Request, res: Response) => {
+/**
+ * 3. STUDENT DIRECTORY (FETCH ONLY STUDENTS)
+ * Feeds the ManageStudent.tsx list
+ */
+export const getAllStudents = async (req: Request, res: Response) => {
     try {
-        // Querying the 'users' table in 'mentorlog_db'
-        const [rows] = await db.execute('SELECT id, full_name, email, role, created_at FROM users');
-        
-        // This structure is required to satisfy your frontend logic
-        res.status(200).json({
-            success: true,
-            data: rows
-        });
+        const [rows]: any = await db.execute(
+            'SELECT id, full_name, email, student_id, course, ojt_hours_required, role, created_at FROM users WHERE role = "student" ORDER BY created_at DESC'
+        );
+        res.status(200).json({ success: true, data: rows });
     } catch (error) {
-        console.error("Fetch Users Error:", error);
-        res.status(500).json({ success: false, message: "Internal Server Error" });
+        console.error("Fetch Students Error:", error);
+        res.status(500).json({ success: false, message: "Error fetching students" });
     }
 };
 
+/**
+ * 4. UPDATE STUDENT
+ */
+export const updateStudent = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { full_name, student_id, ojt_hours_required } = req.body;
+
+    try {
+        await db.execute(
+            'UPDATE users SET full_name = ?, student_id = ?, ojt_hours_required = ? WHERE id = ? AND role = "student"',
+            [full_name, student_id, ojt_hours_required, id]
+        );
+        res.status(200).json({ success: true, message: "Student updated successfully" });
+    } catch (error) {
+        console.error("Update Student Error:", error);
+        res.status(500).json({ success: false, message: "Error updating student" });
+    }
+};
+
+/**
+ * 5. DELETE STUDENT
+ */
+export const deleteStudent = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+        await db.execute('DELETE FROM users WHERE id = ? AND role = "student"', [id]);
+        res.status(200).json({ success: true, message: "Student deleted successfully" });
+    } catch (error) {
+        console.error("Delete Student Error:", error);
+        res.status(500).json({ success: false, message: "Error deleting student" });
+    }
+};
+
+/**
+ * 6. ADMIN MIDDLEWARE
+ */
 export const adminOnly = (req: any, res: any, next: any) => {
     if (req.user && req.user.role === 'admin') {
         next();

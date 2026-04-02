@@ -1,7 +1,7 @@
-import React, { useState } from 'react'; // Added useState
+import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import TaskFeed from './TaskFeed'; 
-import logoPhoto from '../../assets/mentorlogOption.png'; // Import Logo
+import logoPhoto from '../../assets/mentorlogOption.png'; 
 
 interface Task {
     id: number;
@@ -21,7 +21,7 @@ interface AdminLayoutProps {
 const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [showLogoutModal, setShowLogoutModal] = useState(false); // Modal state
+    const [showLogoutModal, setShowLogoutModal] = useState(false); 
     const userName = localStorage.getItem('userName') || 'Admin';
 
     const confirmLogout = () => {
@@ -29,9 +29,11 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
         navigate('/login');
     };
 
+    // --- UPDATED NAVIGATION LINKS ---
     const navLinks = [
         { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
-        { path: '/manage-attendance', label: 'Student Attendance', icon: '📅' },
+        { path: '/manage-students', label: 'Student Directory', icon: '👥' }, // New Link
+        { path: '/manage-attendance', label: 'Attendance Logs', icon: '📅' },
         { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
         { path: '/weekly-reports', label: 'Weekly Reports', icon: '📈' }, 
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
@@ -43,7 +45,6 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
             <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50">
                 <div className="mb-10 px-2 shrink-0">
                     <div className="flex items-center gap-4 mb-8">
-                        {/* BRANDING WITH LOGO */}
                         <div className="relative group">
                             <div className="absolute -inset-1 bg-blue-500/20 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
                             <img 
@@ -88,7 +89,6 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                     })}
                 </nav>
 
-                {/* --- TASK FEED INTEGRATION --- */}
                 <div className="flex-1 min-h-0 mb-6 overflow-hidden">
                     <TaskFeed tasks={tasks} />
                 </div>
