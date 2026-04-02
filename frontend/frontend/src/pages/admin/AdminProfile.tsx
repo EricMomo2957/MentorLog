@@ -1,30 +1,17 @@
 import { useState, useEffect } from 'react';
-import AdminLayout from './AdminLayout';
 
 interface UserProfile {
     full_name: string;
     email: string;
     phone: string;
-    employee_id?: string; // Changed from student_id for Admin context
-    department?: string;   // Changed from course
-    role_title?: string;   // Changed from year_level
-}
-
-// Interface for Task to keep the AdminLayout happy
-interface Task {
-    id: number;
-    user_id: number;
-    student_name?: string;
-    title: string;
-    task_description: string;
-    status: 'Pending' | 'In-Progress' | 'Completed';
-    due_date: string;
+    employee_id?: string;
+    department?: string;
+    role_title?: string;
 }
 
 const AdminProfile = () => {
     const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge';
     const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -40,20 +27,7 @@ const AdminProfile = () => {
 
     useEffect(() => {
         fetchProfile();
-        fetchSidebarTasks();
     }, []);
-
-    const fetchSidebarTasks = async () => {
-        try {
-            const response = await fetch('http://localhost:5000/api/tasks');
-            if (response.ok) {
-                const data = await response.json();
-                setTasks(data);
-            }
-        } catch (error) {
-            console.error("Failed to sync sidebar tasks:", error);
-        }
-    };
 
     const fetchProfile = async () => {
         const userId = localStorage.getItem('userId');
@@ -71,7 +45,7 @@ const AdminProfile = () => {
                     full_name: data.user.full_name || 'Admin User',
                     email: data.user.email || '',
                     phone: data.user.phone || '',
-                    employee_id: data.user.student_id || 'ADM-001', // Reusing student_id field from DB
+                    employee_id: data.user.student_id || 'ADM-001',
                     department: data.user.course || 'IT Department',
                     role_title: data.user.year_level || 'System Administrator'
                 };
@@ -123,15 +97,13 @@ const AdminProfile = () => {
     };
 
     if (loading) return (
-        <AdminLayout tasks={tasks}>
-            <div className="flex items-center justify-center h-[60vh]">
-                <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-            </div>
-        </AdminLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+            <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
     );
 
     return (
-        <AdminLayout tasks={tasks}>
+        <>
             <div className="max-w-5xl mx-auto space-y-8 pb-12">
                 {/* --- HEADER CARD --- */}
                 <div className="relative overflow-hidden bg-[#0f172a] rounded-[2.5rem] border border-slate-800 shadow-2xl">
@@ -176,7 +148,6 @@ const AdminProfile = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* --- CONTACT INFO --- */}
                     <div className="md:col-span-1">
                         <div className="bg-[#0f172a] p-8 rounded-3xl border border-slate-800 shadow-xl h-full">
                             <h4 className="text-white font-bold mb-6 flex items-center gap-2">
@@ -195,7 +166,6 @@ const AdminProfile = () => {
                         </div>
                     </div>
 
-                    {/* --- SYSTEM ROLE SUMMARY --- */}
                     <div className="md:col-span-2 bg-[#0f172a] p-8 rounded-3xl border border-slate-800 shadow-xl">
                         <h4 className="text-white font-bold mb-6 flex items-center gap-2">
                             <span className="text-blue-500">⚙️</span> Administrative Scope
@@ -209,9 +179,6 @@ const AdminProfile = () => {
                                 <p className="text-[10px] text-blue-400 font-black uppercase mb-1">Managed Dept.</p>
                                 <p className="text-2xl font-black text-white">IT/Engineering</p>
                             </div>
-                        </div>
-                        <div className="mt-8 p-4 bg-blue-500/5 rounded-xl border border-blue-500/10 text-[11px] text-slate-400 leading-relaxed">
-                            <strong className="text-blue-400 uppercase mr-2">Note:</strong> Profile changes are logged for security auditing purposes. Ensure all contact information remains current for system notifications.
                         </div>
                     </div>
                 </div>
@@ -233,7 +200,7 @@ const AdminProfile = () => {
                                         <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Full Name</label>
                                         <input 
                                             type="text" required
-                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:border-blue-500/50 outline-none transition-all"
+                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:border-blue-500/50 outline-none"
                                             value={formData.full_name}
                                             onChange={(e) => setFormData({...formData, full_name: e.target.value})}
                                         />
@@ -280,7 +247,7 @@ const AdminProfile = () => {
 
                                 <div className="pt-6 flex gap-3">
                                     <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 px-4 py-4 bg-slate-800 text-slate-400 rounded-2xl font-bold text-sm hover:bg-slate-700 hover:text-white transition-all">Discard</button>
-                                    <button type="submit" disabled={isSaving} className="flex-1 px-4 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm hover:bg-blue-500 disabled:opacity-50 shadow-lg shadow-blue-600/20 transition-all">
+                                    <button type="submit" disabled={isSaving} className="flex-1 px-4 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm hover:bg-blue-500 disabled:opacity-50 transition-all">
                                         {isSaving ? 'UPDATING...' : 'SAVE PROFILE'}
                                     </button>
                                 </div>
@@ -289,7 +256,7 @@ const AdminProfile = () => {
                     </div>
                 </div>
             )}
-        </AdminLayout>
+        </>
     );
 };
 

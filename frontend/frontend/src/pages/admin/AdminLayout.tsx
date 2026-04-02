@@ -29,22 +29,21 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
         navigate('/login');
     };
 
+    // --- UPDATED NAVIGATION LINKS ---
     const navLinks = [
         { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
         { path: '/manage-students', label: 'Student Directory', icon: '👥' },
         { path: '/manage-attendance', label: 'Attendance Logs', icon: '📅' },
         { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
         { path: '/weekly-reports', label: 'Weekly Reports', icon: '📈' }, 
-        { path: '/admin-profile', label: 'My Profile', icon: '👤' },
+        { path: '/admin-profile', label: 'My Profile', icon: '👤' }, // Added Profile Link
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
     ];
 
     return (
         <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
             {/* --- SIDEBAR --- */}
-            <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50 overflow-y-auto custom-scrollbar">
-                
-                {/* Logo & Profile Section */}
+            <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50">
                 <div className="mb-10 px-2 shrink-0">
                     <div className="flex items-center gap-4 mb-8">
                         <div className="relative group">
@@ -61,6 +60,7 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                         </div>
                     </div>
 
+                    {/* --- CLICKABLE PROFILE SECTION --- */}
                     <Link 
                         to="/admin-profile" 
                         className={`block p-4 rounded-2xl border transition-all shadow-inner group/profile ${
@@ -77,12 +77,13 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold group-hover/profile:text-blue-400 transition-colors">System Admin</p>
                                 <p className="text-sm font-bold text-slate-200 truncate">{userName}</p>
                             </div>
-                            <div className="text-slate-600 group-hover/profile:text-blue-400 transition-colors text-xs">➔</div>
+                            <div className="text-slate-600 group-hover/profile:text-blue-400 transition-colors text-xs">
+                                ➔
+                            </div>
                         </div>
                     </Link>
                 </div>
 
-                {/* Main Navigation */}
                 <nav className="space-y-1.5 mb-8 shrink-0">
                     {navLinks.map((link) => {
                         const isActive = location.pathname === link.path;
@@ -102,13 +103,11 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                     })}
                 </nav>
 
-                {/* Task Feed Section */}
-                <div className="grow min-h-0 mb-6">
+                <div className="flex-1 min-h-0 mb-6 overflow-hidden">
                     <TaskFeed tasks={tasks} />
                 </div>
 
-                {/* Logout Section */}
-                <div className="pt-6 border-t border-slate-800/60 shrink-0 mt-auto">
+                <div className="pt-6 border-t border-slate-800/60 shrink-0">
                     <button 
                         onClick={() => setShowLogoutModal(true)} 
                         className="w-full flex items-center justify-between px-5 py-3.5 rounded-xl text-sm font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group border border-transparent hover:border-red-500/20"
@@ -134,7 +133,7 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
             {/* --- LOGOUT MODAL --- */}
             {showLogoutModal && (
                 <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-[#020617]/80 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-[#0f172a] w-full max-w-sm rounded-3xl border border-slate-800 shadow-2xl p-8 text-center animate-in zoom-in-95 duration-200">
+                    <div className="bg-[#0f172a] w-full max-w-sm rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 text-center animate-in zoom-in-95 duration-200">
                         <div className="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
                             <img src={logoPhoto} className="w-10 h-10 object-contain opacity-80" alt="MentorLog" />
                         </div>
