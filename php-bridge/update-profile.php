@@ -20,21 +20,44 @@ if (!$data || !isset($data->user_id)) {
     exit();
 }
 
-$user_id = $data->user_id;
-$full_name = $data->full_name;
-$email = $data->email;
-$phone = $data->phone;
-// Optional: If you want to allow updating these from the modal too
-$student_id = isset($data->student_id) ? $data->student_id : null;
-$course = isset($data->course) ? $data->course : null;
-$year_level = isset($data->year_level) ? $data->year_level : null;
+// Map basic info
+$user_id    = $data->user_id;
+$full_name  = isset($data->full_name) ? $data->full_name : null;
+$email      = isset($data->email) ? $data->email : null;
+$phone      = isset($data->phone) ? $data->phone : null;
+
+// --- UNIVERSAL MAPPING LOGIC ---
+// This handles different keys coming from StudentProfile vs AdminProfile
+
+// 1. ID Number (student_id vs employee_id)
+$id_number = null;
+if (isset($data->student_id)) {
+    $id_number = $data->student_id;
+} elseif (isset($data->employee_id)) {
+    $id_number = $data->employee_id;
+}
+
+// 2. Dept/Course (course vs department)
+$course_or_dept = null;
+if (isset($data->course)) {
+    $course_or_dept = $data->course;
+} elseif (isset($data->department)) {
+    $course_or_dept = $data->department;
+}
+
+// 3. Level/Role (year_level vs role_title)
+$level_or_role = null;
+if (isset($data->year_level)) {
+    $level_or_role = $data->year_level;
+} elseif (isset($data->role_title)) {
+    $level_or_role = $data->role_title;
+}
 
 // 2. Prepare the UPDATE statement
-// We use 'full_name' with an underscore to match your latest table structure
 $sql = "UPDATE users SET 
-        full_name = ?, 
-        email = ?, 
-        phone = ?, 
+        full_name = COALESCE(?, full_name), 
+        email = COALESCE(?, email), 
+        phone = COALESCE(?, phone), 
         student_id = COALESCE(?, student_id), 
         course = COALESCE(?, course), 
         year_level = COALESCE(?, year_level) 
@@ -43,22 +66,23 @@ $sql = "UPDATE users SET
 $stmt = $conn->prepare($sql);
 
 if ($stmt) {
-    // "ssssssi" = 6 strings and 1 integer (the user_id)
+    // "ssssssi" = 6 strings and 1 integer (user_id)
     $stmt->bind_param("ssssssi", 
         $full_name, 
         $email, 
         $phone, 
-        $student_id, 
-        $course, 
-        $year_level, 
+        $id_number, 
+        $course_or_dept, 
+        $level_or_role, 
         $user_id
     );
 
     if ($stmt->execute()) {
+        // errno === 0 check ensures success even if no text was actually changed
         if ($stmt->affected_rows > 0 || $stmt->errno === 0) {
             echo json_encode(["success" => true, "message" => "Profile updated successfully!"]);
         } else {
-            echo json_encode(["success" => false, "message" => "No changes were made."]);
+            echo json_encode(["success" => false, "message" => "No changes were detected."]);
         }
     } else {
         echo json_encode(["success" => false, "message" => "Update failed: " . $stmt->error]);
