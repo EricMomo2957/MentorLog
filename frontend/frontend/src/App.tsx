@@ -12,7 +12,8 @@ import ManageStudents from './pages/admin/ManageStudents';
 import AdminSettings from './pages/admin/AdminSettings';
 import WeeklyReports from './pages/admin/WeeklyReports';
 import ManageTasks from './pages/admin/ManageTasks'; 
-import AdminProfile from './pages/admin/AdminProfile'; // <--- NEW IMPORT
+import AdminProfile from './pages/admin/AdminProfile';
+import AdminCalendar from './pages/admin/AdminCalendar'; // <--- NEW IMPORT
 
 // Student Imports
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -20,7 +21,6 @@ import MyTasks from './pages/student/MyTasks';
 import StudentProfile from './pages/student/StudentProfile';
 import StudentSettings from './pages/student/StudentSettings';
 
-// Define the interface to stay type-safe
 interface Task {
   id: number;
   user_id: number;
@@ -34,7 +34,6 @@ interface Task {
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Sync sidebar tasks for Admin View
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -60,11 +59,11 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
 
         {/* --- Admin Protected Routes --- */}
-        {/* Simplified using .map() to avoid repeating ProtectedRoute/AdminLayout logic */}
         {[
           { path: "/admin-dashboard", element: <AdminDashboard /> },
           { path: "/manage-students", element: <ManageStudents /> },
           { path: "/manage-attendance", element: <ManageAttendance /> },
+          { path: "/admin-calendar", element: <AdminCalendar /> }, // <--- ADDED TO MAP
           { path: "/manage-tasks", element: <ManageTasks /> },
           { path: "/weekly-reports", element: <WeeklyReports /> },
           { path: "/admin-profile", element: <AdminProfile /> }, 

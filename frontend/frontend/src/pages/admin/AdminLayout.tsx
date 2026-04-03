@@ -29,14 +29,15 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
         navigate('/login');
     };
 
-    // --- UPDATED NAVIGATION LINKS ---
+    // --- UPDATED NAVIGATION LINKS (Calendar Added) ---
     const navLinks = [
         { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
         { path: '/manage-students', label: 'Student Directory', icon: '👥' },
         { path: '/manage-attendance', label: 'Attendance Logs', icon: '📅' },
+        { path: '/admin-calendar', label: 'Schedules & Events', icon: '🗓️' }, // Added Calendar
         { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
         { path: '/weekly-reports', label: 'Weekly Reports', icon: '📈' }, 
-        { path: '/admin-profile', label: 'My Profile', icon: '👤' }, // Added Profile Link
+        { path: '/admin-profile', label: 'My Profile', icon: '👤' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
     ];
 
@@ -60,7 +61,6 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                         </div>
                     </div>
 
-                    {/* --- CLICKABLE PROFILE SECTION --- */}
                     <Link 
                         to="/admin-profile" 
                         className={`block p-4 rounded-2xl border transition-all shadow-inner group/profile ${
@@ -84,7 +84,8 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                     </Link>
                 </div>
 
-                <nav className="space-y-1.5 mb-8 shrink-0">
+                {/* --- MAIN NAV --- */}
+                <nav className="flex-1 overflow-y-auto space-y-1.5 mb-8 pr-2 custom-scrollbar">
                     {navLinks.map((link) => {
                         const isActive = location.pathname === link.path;
                         return (
@@ -103,7 +104,8 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                     })}
                 </nav>
 
-                <div className="flex-1 min-h-0 mb-6 overflow-hidden">
+                {/* --- FEED SECTION --- */}
+                <div className="h-48 mb-6 shrink-0 border-t border-slate-800/40 pt-4">
                     <TaskFeed tasks={tasks} />
                 </div>
 

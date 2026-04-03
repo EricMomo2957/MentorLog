@@ -103,3 +103,23 @@ export const adminOnly = (req: any, res: any, next: any) => {
         res.status(403).json({ message: 'Access denied. Admins only.' });
     }
 };
+
+/**
+ * 7. UPDATE ADMIN PROFILE (Fixes the "N/A" ID issue)
+ */
+export const updateAdminProfile = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    // Note: Use 'student_id' if that's where you store the Admin/Employee ID in your table
+    const { full_name, email, student_id } = req.body; 
+
+    try {
+        await db.execute(
+            'UPDATE users SET full_name = ?, email = ?, student_id = ? WHERE id = ? AND role = "admin"',
+            [full_name, email, student_id, id]
+        );
+        res.status(200).json({ success: true, message: "Admin profile updated successfully" });
+    } catch (error) {
+        console.error("Update Admin Error:", error);
+        res.status(500).json({ success: false, message: "Error updating admin profile" });
+    }
+};

@@ -5,7 +5,7 @@ import authRoutes from './routes/authRoutes';
 import attendanceRoutes from './routes/attendanceRoutes'; // Import your new routes
 import adminRoutes from './routes/adminRoutes'; // Import admin routes
 import taskRoutes from './routes/taskRoutes';
-
+import eventRoutes from './routes/eventRoutes';
 dotenv.config();
 
 const app = express(); // <--- THIS LINE IS MISSING IN YOUR FILE
@@ -19,7 +19,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/attendance', attendanceRoutes); // Now 'app' will be recognized!
 app.use('/api/admin', adminRoutes); // Admin routes
 app.use('/api/tasks', taskRoutes); // Task routes
-
+app.use('/api/events', eventRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
