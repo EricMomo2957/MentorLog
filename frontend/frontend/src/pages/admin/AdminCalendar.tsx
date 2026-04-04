@@ -35,7 +35,7 @@ const AdminCalendar = () => {
         end_time: ''
     });
 
-    // --- FETCH EVENTS (Memoized to prevent unnecessary re-renders) ---
+    // --- 1. FETCH EVENTS ---
     const fetchEvents = useCallback(async () => {
         try {
             const response = await axios.get('http://localhost:5000/api/events');
@@ -45,51 +45,59 @@ const AdminCalendar = () => {
         }
     }, []);
 
-    // --- EFFECT HOOK (Safe loading pattern) ---
+    // --- 2. EFFECT HOOK ---
     useEffect(() => {
-        let isMounted = true;
-
         const loadData = async () => {
-            try {
-                const response = await axios.get('http://localhost:5000/api/events');
-                if (isMounted) {
-                    setEvents(response.data);
-                }
-            } catch (err) {
-                console.error("Error in useEffect fetch:", err);
-            }
+            await fetchEvents();
         };
-
         loadData();
+    }, [fetchEvents, currentMonth]);
 
-        return () => {
-            isMounted = false; // Cleanup to prevent state updates on unmounted component
-        };
-    }, [currentMonth]);
-
-    // --- NAVIGATION ---
+    // --- 3. HANDLERS ---
     const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
     const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
     const handleSaveEvent = async () => {
-        const userId = localStorage.getItem('id'); 
+        // Try to get ID from multiple common keys to prevent the 'null' error
+        const storedId = localStorage.getItem('id') || localStorage.getItem('userId'); 
+        
+        console.log("Debug - LocalStorage content:", localStorage);
+
+        if (!storedId) {
+            alert("Error: User ID not found. Please log in again.");
+            return;
+        }
+
+        if (!eventData.title || !eventData.start_time) {
+            alert("Please provide at least a title and start time.");
+            return;
+        }
+
         try {
-            const response = await axios.post('http://localhost:5000/api/events/add', {
+            // Build payload explicitly with the ID found and format dates for MySQL
+            const payload = {
                 ...eventData,
-                user_id: userId
-            });
-            if (response.data.success) {
-                alert("Event Created!");
+                user_id: parseInt(storedId),
+                // Replace 'T' with space for MySQL DATETIME compatibility
+                start_time: eventData.start_time.replace('T', ' '),
+                end_time: eventData.end_time ? eventData.end_time.replace('T', ' ') : eventData.start_time.replace('T', ' ')
+            };
+
+            const response = await axios.post('http://localhost:5000/api/events/add', payload);
+
+            if (response.status === 201 || response.data.success) {
+                alert("Event Created Successfully!");
                 setShowModal(false);
-                fetchEvents(); // Refresh after adding
+                setEventData({ title: '', description: '', location: '', start_time: '', end_time: '' });
+                fetchEvents(); 
             }
         } catch (err) {
             console.error("Error saving event", err);
-            alert("Failed to save event.");
+            alert("Failed to save event. Check backend console.");
         }
     };
 
-    // --- CALENDAR GENERATION LOGIC ---
+    // --- 4. CALENDAR LOGIC ---
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(monthStart);
     const startDate = startOfWeek(monthStart);
@@ -101,50 +109,56 @@ const AdminCalendar = () => {
     });
 
     return (
-        <div className="p-6 bg-gray-900 min-h-screen text-white">
-            <div className="flex justify-between items-center mb-6">
+        <div className="p-6 bg-[#020617] min-h-screen text-slate-200">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-10">
                 <div>
-                    <h2 className="text-3xl font-bold text-blue-400">
+                    <h2 className="text-4xl font-black tracking-tight text-white italic">
                         {format(currentMonth, 'MMMM yyyy')}
                     </h2>
-                    <div className="flex gap-4 mt-2">
-                        <button onClick={prevMonth} className="hover:text-blue-400 transition-colors">← Previous</button>
-                        <button onClick={nextMonth} className="hover:text-blue-400 transition-colors">Next →</button>
+                    <div className="flex gap-6 mt-3">
+                        <button onClick={prevMonth} className="text-slate-400 hover:text-blue-400 font-bold transition-all text-sm uppercase tracking-widest">← Prev</button>
+                        <button onClick={nextMonth} className="text-slate-400 hover:text-blue-400 font-bold transition-all text-sm uppercase tracking-widest">Next →</button>
                     </div>
                 </div>
                 <button 
                     onClick={() => setShowModal(true)}
-                    className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-bold transition shadow-lg"
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-black transition-all shadow-lg shadow-blue-600/20 active:scale-95"
                 >
-                    + Add New Event
+                    + NEW EVENT
                 </button>
             </div>
 
-            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-                <div className="grid grid-cols-7 bg-gray-700 p-2 text-center text-sm font-bold text-gray-300">
+            {/* Grid */}
+            <div className="bg-[#0f172a]/80 backdrop-blur-xl rounded-4xl border border-slate-800/60 overflow-hidden shadow-2xl">
+                <div className="grid grid-cols-7 bg-slate-800/40 p-4 text-center text-xs font-black uppercase tracking-[0.2em] text-slate-500 border-b border-slate-800/60">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                         <div key={day}>{day}</div>
                     ))}
                 </div>
 
-                <div className="grid grid-cols-7 border-t border-gray-700">
+                <div className="grid grid-cols-7">
                     {calendarDays.map((day, idx) => {
                         const dayEvents = events.filter(event => 
                             isSameDay(new Date(event.start_time), day)
                         );
+                        const isCurrentMonth = isSameMonth(day, monthStart);
+                        const isToday = isSameDay(day, new Date());
 
                         return (
                             <div 
                                 key={idx} 
-                                className={`min-h-32 p-2 border-r border-b border-gray-700 transition-colors 
-                                ${!isSameMonth(day, monthStart) ? 'bg-gray-900/50 text-gray-600' : 'hover:bg-gray-750'}`}
+                                className={`min-h-32 p-3 border-r border-b border-slate-800/40 transition-all 
+                                ${!isCurrentMonth ? 'bg-slate-900/30 text-slate-700' : 'hover:bg-slate-800/30'}`}
                             >
-                                <span className={`text-sm font-semibold ${isSameDay(day, new Date()) ? 'text-blue-400' : ''}`}>
-                                    {format(day, 'd')}
-                                </span>
-                                <div className="mt-1 space-y-1">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className={`text-sm font-bold ${isToday ? 'bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full shadow-lg shadow-blue-600/40' : ''}`}>
+                                        {format(day, 'd')}
+                                    </span>
+                                </div>
+                                <div className="space-y-1">
                                     {dayEvents.map((event, eIdx) => (
-                                        <div key={eIdx} className="text-[10px] bg-blue-900/40 text-blue-200 p-1 rounded truncate border border-blue-700/50">
+                                        <div key={eIdx} className="text-[10px] bg-blue-500/10 text-blue-400 p-1.5 rounded-lg truncate border border-blue-500/20 font-bold">
                                             {event.title}
                                         </div>
                                     ))}
@@ -155,60 +169,68 @@ const AdminCalendar = () => {
                 </div>
             </div>
 
+            {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-gray-800 rounded-2xl p-8 w-full max-w-md border border-gray-700 shadow-2xl">
-                        <h3 className="text-2xl font-bold mb-6 text-blue-400">New Event Details</h3>
-                        <div className="space-y-4">
+                <div className="fixed inset-0 bg-[#020617]/90 backdrop-blur-md flex items-center justify-center p-4 z-100 animate-in fade-in duration-200">
+                    <div className="bg-[#0f172a] rounded-[2.5rem] p-10 w-full max-w-md border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
+                        <h3 className="text-3xl font-black text-white mb-2 italic">Schedule Event</h3>
+                        <p className="text-slate-400 text-sm mb-8 font-medium">Fill in the details to notify the team.</p>
+                        
+                        <div className="space-y-5">
                             <div>
-                                <label className="text-xs text-gray-400 uppercase font-bold">Title</label>
+                                <label className="text-[10px] text-slate-500 uppercase font-black tracking-widest ml-1">Event Title</label>
                                 <input 
                                     type="text" 
-                                    className="w-full bg-gray-900 p-3 rounded-lg border border-gray-700 focus:border-blue-500 outline-none transition-all"
+                                    value={eventData.title}
+                                    placeholder="e.g. Weekly Sync"
+                                    className="w-full bg-slate-900/50 p-4 rounded-2xl border border-slate-800 focus:border-blue-500 outline-none transition-all text-white placeholder:text-slate-600"
                                     onChange={(e) => setEventData({...eventData, title: e.target.value})}
                                 />
                             </div>
                             <div>
-                                <label className="text-xs text-gray-400 uppercase font-bold">Description</label>
-                                <textarea 
-                                    className="w-full bg-gray-900 p-3 rounded-lg border border-gray-700 focus:border-blue-500 outline-none transition-all"
-                                    onChange={(e) => setEventData({...eventData, description: e.target.value})}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-400 uppercase font-bold">Location</label>
+                                <label className="text-[10px] text-slate-500 uppercase font-black tracking-widest ml-1">Location</label>
                                 <input 
                                     type="text" 
-                                    className="w-full bg-gray-900 p-3 rounded-lg border border-gray-700 focus:border-blue-500 outline-none transition-all"
+                                    value={eventData.location}
+                                    placeholder="Meeting Room or Zoom Link"
+                                    className="w-full bg-slate-900/50 p-4 rounded-2xl border border-slate-800 focus:border-blue-500 outline-none transition-all text-white placeholder:text-slate-600"
                                     onChange={(e) => setEventData({...eventData, location: e.target.value})}
                                 />
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/2">
-                                    <label className="text-xs text-gray-400 uppercase font-bold">Start</label>
+                                    <label className="text-[10px] text-slate-500 uppercase font-black tracking-widest ml-1">Start Time</label>
                                     <input 
                                         type="datetime-local" 
-                                        className="w-full bg-gray-900 p-2 rounded border border-gray-700 text-sm text-white focus:border-blue-500 outline-none"
+                                        value={eventData.start_time}
+                                        className="w-full bg-slate-900/50 p-4 rounded-2xl border border-slate-800 text-sm text-white focus:border-blue-500 outline-none transition-all scheme-dark"
                                         onChange={(e) => setEventData({...eventData, start_time: e.target.value})}
                                     />
                                 </div>
                                 <div className="w-1/2">
-                                    <label className="text-xs text-gray-400 uppercase font-bold">End</label>
+                                    <label className="text-[10px] text-slate-500 uppercase font-black tracking-widest ml-1">End Time</label>
                                     <input 
                                         type="datetime-local" 
-                                        className="w-full bg-gray-900 p-2 rounded border border-gray-700 text-sm text-white focus:border-blue-500 outline-none"
+                                        value={eventData.end_time}
+                                        className="w-full bg-slate-900/50 p-4 rounded-2xl border border-slate-800 text-sm text-white focus:border-blue-500 outline-none transition-all scheme-dark"
                                         onChange={(e) => setEventData({...eventData, end_time: e.target.value})}
                                     />
                                 </div>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-4 mt-8">
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white transition">Cancel</button>
+                        
+                        <div className="flex flex-col gap-3 mt-10">
                             <button 
                                 onClick={handleSaveEvent}
-                                className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg font-bold transition shadow-lg active:scale-95"
+                                className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-sm transition-all shadow-lg shadow-blue-600/20"
                             >
-                                Create Event
+                                CONFIRM & CREATE
+                            </button>
+                            <button 
+                                onClick={() => setShowModal(false)} 
+                                className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-2xl font-bold text-sm transition-all"
+                            >
+                                DISCARD
                             </button>
                         </div>
                     </div>
