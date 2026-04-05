@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+// import { useState, useEffect } from 'react'; // Removed unused hooks
 import Register from './pages/Register';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -16,42 +16,15 @@ import AdminProfile from './pages/admin/AdminProfile';
 import AdminCalendar from './pages/admin/AdminCalendar';
 
 // Student Imports
-import StudentLayout from './pages/student/StudentLayout'; // <--- IMPORT LAYOUT
 import StudentDashboard from './pages/student/StudentDashboard';
 import MyTasks from './pages/student/MyTasks'; 
 import StudentProfile from './pages/student/StudentProfile';
 import StudentSettings from './pages/student/StudentSettings';
-import StudentCalendar from './pages/student/StudentCalendar'; // <--- NEW IMPORT
 
-interface Task {
-  id: number;
-  user_id: number;
-  student_name?: string;
-  title: string;
-  task_description: string;
-  status: 'Pending' | 'In-Progress' | 'Completed';
-  due_date: string;
-}
+// REMOVED: import logoPhoto from "../../assets/mentorlogOption.png"; 
+// REMOVED: interface Task and all task-fetching logic
 
 function App() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/tasks');
-        if (response.ok) {
-          const data = await response.json();
-          setTasks(data);
-        }
-      } catch (error) {
-        console.error("Failed to sync sidebar tasks:", error);
-      }
-    };
-
-    fetchTasks();
-  }, []);
-
   return (
     <Router>
       <Routes>
@@ -65,7 +38,7 @@ function App() {
           { path: "/admin-dashboard", element: <AdminDashboard /> },
           { path: "/manage-students", element: <ManageStudents /> },
           { path: "/manage-attendance", element: <ManageAttendance /> },
-          { path: "/admin-calendar", element: <AdminCalendar /> },
+          { path: "/admin-calendar", element: <AdminCalendar /> }, 
           { path: "/manage-tasks", element: <ManageTasks /> },
           { path: "/weekly-reports", element: <WeeklyReports /> },
           { path: "/admin-profile", element: <AdminProfile /> }, 
@@ -76,7 +49,7 @@ function App() {
             path={route.path} 
             element={
               <ProtectedRoute requiredRole="admin">
-                <AdminLayout tasks={tasks}>
+                <AdminLayout>
                   {route.element}
                 </AdminLayout>
               </ProtectedRoute>
@@ -89,9 +62,7 @@ function App() {
           path="/student-dashboard" 
           element={
             <ProtectedRoute requiredRole="student">
-              <StudentLayout>
-                <StudentDashboard />
-              </StudentLayout>
+              <StudentDashboard />
             </ProtectedRoute>
           } 
         />
@@ -100,9 +71,7 @@ function App() {
           path="/tasks" 
           element={
             <ProtectedRoute requiredRole="student">
-              <StudentLayout>
-                <MyTasks />
-              </StudentLayout>
+              <MyTasks />
             </ProtectedRoute>
           } 
         />
@@ -111,9 +80,7 @@ function App() {
           path="/student-profile" 
           element={
             <ProtectedRoute requiredRole="student">
-              <StudentLayout>
-                <StudentProfile />
-              </StudentLayout>
+              <StudentProfile />
             </ProtectedRoute>
           } 
         />
@@ -122,21 +89,7 @@ function App() {
           path="/settings" 
           element={
             <ProtectedRoute requiredRole="student">
-              <StudentLayout>
-                <StudentSettings />
-              </StudentLayout>
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* --- ADDED STUDENT CALENDAR ROUTE --- */}
-        <Route 
-          path="/campus-events" 
-          element={
-            <ProtectedRoute requiredRole="student">
-              <StudentLayout>
-                <StudentCalendar />
-              </StudentLayout>
+              <StudentSettings />
             </ProtectedRoute>
           } 
         />
@@ -145,12 +98,10 @@ function App() {
           path="/my-attendance" 
           element={
             <ProtectedRoute requiredRole="student">
-              <StudentLayout>
-                <div className="p-10 text-white bg-[#0f172a] min-h-screen">
-                  <h1 className="text-3xl font-black mb-4 uppercase italic">My Attendance</h1>
-                  <p className="text-slate-400 font-medium">Attendance Feature Coming Soon...</p>
-                </div>
-              </StudentLayout>
+              <div className="p-10 text-white bg-[#0f172a] min-h-screen">
+                <h1 className="text-3xl font-black mb-4">My Attendance</h1>
+                <p className="text-slate-400">Attendance Feature Coming Soon...</p>
+              </div>
             </ProtectedRoute>
           } 
         />
