@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import StudentLayout from './StudentLayout';
 
 // --- INTERFACES ---
 interface Task {
@@ -55,16 +54,13 @@ const StudentDashboard = () => {
         }
     }, [toast]);
 
-    // --- HELPER: PARSE TIME STRING (FIXED ESLINT ERRORS) ---
+    // --- HELPER: PARSE TIME STRING ---
     const parseTimeString = (timeStr: string) => {
         if (!timeStr) return null;
-        
         const now = new Date();
         const match = timeStr.match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)?/i);
-        
         if (!match) return null;
 
-        // FIXED: Using const for destructuring as these are never reassigned
         const [ , hours, minutes, seconds, modifier] = match;
         let h = parseInt(hours, 10);
         const m = parseInt(minutes, 10);
@@ -105,32 +101,25 @@ const StudentDashboard = () => {
             const data = await response.json();
             if (Array.isArray(data)) setAssignedTasks(data);
         } catch {
-            // Removed unused variable to satisfy ESLint
             console.error("Failed to fetch tasks via PHP bridge.");
         }
     };
 
-    // --- UPDATED FETCH HISTORY ---
     const fetchHistory = async () => {
         try {
             const response = await fetch(`${NODE_API_URL}/attendance/history`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await response.json();
-            
             if (Array.isArray(data)) {
                 setHistory(data);
-                
-                // Check for an active session (where clock_out is null)
                 const activeSession = data.find(log => log.clock_out === null);
-
                 if (activeSession) {
                     setIsClockedIn(true);
                     setHasCompletedShift(false);
                     setStartTime(activeSession.clock_in);
                 } else {
                     setIsClockedIn(false);
-                    // If there's a log from today but it's finished, mark as completed
                     const todayStr = new Date().toLocaleDateString('en-CA');
                     const finishedToday = data.some(log => log.date.startsWith(todayStr) && log.clock_out !== null);
                     setHasCompletedShift(finishedToday);
@@ -140,6 +129,7 @@ const StudentDashboard = () => {
             console.error("Failed to fetch history.");
         }
     };
+
     const fetchReport = async () => {
         try {
             const response = await fetch(`${NODE_API_URL}/attendance/weekly-report`, {
@@ -188,15 +178,12 @@ const StudentDashboard = () => {
         }
     };
 
-    // --- UPDATED CLOCK TOGGLE HANDLER ---
     const handleClockToggle = async (actionOverride?: 'resume') => {
         const action = actionOverride || (isClockedIn ? 'clock-out' : 'clock-in');
-
         if (!isClockedIn && hasCompletedShift && action !== 'resume') {
             setToast({ message: "Shift already completed for today.", type: 'error' });
             return;
         }
-
         if (isClockedIn && !window.confirm("Are you sure you want to clock out?")) return;
 
         try {
@@ -208,30 +195,25 @@ const StudentDashboard = () => {
                 },
                 body: JSON.stringify({ action })
             });
-
             const data = await response.json();
 
             if (response.ok) {
                 if (action === 'resume') {
                     setHasCompletedShift(false);
                     setIsClockedIn(true);
-                    // Ensure we get the start time when resuming
                     if (data.clock_in) setStartTime(data.clock_in); 
                     setToast({ message: "Shift resumed!", type: 'success' });
                 } else if (action === 'clock-in') {
                     setIsClockedIn(true);
-                    // CRITICAL: Set the start time from the DB response immediately
                     setStartTime(data.clock_in); 
                     setHasCompletedShift(false);
                     setToast({ message: "Clocked in successfully!", type: 'success' });
                 } else {
                     setIsClockedIn(false);
                     setHasCompletedShift(true);
-                    setStartTime(''); // Clear timer on clock out
+                    setStartTime('');
                     setToast({ message: "Clocked out successfully!", type: 'success' });
                 }
-                
-                // Refresh history immediately so the table updates
                 await fetchHistory();
                 await fetchReport();
             } else {
@@ -241,6 +223,7 @@ const StudentDashboard = () => {
             setToast({ message: "Connection error.", type: 'error' });
         }
     };
+
     const handleUpdateTask = async () => {
         if (!taskDescription.trim()) return setToast({ message: "Please enter a description.", type: 'error' });
         setIsSubmitting(true);
@@ -279,7 +262,7 @@ const StudentDashboard = () => {
     const progressPercentage = Math.min((report.accumulated_hours / totalTargetHours) * 100, 100);
 
     return (
-        <StudentLayout>
+        <>
             {toast && (
                 <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-2xl shadow-2xl border transition-all animate-bounce ${
                     toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-red-500/10 border-red-500 text-red-500'
@@ -452,7 +435,7 @@ const StudentDashboard = () => {
                     </div>
                 </div>
             </div>
-        </StudentLayout>
+        </>
     );
 };
 
