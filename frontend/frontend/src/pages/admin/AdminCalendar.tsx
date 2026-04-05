@@ -34,8 +34,9 @@ const AdminCalendar = () => {
         start_time: '',
         end_time: ''
     });
-
+    
     // --- 1. FETCH EVENTS ---
+    // useCallback prevents this function from being recreated on every render
     const fetchEvents = useCallback(async () => {
         try {
             const response = await axios.get('http://localhost:5000/api/events');
@@ -43,26 +44,34 @@ const AdminCalendar = () => {
         } catch (err) {
             console.error("Error fetching events", err);
         }
-    }, []);
+    }, []); // Empty dependency array means this function identity is stable
 
     // --- 2. EFFECT HOOK ---
-    useEffect(() => {
-        const loadData = async () => {
+    // --- 2. EFFECT HOOK ---
+useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+        if (isMounted) {
             await fetchEvents();
-        };
-        loadData();
-    }, [fetchEvents, currentMonth]);
+        }
+    };
+
+    loadData();
+
+    return () => {
+        isMounted = false;
+    };
+}, [fetchEvents]); // Now fetchEvents won't change, preventing the infinite loop
 
     // --- 3. HANDLERS ---
     const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
     const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
     const handleSaveEvent = async () => {
-        // Try to get ID from multiple common keys to prevent the 'null' error
+        // Checking for both 'id' and 'userId' to prevent "User ID not found" errors
         const storedId = localStorage.getItem('id') || localStorage.getItem('userId'); 
         
-        console.log("Debug - LocalStorage content:", localStorage);
-
         if (!storedId) {
             alert("Error: User ID not found. Please log in again.");
             return;
@@ -74,11 +83,10 @@ const AdminCalendar = () => {
         }
 
         try {
-            // Build payload explicitly with the ID found and format dates for MySQL
             const payload = {
                 ...eventData,
                 user_id: parseInt(storedId),
-                // Replace 'T' with space for MySQL DATETIME compatibility
+                // Replaces 'T' from datetime-local input with a space for MySQL DATETIME compatibility
                 start_time: eventData.start_time.replace('T', ' '),
                 end_time: eventData.end_time ? eventData.end_time.replace('T', ' ') : eventData.start_time.replace('T', ' ')
             };
@@ -97,6 +105,20 @@ const AdminCalendar = () => {
         }
     };
 
+    const handleDeleteEvent = async (id: number | undefined) => {
+        if (!id) return;
+        if (!window.confirm("Are you sure you want to delete this event?")) return;
+
+        try {
+            await axios.delete(`http://localhost:5000/api/events/${id}`);
+            alert("Event deleted successfully");
+            fetchEvents();
+        } catch (err) {
+            console.error("Error deleting event", err);
+            alert("Failed to delete event.");
+        }
+    };
+
     // --- 4. CALENDAR LOGIC ---
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(monthStart);
@@ -109,9 +131,9 @@ const AdminCalendar = () => {
     });
 
     return (
-        <div className="p-6 bg-[#020617] min-h-screen text-slate-200">
+        <div className="p-6 bg-[#020617] min-h-screen text-slate-200 space-y-10">
             {/* Header */}
-            <div className="flex justify-between items-center mb-10">
+            <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-4xl font-black tracking-tight text-white italic">
                         {format(currentMonth, 'MMMM yyyy')}
@@ -129,7 +151,7 @@ const AdminCalendar = () => {
                 </button>
             </div>
 
-            {/* Grid */}
+            {/* Calendar Grid */}
             <div className="bg-[#0f172a]/80 backdrop-blur-xl rounded-4xl border border-slate-800/60 overflow-hidden shadow-2xl">
                 <div className="grid grid-cols-7 bg-slate-800/40 p-4 text-center text-xs font-black uppercase tracking-[0.2em] text-slate-500 border-b border-slate-800/60">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -169,8 +191,69 @@ const AdminCalendar = () => {
                 </div>
             </div>
 
+            {/* Upcoming Schedule Table */}
+            <div className="mt-12">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-black text-white italic tracking-tight">Upcoming Schedule</h3>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
+                        {events.length} Total Events
+                    </span>
+                </div>
+                
+                <div className="bg-[#0f172a]/80 backdrop-blur-xl rounded-3xl border border-slate-800/60 overflow-hidden shadow-2xl">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-800/40 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
+                                <th className="p-5 border-b border-slate-800/60">Event Title</th>
+                                <th className="p-5 border-b border-slate-800/60">Date & Time</th>
+                                <th className="p-5 border-b border-slate-800/60">Location</th>
+                                <th className="p-5 border-b border-slate-800/60 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/40">
+                            {events.length > 0 ? (
+                                events.map((event, idx) => (
+                                    <tr key={idx} className="group hover:bg-blue-500/5 transition-colors">
+                                        <td className="p-5">
+                                            <div className="font-bold text-slate-200 group-hover:text-blue-400 transition-colors">{event.title}</div>
+                                            <div className="text-xs text-slate-500 mt-1 line-clamp-1">{event.description || 'No description provided'}</div>
+                                        </td>
+                                        <td className="p-5">
+                                            <div className="text-sm font-medium text-slate-300">
+                                                {format(new Date(event.start_time), 'MMM d, yyyy')}
+                                            </div>
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase mt-1">
+                                                {format(new Date(event.start_time), 'hh:mm a')}
+                                            </div>
+                                        </td>
+                                        <td className="p-5">
+                                            <span className="text-xs px-3 py-1 bg-slate-800 rounded-full border border-slate-700 text-slate-400 font-bold group-hover:border-blue-500/30 transition-all">
+                                                {event.location || 'Remote/N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="p-5 text-right">
+                                            <button 
+                                                onClick={() => handleDeleteEvent(event.id)}
+                                                className="text-[10px] font-black text-slate-500 hover:text-red-400 uppercase tracking-widest transition-colors"
+                                            >
+                                                Remove
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={4} className="p-10 text-center text-slate-500 italic">No events scheduled yet.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             {/* Modal */}
             {showModal && (
+                // Fixed z-100 warning here
                 <div className="fixed inset-0 bg-[#020617]/90 backdrop-blur-md flex items-center justify-center p-4 z-100 animate-in fade-in duration-200">
                     <div className="bg-[#0f172a] rounded-[2.5rem] p-10 w-full max-w-md border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
                         <h3 className="text-3xl font-black text-white mb-2 italic">Schedule Event</h3>
