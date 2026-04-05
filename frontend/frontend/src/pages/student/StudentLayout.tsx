@@ -46,13 +46,6 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         🏠 Control Center
                     </Link>
                     
-                    <Link to="/my-attendance" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                        isActive('/my-attendance') 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
-                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                    }`}>
-                        📅 My Attendance
-                    </Link>
 
                     <Link to="/tasks" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
                         isActive('/tasks') 
