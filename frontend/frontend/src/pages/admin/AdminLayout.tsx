@@ -1,24 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import TaskFeed from './TaskFeed'; 
 import logoPhoto from '../../assets/mentorlogOption.png'; 
 
-interface Task {
-    id: number;
-    user_id: number;
-    student_name?: string;
-    title: string;
-    task_description: string;
-    status: 'Pending' | 'In-Progress' | 'Completed';
-    due_date: string;
-}
+// 1. Removed the Task interface since it's no longer used here
 
 interface AdminLayoutProps {
     children: React.ReactNode;
-    tasks?: Task[]; 
+    // 2. Removed tasks? from the props interface
 }
 
-const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
+// 3. Removed tasks from the component arguments
+const AdminLayout = ({ children }: AdminLayoutProps) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [showLogoutModal, setShowLogoutModal] = useState(false); 
@@ -29,12 +21,11 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
         navigate('/login');
     };
 
-    // --- UPDATED NAVIGATION LINKS (Calendar Added) ---
     const navLinks = [
         { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
         { path: '/manage-students', label: 'Student Directory', icon: '👥' },
         { path: '/manage-attendance', label: 'Attendance Logs', icon: '📅' },
-        { path: '/admin-calendar', label: 'Schedules & Events', icon: '🗓️' }, // Added Calendar
+        { path: '/admin-calendar', label: 'Schedules & Events', icon: '🗓️' },
         { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
         { path: '/admin-profile', label: 'My Profile', icon: '👤' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
@@ -43,7 +34,7 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
     return (
         <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
             {/* --- SIDEBAR --- */}
-            <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50">
+            <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50 overflow-hidden">
                 <div className="mb-10 px-2 shrink-0">
                     <div className="flex items-center gap-4 mb-8">
                         <div className="relative group">
@@ -84,7 +75,7 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                 </div>
 
                 {/* --- MAIN NAV --- */}
-                <nav className="flex-1 overflow-y-auto space-y-1.5 mb-8 pr-2 custom-scrollbar">
+                <nav className="flex-1 overflow-y-hidden space-y-1.5 mb-8 pr-2">
                     {navLinks.map((link) => {
                         const isActive = location.pathname === link.path;
                         return (
@@ -103,11 +94,7 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
                     })}
                 </nav>
 
-                {/* --- FEED SECTION --- */}
-                <div className="h-48 mb-6 shrink-0 border-t border-slate-800/40 pt-4">
-                    <TaskFeed tasks={tasks} />
-                </div>
-
+                {/* --- LOGOUT SECTION --- */}
                 <div className="pt-6 border-t border-slate-800/60 shrink-0">
                     <button 
                         onClick={() => setShowLogoutModal(true)} 
