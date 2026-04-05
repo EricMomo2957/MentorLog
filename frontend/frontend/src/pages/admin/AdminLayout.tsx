@@ -36,7 +36,6 @@ const AdminLayout = ({ children, tasks = [] }: AdminLayoutProps) => {
         { path: '/manage-attendance', label: 'Attendance Logs', icon: '📅' },
         { path: '/admin-calendar', label: 'Schedules & Events', icon: '🗓️' }, // Added Calendar
         { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
-        { path: '/weekly-reports', label: 'Weekly Reports', icon: '📈' }, 
         { path: '/admin-profile', label: 'My Profile', icon: '👤' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
     ];

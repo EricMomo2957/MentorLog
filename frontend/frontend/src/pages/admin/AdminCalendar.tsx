@@ -56,7 +56,6 @@ const AdminCalendar = () => {
         }
     }, []);
 
-    // --- 2. EFFECT HOOK ---
     // Replace your current useEffect with this:
     useEffect(() => {
         const loadData = async () => {
