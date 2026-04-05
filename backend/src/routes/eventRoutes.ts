@@ -6,8 +6,12 @@ import {
     deleteEvent // Added this import
 } from '../controllers/eventController';
 
+import { getUserEvents } from '../controllers/eventController';
+
 const router = express.Router();
 
+router.get('/user/:userId', getUserEvents);
+router.post('/add', addEvent);
 // --- POST: Create a new event ---
 router.post('/add', addEvent);
 

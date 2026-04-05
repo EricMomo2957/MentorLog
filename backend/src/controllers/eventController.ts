@@ -118,6 +118,21 @@ export const updateEvent = async (req: Request, res: Response) => {
     }
 };
 
+// Get events for a specific student
+export const getUserEvents = async (req: Request, res: Response) => {
+    const userId = req.params.userId;
+    const query = "SELECT * FROM events WHERE user_id = ? ORDER BY start_time ASC";
+    
+    try {
+        // Use await instead of a callback function to fix the "Expected 1-2 arguments" error
+        const [results] = await db.query(query, [userId]);
+        return res.json(results);
+    } catch (err: any) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: err.message });
+    }
+};
+
 /**
  * DELETE: Remove an event
  * Path: /api/events/:id
@@ -151,3 +166,4 @@ export const deleteEvent = async (req: Request, res: Response) => {
         });
     }
 };
+

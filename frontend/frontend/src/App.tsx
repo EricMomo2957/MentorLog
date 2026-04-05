@@ -13,13 +13,15 @@ import AdminSettings from './pages/admin/AdminSettings';
 import WeeklyReports from './pages/admin/WeeklyReports';
 import ManageTasks from './pages/admin/ManageTasks'; 
 import AdminProfile from './pages/admin/AdminProfile';
-import AdminCalendar from './pages/admin/AdminCalendar'; // <--- NEW IMPORT
+import AdminCalendar from './pages/admin/AdminCalendar';
 
 // Student Imports
+import StudentLayout from './pages/student/StudentLayout'; // <--- IMPORT LAYOUT
 import StudentDashboard from './pages/student/StudentDashboard';
 import MyTasks from './pages/student/MyTasks'; 
 import StudentProfile from './pages/student/StudentProfile';
 import StudentSettings from './pages/student/StudentSettings';
+import StudentCalendar from './pages/student/StudentCalendar'; // <--- NEW IMPORT
 
 interface Task {
   id: number;
@@ -63,7 +65,7 @@ function App() {
           { path: "/admin-dashboard", element: <AdminDashboard /> },
           { path: "/manage-students", element: <ManageStudents /> },
           { path: "/manage-attendance", element: <ManageAttendance /> },
-          { path: "/admin-calendar", element: <AdminCalendar /> }, // <--- ADDED TO MAP
+          { path: "/admin-calendar", element: <AdminCalendar /> },
           { path: "/manage-tasks", element: <ManageTasks /> },
           { path: "/weekly-reports", element: <WeeklyReports /> },
           { path: "/admin-profile", element: <AdminProfile /> }, 
@@ -87,7 +89,9 @@ function App() {
           path="/student-dashboard" 
           element={
             <ProtectedRoute requiredRole="student">
-              <StudentDashboard />
+              <StudentLayout>
+                <StudentDashboard />
+              </StudentLayout>
             </ProtectedRoute>
           } 
         />
@@ -96,7 +100,9 @@ function App() {
           path="/tasks" 
           element={
             <ProtectedRoute requiredRole="student">
-              <MyTasks />
+              <StudentLayout>
+                <MyTasks />
+              </StudentLayout>
             </ProtectedRoute>
           } 
         />
@@ -105,7 +111,9 @@ function App() {
           path="/student-profile" 
           element={
             <ProtectedRoute requiredRole="student">
-              <StudentProfile />
+              <StudentLayout>
+                <StudentProfile />
+              </StudentLayout>
             </ProtectedRoute>
           } 
         />
@@ -114,7 +122,21 @@ function App() {
           path="/settings" 
           element={
             <ProtectedRoute requiredRole="student">
-              <StudentSettings />
+              <StudentLayout>
+                <StudentSettings />
+              </StudentLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* --- ADDED STUDENT CALENDAR ROUTE --- */}
+        <Route 
+          path="/campus-events" 
+          element={
+            <ProtectedRoute requiredRole="student">
+              <StudentLayout>
+                <StudentCalendar />
+              </StudentLayout>
             </ProtectedRoute>
           } 
         />
@@ -123,10 +145,12 @@ function App() {
           path="/my-attendance" 
           element={
             <ProtectedRoute requiredRole="student">
-              <div className="p-10 text-white bg-[#0f172a] min-h-screen">
-                <h1 className="text-3xl font-black mb-4">My Attendance</h1>
-                <p className="text-slate-400">Attendance Feature Coming Soon...</p>
-              </div>
+              <StudentLayout>
+                <div className="p-10 text-white bg-[#0f172a] min-h-screen">
+                  <h1 className="text-3xl font-black mb-4 uppercase italic">My Attendance</h1>
+                  <p className="text-slate-400 font-medium">Attendance Feature Coming Soon...</p>
+                </div>
+              </StudentLayout>
             </ProtectedRoute>
           } 
         />

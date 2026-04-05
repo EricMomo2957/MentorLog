@@ -1,17 +1,15 @@
-import { useState } from 'react'; // ADD THIS IMPORT
+import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import logoPhoto from "../../assets/mentorlogOption.png"; // IMPORT YOUR LOGO
+import logoPhoto from "../../assets/mentorlogOption.png"; 
 
 const StudentLayout = ({ children }: { children: React.ReactNode }) => {
     const navigate = useNavigate();
     const location = useLocation(); 
     
-    // MODAL STATE CONTROL
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     const userName = localStorage.getItem('userName') || 'Student';
 
-    // REMOVE THE OLD WINDOW.CONFIRM FUNCTION
     const handleLogout = () => {
         setIsLogoutModalOpen(true);
     };
@@ -28,7 +26,6 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
             {/* STUDENT SIDE NAV */}
             <aside className="w-64 bg-[#1e293b] border-r border-slate-700 p-6 flex flex-col fixed h-full shadow-2xl z-40">
                 <div className="mb-10">
-                    {/* ADDING YOUR LOGO HERE */}
                     <img src={logoPhoto} alt="MentorLog Logo" className="h-12 w-auto object-contain mb-4 mx-auto block" />
                     
                     <h2 className="text-xl font-black text-emerald-400 tracking-tight text-center">MENTOR<span className="text-white">LOG</span></h2>
@@ -39,7 +36,6 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                 </div>
 
                 <nav className="flex-1 space-y-2">
-                    {/* Main Navigation Group */}
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Menu</p>
                     
                     <Link to="/student-dashboard" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
@@ -66,7 +62,15 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         📝 My Tasks
                     </Link>
 
-                    {/* Account Settings Group */}
+                    {/* NEW: CAMPUS EVENTS LINK */}
+                    <Link to="/campus-events" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
+                        isActive('/campus-events') 
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
+                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
+                    }`}>
+                        🗓️ Campus Events
+                    </Link>
+
                     <div className="pt-6 mt-6 border-t border-slate-800">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Account</p>
                         
