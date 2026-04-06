@@ -22,6 +22,9 @@ const StudentCalendar = () => {
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     
+    // Base URL for axios - change to your actual backend URL if different
+    const API_BASE = "http://localhost:5000/api/events";
+
     const initialFormState: CalendarEvent = {
         user_id: localStorage.getItem('userId') || '',
         title: '',
@@ -39,30 +42,26 @@ const StudentCalendar = () => {
         const userId = localStorage.getItem('userId');
         if (!userId) return;
         try {
-            const response = await axios.get(`http://localhost:5000/api/events/user/${userId}`);
+            // Updated to use the unified GET route with user_id params
+            const response = await axios.get(API_BASE, {
+                params: { user_id: userId }
+            });
             setEvents(response.data);
         } catch (err) {
             console.error("Error loading personal calendar", err);
         }
     }, []);
 
-    // Memoized fetch call on mount and whenever function identity changes
     useEffect(() => {
-    let isMounted = true;
-
-    const loadData = async () => {
-        // Adding a check ensures we only update state if the component is still active
-        if (isMounted) {
-            await fetchMyEvents();
-        }
-    };
-
-    loadData();
-
-    return () => {
-        isMounted = false;
-    };
-}, [fetchMyEvents]);
+        let isMounted = true;
+        const loadData = async () => {
+            if (isMounted) {
+                await fetchMyEvents();
+            }
+        };
+        loadData();
+        return () => { isMounted = false; };
+    }, [fetchMyEvents]);
 
 
     // --- HANDLERS ---
@@ -99,14 +98,13 @@ const StudentCalendar = () => {
 
         try {
             if (isEditing && formData.id) {
-                // Hits the student-specific update route
-                await axios.put(`http://localhost:5000/api/events/user/update/${formData.id}`, payload);
+                // Updated to use the unified PUT route
+                await axios.put(`${API_BASE}/${formData.id}`, payload);
             } else {
-                await axios.post('http://localhost:5000/api/events/add', payload);
+                await axios.post(`${API_BASE}/add`, payload);
             }
             
             setIsModalOpen(false);
-            // Refresh UI
             fetchMyEvents(); 
             setSelectedEvent(null);
         } catch (err) {
@@ -122,10 +120,11 @@ const StudentCalendar = () => {
         if (!window.confirm("Are you sure you want to delete your event?")) return;
         
         try {
-            // Hits the student-specific delete route with validation parameters
-            await axios.delete(`http://localhost:5000/api/events/user/delete/${id}/${userId}`);
+            // Updated to use the unified DELETE route with user_id params
+            await axios.delete(`${API_BASE}/${id}`, {
+                params: { user_id: userId }
+            });
             
-            // Refresh UI immediately
             fetchMyEvents(); 
             setSelectedEvent(null);
         } catch (err) {
@@ -195,7 +194,7 @@ const StudentCalendar = () => {
                 <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-6 shadow-2xl">
                     <h4 className="text-lg font-bold text-white mb-4">Event Details</h4>
                     {selectedEvent ? (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                        <div className="space-y-4">
                             <div className="p-4 bg-slate-900/60 rounded-2xl border border-slate-700">
                                 <h3 className="text-xl font-bold text-blue-400">{selectedEvent.title}</h3>
                                 <p className="text-sm text-slate-400 mt-2">{selectedEvent.description}</p>

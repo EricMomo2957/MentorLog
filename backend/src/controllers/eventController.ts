@@ -4,26 +4,12 @@ import db from '../config/db';
 
 /**
  * POST: Create a new event
- * Path: /api/events/add
  */
 export const addEvent = async (req: Request, res: Response) => {
     const { title, description, location, start_time, end_time, user_id } = req.body;
 
-    // Debugging the "user_id cannot be null" issue
-    console.log("Payload received by Backend (Add):", req.body);
-
-    if (!user_id) {
-        return res.status(400).json({ 
-            success: false, 
-            message: "user_id is missing from request" 
-        });
-    }
-
-    if (!title) {
-        return res.status(400).json({ 
-            success: false, 
-            message: "title is missing from request" 
-        });
+    if (!user_id || !title) {
+        return res.status(400).json({ success: false, message: "Missing user_id or title" });
     }
 
     try {
@@ -39,62 +25,49 @@ export const addEvent = async (req: Request, res: Response) => {
             location || '', 
             start_time, 
             end_time || start_time 
-        ]);
+        ] as any); // Use 'as any' to satisfy TS overload check
         
-        return res.status(201).json({ 
-            success: true, 
-            message: "Event created" 
-        });
-
+        return res.status(201).json({ success: true, message: "Event created" });
     } catch (error) {
         console.error("Database Error (Add):", error);
-        return res.status(500).json({ 
-            success: false, 
-            error: "Internal Server Error" 
-        });
+        return res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 };
 
 /**
- * GET: Fetch all events
- * Path: /api/events
+ * GET: Fetch events ONLY for the logged-in user
  */
-export const getEvents = async (_req: Request, res: Response) => {
+export const getEvents = async (req: Request, res: Response) => {
+    const { user_id } = req.query; 
+
+    if (!user_id) {
+        return res.status(400).json({ success: false, message: "user_id is required" });
+    }
+
     try {
-        // mysql2 returns [rows, fields]
-        const [rows] = await db.execute('SELECT * FROM events ORDER BY start_time ASC');
-        
-        // Return rows directly so frontend .map() works
+        const query = 'SELECT * FROM events WHERE user_id = ? ORDER BY start_time ASC';
+        const [rows] = await db.execute(query, [user_id] as any);
         return res.status(200).json(rows);
-        
     } catch (error) {
         console.error("Fetch Error:", error);
-        return res.status(500).json({ 
-            success: false,
-            error: 'Failed to fetch events' 
-        });
+        return res.status(500).json({ success: false, error: 'Failed to fetch events' });
     }
 };
 
 /**
- * PUT: Update an existing event
- * Path: /api/events/:id
+ * PUT: Update an existing event (Owner check included)
  */
 export const updateEvent = async (req: Request, res: Response) => {
     const { id } = req.params; 
-    const { title, description, location, start_time, end_time } = req.body;
+    const { title, description, location, start_time, end_time, user_id } = req.body;
 
-    console.log(`Attempting to update event ID: ${id} with:`, req.body);
-
-    if (!title || !start_time) {
-        return res.status(400).json({ success: false, message: "Missing required fields." });
-    }
+    if (!user_id) return res.status(400).json({ success: false, message: "User ID missing" });
 
     try {
         const query = `
             UPDATE events 
             SET title = ?, description = ?, location = ?, start_time = ?, end_time = ? 
-            WHERE id = ?
+            WHERE id = ? AND user_id = ?
         `;
         
         const [result]: any = await db.execute(query, [
@@ -103,55 +76,42 @@ export const updateEvent = async (req: Request, res: Response) => {
             location || '', 
             start_time, 
             end_time || start_time, 
-            id 
-        ]);
+            id, 
+            user_id 
+        ] as any);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Event not found." });
+            return res.status(404).json({ success: false, message: "Not found or permission denied" });
         }
-
-        return res.status(200).json({ success: true, message: "Event updated successfully" });
-
+        return res.status(200).json({ success: true, message: "Updated successfully" });
     } catch (error) {
-        console.error("Database Update Error:", error);
+        console.error("Update Error:", error);
         return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
 
 /**
- * DELETE: Remove an event
- * Path: /api/events/:id
+ * DELETE: Remove an event (Owner check included)
  */
 export const deleteEvent = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const { user_id } = req.query; 
 
-    console.log(`Attempting to delete event ID: ${id}`);
+    if (!user_id) return res.status(400).json({ success: false, message: "User ID missing" });
 
     try {
-        const query = 'DELETE FROM events WHERE id = ?';
-        const [result]: any = await db.execute(query, [id]);
+        const query = 'DELETE FROM events WHERE id = ? AND user_id = ?';
+        const [result]: any = await db.execute(query, [id, user_id] as any);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Event not found." 
-            });
+            return res.status(404).json({ success: false, message: "Not found or unauthorized" });
         }
-
-        return res.status(200).json({ 
-            success: true, 
-            message: "Event deleted successfully" 
-        });
-
+        return res.status(200).json({ success: true, message: "Deleted successfully" });
     } catch (error) {
-        console.error("Database Delete Error:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Internal Server Error" 
-        });
+        console.error("Delete Error:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
-
 
 /**
  * 

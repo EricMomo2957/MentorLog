@@ -47,14 +47,31 @@ const AdminCalendar = () => {
     };
 
     // --- 1. FETCH EVENTS ---
-    const fetchEvents = useCallback(async () => {
-        try {
-            const response = await axios.get('http://localhost:5000/api/events');
-            setEvents(response.data);
-        } catch (err) {
-            console.error("Error fetching events", err);
-        }
-    }, []);
+        // --- 1. FETCH EVENTS ---
+const fetchEvents = useCallback(async () => {
+    // Robust check for User ID from localStorage
+    const storedId = localStorage.getItem('id') || 
+                     localStorage.getItem('userId') || 
+                     JSON.parse(localStorage.getItem('user') || '{}').id;
+
+    if (!storedId) {
+        console.error("User ID not found in localStorage");
+        return;
+    }
+
+    try {
+        // Pass user_id as a query parameter so the backend filters the results
+        const response = await axios.get('http://localhost:5000/api/events', {
+            params: { user_id: storedId }
+        });
+        
+        // Ensure we handle the response correctly (mysql2 returns rows directly)
+        setEvents(response.data);
+    } catch (err) {
+        console.error("Error fetching events", err);
+    }
+}, []);
+
 
     // Replace your current useEffect with this:
     useEffect(() => {
