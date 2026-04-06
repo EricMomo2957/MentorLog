@@ -1,7 +1,7 @@
 // backend/src/controllers/eventController.ts
 import { Request, Response } from 'express';
 import db from '../config/db';
-
+import { ResultSetHeader } from 'mysql2';
 /**
  * POST: Create a new event
  */
@@ -95,21 +95,47 @@ export const updateEvent = async (req: Request, res: Response) => {
  */
 export const deleteEvent = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { user_id } = req.query; 
-
-    if (!user_id) return res.status(400).json({ success: false, message: "User ID missing" });
+    
+    // If you are NOT using JWT, you'd usually pass user_id in the query 
+    // or body. For now, let's make it robust to avoid TS errors.
+    const user_id = req.query.user_id as string | undefined; 
 
     try {
-        const query = 'DELETE FROM events WHERE id = ? AND user_id = ?';
-        const [result]: any = await db.execute(query, [id, user_id] as any);
+        let query: string;
+        let params: any[];
+
+        if (user_id) {
+            // Option A: Secure delete (checks if user owns the event)
+            query = 'DELETE FROM events WHERE id = ? AND user_id = ?';
+            params = [id, user_id];
+        } else {
+            // Option B: Direct delete (Admin style)
+            // Use this if your frontend isn't sending user_id in the DELETE request
+            query = 'DELETE FROM events WHERE id = ?';
+            params = [id];
+        }
+
+        // We cast to ResultSetHeader to get access to .affectedRows without 'any'
+        const [result] = await db.execute<ResultSetHeader>(query, params);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Not found or unauthorized" });
+            return res.status(404).json({ 
+                success: false, 
+                message: "Event not found or unauthorized" 
+            });
         }
-        return res.status(200).json({ success: true, message: "Deleted successfully" });
-    } catch (error) {
+
+        return res.status(200).json({ 
+            success: true, 
+            message: "Deleted successfully" 
+        });
+
+    } catch (error: unknown) {
         console.error("Delete Error:", error);
-        return res.status(500).json({ success: false, message: "Internal Server Error" });
+        return res.status(500).json({ 
+            success: false, 
+            message: "Internal Server Error" 
+        });
     }
 };
 

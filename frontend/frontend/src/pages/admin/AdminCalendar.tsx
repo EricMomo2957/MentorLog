@@ -47,42 +47,31 @@ const AdminCalendar = () => {
     };
 
     // --- 1. FETCH EVENTS ---
-        // --- 1. FETCH EVENTS ---
-const fetchEvents = useCallback(async () => {
-    // Robust check for User ID from localStorage
-    const storedId = localStorage.getItem('id') || 
-                     localStorage.getItem('userId') || 
-                     JSON.parse(localStorage.getItem('user') || '{}').id;
+    const fetchEvents = useCallback(async () => {
+        const storedId = localStorage.getItem('id') || 
+                         localStorage.getItem('userId') || 
+                         JSON.parse(localStorage.getItem('user') || '{}').id;
 
-    if (!storedId) {
-        console.error("User ID not found in localStorage");
-        return;
-    }
+        if (!storedId) {
+            console.error("User ID not found in localStorage");
+            return;
+        }
 
-    try {
-        // Pass user_id as a query parameter so the backend filters the results
-        const response = await axios.get('http://localhost:5000/api/events', {
-            params: { user_id: storedId }
-        });
-        
-        // Ensure we handle the response correctly (mysql2 returns rows directly)
-        setEvents(response.data);
-    } catch (err) {
-        console.error("Error fetching events", err);
-    }
-}, []);
-
-
-    // Replace your current useEffect with this:
-    useEffect(() => {
-        const loadData = async () => {
-            await fetchEvents();
-        };
-        loadData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        try {
+            const response = await axios.get('http://localhost:5000/api/events', {
+                params: { user_id: storedId }
+            });
+            setEvents(response.data);
+        } catch (err) {
+            console.error("Error fetching events", err);
+        }
     }, []);
 
-    // --- 3. HANDLERS ---
+    useEffect(() => {
+        fetchEvents();
+    }, [fetchEvents]);
+
+    // --- 2. HANDLERS ---
     const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
     const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
@@ -107,7 +96,6 @@ const fetchEvents = useCallback(async () => {
     };
 
     const handleSaveEvent = async () => {
-        // Robust check for User ID
         const storedId = localStorage.getItem('id') || 
                          localStorage.getItem('userId') || 
                          JSON.parse(localStorage.getItem('user') || '{}').id;
@@ -126,7 +114,6 @@ const fetchEvents = useCallback(async () => {
             const payload = {
                 ...eventData,
                 user_id: parseInt(storedId),
-                // Replace 'T' with space for MySQL compatibility
                 start_time: eventData.start_time.replace('T', ' '),
                 end_time: eventData.end_time ? eventData.end_time.replace('T', ' ') : eventData.start_time.replace('T', ' ')
             };
@@ -149,24 +136,42 @@ const fetchEvents = useCallback(async () => {
         }
     };
 
-    // --- NEW DELETE HANDLER ---
+    // --- UPDATED TYPE-SAFE DELETE HANDLER ---
     const handleDeleteEvent = async (id: number | undefined) => {
-        if (!id) return;
+        if (id === undefined) {
+            console.error("Delete failed: Event ID is undefined");
+            alert("Error: Cannot delete an event without a valid ID.");
+            return;
+        }
+
         if (!window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
         
         try {
+            console.log(`Attempting to delete event with ID: ${id}`);
+            
             const response = await axios.delete(`http://localhost:5000/api/events/${id}`);
-            if (response.status === 200 || response.data.success) {
+            
+            if (response.status === 200 || response.status === 204 || response.data.success) {
                 alert("Event deleted successfully");
-                fetchEvents(); // Refresh the list and calendar
+                await fetchEvents(); 
+            } else {
+                throw new Error("Backend returned unsuccessful status");
             }
-        } catch (err) {
-            console.error("Error deleting event", err);
-            alert("Failed to delete event.");
+        } catch (err: unknown) {
+            let errorMessage = "Check backend console.";
+            
+            if (axios.isAxiosError(err)) {
+                errorMessage = err.response?.data?.error || err.message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+
+            console.error("Error deleting event:", err);
+            alert(`Failed to delete event: ${errorMessage}`);
         }
     };
 
-    // --- 4. CALENDAR LOGIC ---
+    // --- 3. CALENDAR LOGIC ---
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(monthStart);
     const startDate = startOfWeek(monthStart);
