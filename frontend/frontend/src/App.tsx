@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-// import { useState, useEffect } from 'react'; // Removed unused hooks
 import Register from './pages/Register';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -16,13 +15,12 @@ import AdminProfile from './pages/admin/AdminProfile';
 import AdminCalendar from './pages/admin/AdminCalendar';
 
 // Student Imports
+import StudentLayout from './pages/student/StudentLayout';
 import StudentDashboard from './pages/student/StudentDashboard';
 import MyTasks from './pages/student/MyTasks'; 
 import StudentProfile from './pages/student/StudentProfile';
 import StudentSettings from './pages/student/StudentSettings';
-
-// REMOVED: import logoPhoto from "../../assets/mentorlogOption.png"; 
-// REMOVED: interface Task and all task-fetching logic
+import StudentCalendar from './pages/student/StudentCalendar';
 
 function App() {
   return (
@@ -58,53 +56,34 @@ function App() {
         ))}
 
         {/* --- Student Protected Routes --- */}
-        <Route 
-          path="/student-dashboard" 
-          element={
-            <ProtectedRoute requiredRole="student">
-              <StudentDashboard />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/tasks" 
-          element={
-            <ProtectedRoute requiredRole="student">
-              <MyTasks />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/student-profile" 
-          element={
-            <ProtectedRoute requiredRole="student">
-              <StudentProfile />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/settings" 
-          element={
-            <ProtectedRoute requiredRole="student">
-              <StudentSettings />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/my-attendance" 
-          element={
-            <ProtectedRoute requiredRole="student">
-              <div className="p-10 text-white bg-[#0f172a] min-h-screen">
+        {[
+          { path: "/student-dashboard", element: <StudentDashboard /> },
+          { path: "/tasks", element: <MyTasks /> },
+          { path: "/student-profile", element: <StudentProfile /> },
+          { path: "/settings", element: <StudentSettings /> },
+          { path: "/campus-events", element: <StudentCalendar /> },
+          { 
+            path: "/my-attendance", 
+            element: (
+              <div className="p-10 text-white">
                 <h1 className="text-3xl font-black mb-4">My Attendance</h1>
                 <p className="text-slate-400">Attendance Feature Coming Soon...</p>
               </div>
-            </ProtectedRoute>
-          } 
-        />
+            ) 
+          },
+        ].map((route) => (
+          <Route 
+            key={route.path}
+            path={route.path} 
+            element={
+              <ProtectedRoute requiredRole="student">
+                <StudentLayout>
+                  {route.element}
+                </StudentLayout>
+              </ProtectedRoute>
+            } 
+          />
+        ))}
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" />} />
