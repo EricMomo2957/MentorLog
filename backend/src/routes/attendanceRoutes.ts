@@ -3,7 +3,8 @@ import {
     toggleAttendance, 
     getAllAttendance, 
     getWeeklyReport, 
-    getMyAttendanceHistory // Make sure this is exported in your controller
+    getMyAttendanceHistory, // Make sure this is exported in your controller
+    manualAttendanceLog
 } from '../controllers/attendanceController';
 import { protect } from '../middleware/authMiddleware'; 
 import { addManualLog } from '../controllers/attendanceController';
@@ -21,4 +22,5 @@ router.get('/history', protect, getMyAttendanceHistory);
 router.get('/all', protect, getAllAttendance);
 router.get('/weekly-report', protect, getWeeklyReport);
 router.post('/manual-log', protect, addManualLog);
+router.post('/manual-log', protect, manualAttendanceLog);
 export default router;

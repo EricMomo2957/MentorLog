@@ -197,3 +197,34 @@ export const addManualLog = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
+export const manualAttendanceLog = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const { date, clock_in, clock_out, status } = req.body;
+
+    try {
+        // 1. Check if ANY record (manual or toggle) already exists for this specific date
+        const [existing]: any = await db.execute(
+            'SELECT id FROM attendance WHERE user_id = ? AND date = ? LIMIT 1',
+            [userId, date]
+        );
+
+        if (existing.length > 0) {
+            return res.status(400).json({ 
+                message: `Attendance record already exists for ${date}.` 
+            });
+        }
+
+        // 2. Calculate hours (MySQL-side calculation for decimal(5,2))
+        // Since your table uses decimal(5,2), we ensure the value fits
+        await db.execute(`
+            INSERT INTO attendance (user_id, date, clock_in, clock_out, status, total_hours, is_active)
+            VALUES (?, ?, ?, ?, ?, TIMESTAMPDIFF(SECOND, ?, ?) / 3600, 0)
+        `, [userId, date, clock_in, clock_out, status, clock_in, clock_out]);
+
+        return res.json({ success: true, message: "Manual entry saved successfully." });
+    } catch (error) {
+        console.error("Manual Log Error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
