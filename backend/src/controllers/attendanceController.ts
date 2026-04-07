@@ -153,3 +153,47 @@ export const getMyAttendanceHistory = async (req: AuthRequest, res: Response) =>
         res.status(500).json({ message: "Error fetching your history" });
     }
 };
+
+
+export const addManualLog = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+    // Destructure the data from the modal
+    const { date, clock_in, clock_out, status } = req.body;
+
+    try {
+        // 1. Calculate Total Hours
+        // We create date objects to find the difference between clock_in and clock_out
+        const start = new Date(`${date} ${clock_in}`);
+        const end = new Date(`${date} ${clock_out}`);
+        
+        // Calculate difference in hours
+        const diffInMs = end.getTime() - start.getTime();
+        const totalHours = parseFloat((diffInMs / (1000 * 60 * 60)).toFixed(2));
+
+        // Validation: Ensure they didn't pick a clock-out time before clock-in
+        if (totalHours < 0) {
+            return res.status(400).json({ message: "Clock out time must be after clock in time." });
+        }
+
+        // 2. Insert into database
+        // is_active is 0 because manual logs are usually for completed shifts
+        const sql = `
+            INSERT INTO attendance (user_id, date, clock_in, clock_out, status, total_hours, is_active) 
+            VALUES (?, ?, ?, ?, ?, ?, 0)
+        `;
+
+        await db.execute(sql, [userId, date, clock_in, clock_out, status, totalHours]);
+
+        return res.json({ 
+            success: true, 
+            message: "Manual attendance logged successfully!",
+            totalHours 
+        });
+
+    } catch (error) {
+        console.error("Manual Log Error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};

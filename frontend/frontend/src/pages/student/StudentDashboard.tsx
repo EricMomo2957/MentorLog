@@ -1,14 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // --- INTERFACES ---
-interface Task {
-    id: number;
-    title: string;
-    task_description: string;
-    status: 'Pending' | 'In-Progress' | 'Completed';
-    due_date: string;
-}
-
 interface AttendanceSession {
     id: number;
     date: string;
@@ -24,25 +16,34 @@ interface WeeklyReport {
     days_late: number;
 }
 
+interface ManualEntryState {
+    date: string;
+    clock_in: string;
+    clock_out: string;
+    status: 'Present' | 'Late' | 'Absent';
+}
+
 const StudentDashboard = () => {
-    // --- SETTINGS ---
-    const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge'; 
     const NODE_API_URL = 'http://localhost:5000/api'; 
 
     // --- STATES ---
     const [isClockedIn, setIsClockedIn] = useState(false);
-    const [startTime, setStartTime] = useState('');
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [taskDescription, setTaskDescription] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [history, setHistory] = useState<AttendanceSession[]>([]);
-    const [assignedTasks, setAssignedTasks] = useState<Task[]>([]);
     const [report, setReport] = useState<WeeklyReport>({ accumulated_hours: 0, days_present: 0, days_late: 0 });
     const [hasCompletedShift, setHasCompletedShift] = useState(false);
-
-    // --- UI FEEDBACK STATES ---
-    const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Initial Helper for Date
+    const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+    const [manualEntry, setManualEntry] = useState<ManualEntryState>({
+        date: getTodayDate(),
+        clock_in: '',
+        clock_out: '',
+        status: 'Present'
+    });
 
     const totalTargetHours = 600;
 
@@ -54,138 +55,102 @@ const StudentDashboard = () => {
         }
     }, [toast]);
 
-    // --- HELPER: PARSE TIME STRING ---
-    const parseTimeString = (timeStr: string) => {
-        if (!timeStr) return null;
-        const now = new Date();
-        const match = timeStr.match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)?/i);
-        if (!match) return null;
-
-        const [ , hours, minutes, seconds, modifier] = match;
-        let h = parseInt(hours, 10);
-        const m = parseInt(minutes, 10);
-        const s = parseInt(seconds || "0", 10);
-
-        if (modifier) {
-            const mod = modifier.toUpperCase();
-            if (mod === 'PM' && h < 12) h += 12;
-            if (mod === 'AM' && h === 12) h = 0;
-        }
-
-        return new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s);
-    };
-
-    const getDuration = () => {
-        const start = parseTimeString(startTime);
-        if (!start || !isClockedIn) return "00:00:00";
-        
-        const diff = currentTime.getTime() - start.getTime();
-        if (diff < 0) return "00:00:00";
-        
-        const seconds = Math.floor((diff / 1000) % 60);
-        const minutes = Math.floor((diff / 1000 / 60) % 60);
-        const hours = Math.floor((diff / 1000 / 60 / 60));
-        
-        return [
-            hours.toString().padStart(2, '0'),
-            minutes.toString().padStart(2, '0'),
-            seconds.toString().padStart(2, '0')
-        ].join(':');
-    };
-
-    // --- API CALLS ---
-    const fetchAssignedTasks = async () => {
+    // --- DATA FETCHING ---
+    const refreshDashboardData = useCallback(async () => {
         try {
-            const userId = localStorage.getItem('userId');
-            const response = await fetch(`${PHP_BRIDGE_URL}/get-my-tasks.php?user_id=${userId}`);
-            const data = await response.json();
-            if (Array.isArray(data)) setAssignedTasks(data);
-        } catch {
-            console.error("Failed to fetch tasks via PHP bridge.");
-        }
-    };
+            const token = localStorage.getItem('token');
+            const headers = { 'Authorization': `Bearer ${token}` };
 
-    const fetchHistory = async () => {
-        try {
-            const response = await fetch(`${NODE_API_URL}/attendance/history`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            const data = await response.json();
-            if (Array.isArray(data)) {
-                setHistory(data);
-                const activeSession = data.find(log => log.clock_out === null);
-                if (activeSession) {
-                    setIsClockedIn(true);
-                    setHasCompletedShift(false);
-                    setStartTime(activeSession.clock_in);
-                } else {
-                    setIsClockedIn(false);
-                    const todayStr = new Date().toLocaleDateString('en-CA');
-                    const finishedToday = data.some(log => log.date.startsWith(todayStr) && log.clock_out !== null);
+            const [historyRes, reportRes] = await Promise.all([
+                fetch(`${NODE_API_URL}/attendance/history`, { headers }),
+                fetch(`${NODE_API_URL}/attendance/weekly-report`, { headers })
+            ]);
+
+            const historyData: AttendanceSession[] = await historyRes.json();
+            const reportData = await reportRes.json();
+
+            if (Array.isArray(historyData)) {
+                setHistory(historyData);
+                const activeSession = historyData.find(log => log.clock_out === null);
+                const clockedInStatus = !!activeSession;
+                setIsClockedIn(clockedInStatus);
+
+                if (!clockedInStatus) {
+                    const todayStr = getTodayDate();
+                    const finishedToday = historyData.some(log => 
+                        log.date.startsWith(todayStr) && log.clock_out !== null
+                    );
                     setHasCompletedShift(finishedToday);
+                } else {
+                    setHasCompletedShift(false);
                 }
             }
-        } catch {
-            console.error("Failed to fetch history.");
-        }
-    };
 
-    const fetchReport = async () => {
-        try {
-            const response = await fetch(`${NODE_API_URL}/attendance/weekly-report`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            const data = await response.json();
-            if (data) {
+            if (reportData) {
                 setReport({
-                    accumulated_hours: Number(data.accumulated_hours) || 0,
-                    days_present: data.days_present || 0,
-                    days_late: data.days_late || 0
+                    accumulated_hours: Number(reportData.accumulated_hours) || 0,
+                    days_present: reportData.days_present || 0,
+                    days_late: reportData.days_late || 0
                 });
             }
-        } catch {
-            console.error("Connection error during report fetch.");
+        } catch (error) {
+            console.error("Dashboard sync error:", error);
+        }
+    }, [NODE_API_URL]);
+
+    useEffect(() => {
+    // Define or call logic directly here
+    const fetchData = async () => {
+        try {
+            // Your API calls here
+        } catch (err) {
+            console.error("Failed to refresh dashboard:", err);
         }
     };
 
-    useEffect(() => {
-        fetchHistory();
-        fetchReport();
-        fetchAssignedTasks();
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
+    fetchData();
+    
+    const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(clockInterval);
+}, []); // Empty array if you only want this to run once on mount
 
     // --- HANDLERS ---
-    const handleStatusUpdate = async (taskId: number, newStatus: string) => {
-        setUpdatingTaskId(taskId);
+    const handleManualSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // Frontend Validation
+        if (manualEntry.clock_out <= manualEntry.clock_in) {
+            setToast({ message: "Clock-out must be after Clock-in", type: 'error' });
+            return;
+        }
+
         try {
-            const response = await fetch(`${PHP_BRIDGE_URL}/update-task-status.php`, {
+            const response = await fetch(`${NODE_API_URL}/attendance/manual-log`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskId, status: newStatus })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(manualEntry)
             });
+
             if (response.ok) {
-                setToast({ message: "Task marked as completed!", type: 'success' });
-                await fetchAssignedTasks();
+                setToast({ message: "Entry saved successfully!", type: 'success' });
+                setIsModalOpen(false);
+                // Reset form for next time
+                setManualEntry({ date: getTodayDate(), clock_in: '', clock_out: '', status: 'Present' });
+                refreshDashboardData();
             } else {
-                setToast({ message: "Failed to update task.", type: 'error' });
+                const data = await response.json();
+                setToast({ message: data.message || "Failed to save entry.", type: 'error' });
             }
         } catch {
-            setToast({ message: "Server connection error.", type: 'error' });
-        } finally {
-            setUpdatingTaskId(null);
+            setToast({ message: "Connection error.", type: 'error' });
         }
     };
 
     const handleClockToggle = async (actionOverride?: 'resume') => {
         const action = actionOverride || (isClockedIn ? 'clock-out' : 'clock-in');
-        if (!isClockedIn && hasCompletedShift && action !== 'resume') {
-            setToast({ message: "Shift already completed for today.", type: 'error' });
-            return;
-        }
-        if (isClockedIn && !window.confirm("Are you sure you want to clock out?")) return;
-
         try {
             const response = await fetch(`${NODE_API_URL}/attendance/toggle`, {
                 method: 'POST',
@@ -195,76 +160,26 @@ const StudentDashboard = () => {
                 },
                 body: JSON.stringify({ action })
             });
-            const data = await response.json();
 
             if (response.ok) {
-                if (action === 'resume') {
-                    setHasCompletedShift(false);
-                    setIsClockedIn(true);
-                    if (data.clock_in) setStartTime(data.clock_in); 
-                    setToast({ message: "Shift resumed!", type: 'success' });
-                } else if (action === 'clock-in') {
-                    setIsClockedIn(true);
-                    setStartTime(data.clock_in); 
-                    setHasCompletedShift(false);
-                    setToast({ message: "Clocked in successfully!", type: 'success' });
-                } else {
-                    setIsClockedIn(false);
-                    setHasCompletedShift(true);
-                    setStartTime('');
-                    setToast({ message: "Clocked out successfully!", type: 'success' });
-                }
-                await fetchHistory();
-                await fetchReport();
-            } else {
-                setToast({ message: data.message || "Attendance update failed.", type: 'error' });
+                setToast({ 
+                    message: action === 'clock-out' ? "Clocked out!" : "Shift started!", 
+                    type: 'success' 
+                });
+                refreshDashboardData();
             }
         } catch {
-            setToast({ message: "Connection error.", type: 'error' });
+            setToast({ message: "Network error.", type: 'error' });
         }
     };
-
-    const handleUpdateTask = async () => {
-        if (!taskDescription.trim()) return setToast({ message: "Please enter a description.", type: 'error' });
-        setIsSubmitting(true);
-        try {
-            const response = await fetch(`${NODE_API_URL}/tasks/submit`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    title: "Daily OJT Update",
-                    task_description: taskDescription
-                }),
-            });
-            if (response.ok) {
-                setToast({ message: "Daily log submitted!", type: 'success' });
-                setTaskDescription('');
-                fetchAssignedTasks(); 
-            } else {
-                const data = await response.json();
-                setToast({ message: data.message, type: 'error' });
-            }
-        } catch {
-            setToast({ message: "Connection error.", type: 'error' });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const urgentTasks = assignedTasks
-        .filter(task => task.status !== 'Completed')
-        .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-        .slice(0, 3);
 
     const progressPercentage = Math.min((report.accumulated_hours / totalTargetHours) * 100, 100);
 
     return (
-        <>
+        <div className="max-w-6xl mx-auto space-y-8 pb-10 px-4">
+            {/* Toast System */}
             {toast && (
-                <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-2xl shadow-2xl border transition-all animate-bounce ${
+                <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-2xl shadow-xl border transition-all animate-in fade-in slide-in-from-top-4 ${
                     toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-red-500/10 border-red-500 text-red-500'
                 }`}>
                     <p className="font-bold flex items-center gap-2">
@@ -273,169 +188,147 @@ const StudentDashboard = () => {
                 </div>
             )}
 
-            <div className="max-w-6xl mx-auto space-y-8 pb-10 px-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                    <div className="space-y-1">
-                        <h1 className="text-4xl font-black text-white tracking-tight">
-                            Student <span className="text-blue-500">Portal</span>
-                        </h1>
-                        <p className="text-slate-400 font-medium">
-                            {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                        </p>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                        {hasCompletedShift && !isClockedIn && (
-                            <button 
-                                onClick={() => handleClockToggle('resume')}
-                                className="px-6 py-3 rounded-xl font-bold bg-amber-500/10 text-amber-500 border border-amber-500/50 hover:bg-amber-500 hover:text-slate-900 transition-all shadow-lg"
-                            >
-                                🔄 Resume Shift
-                            </button>
-                        )}
-                        <button 
-                            onClick={() => handleClockToggle()}
-                            disabled={!isClockedIn && hasCompletedShift}
-                            className={`px-6 py-3 rounded-xl font-bold transition-all shadow-lg ${
-                                isClockedIn 
-                                    ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white' 
-                                    : hasCompletedShift 
-                                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                                        : 'bg-emerald-500 text-slate-900 hover:scale-105'
-                            }`}
-                        >
-                            {!isClockedIn && hasCompletedShift ? '✅ Shift Completed' : isClockedIn ? '⏹ End Shift' : '▶ Begin Shift'}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
-                        <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Total Progress</p>
-                        <h3 className="text-4xl font-bold mt-3 text-white">
-                            {report.accumulated_hours.toFixed(1)} <span className="text-lg text-slate-500 font-medium">/ {totalTargetHours} hrs</span>
-                        </h3>
-                        <div className="w-full bg-slate-900/50 h-3 rounded-full mt-6 overflow-hidden border border-slate-700/50">
-                            <div className="bg-emerald-500 h-full rounded-full transition-all duration-1000" style={{ width: `${progressPercentage}%` }}></div>
-                        </div>
-                    </div>
-
-                    <div className={`bg-[#1e293b] p-8 rounded-3xl border transition-all duration-500 shadow-xl ${isClockedIn ? 'border-blue-500/50 ring-4 ring-blue-500/5' : 'border-slate-800'}`}>
-                        <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Active Session</p>
-                        <h3 className="text-4xl font-mono font-bold mt-3 text-white">{isClockedIn ? getDuration() : '--:--:--'}</h3>
-                        <div className="mt-4 flex items-center gap-3 py-2 px-4 bg-slate-900/50 rounded-xl w-fit border border-slate-700/50">
-                            <span className={`w-2.5 h-2.5 rounded-full ${isClockedIn ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`}></span>
-                            <span className="text-xs font-bold text-slate-300 uppercase">{isClockedIn ? `Started at ${startTime}` : 'Session Inactive'}</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
-                        <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Attendance Status</p>
-                        <h3 className="text-4xl font-bold mt-3 text-white">{report.days_present} <span className="text-lg text-slate-500 font-medium">Days</span></h3>
-                        <p className="text-amber-400 text-xs mt-4 font-bold">{report.days_late} Late Arrivals Recorded</p>
-                    </div>
-                </div>
-
-                <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-8 shadow-2xl">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 text-xl">🔥</div>
+            {/* Manual Log Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                    <div className="bg-[#1e293b] w-full max-w-md p-8 rounded-3xl border border-slate-700 shadow-2xl">
+                        <h2 className="text-2xl font-bold text-white mb-6 tracking-tight">Manual Log</h2>
+                        <form onSubmit={handleManualSubmit} className="space-y-4">
                             <div>
-                                <h4 className="text-lg font-bold text-white">Priority Tasks</h4>
-                                <p className="text-sm text-slate-500">Most urgent assignments</p>
+                                <label className="text-slate-400 text-xs font-bold uppercase mb-1 block">Date</label>
+                                <input type="date" required value={manualEntry.date} onChange={e => setManualEntry({...manualEntry, date: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all"/>
                             </div>
-                        </div>
-                        <a href="/tasks" className="text-xs font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest">View All Tasks →</a>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {urgentTasks.length > 0 ? urgentTasks.map((task) => (
-                            <div key={task.id} className={`bg-slate-900/40 border border-slate-700/50 p-5 rounded-2xl flex flex-col justify-between group hover:border-amber-500/30 transition-all ${updatingTaskId === task.id ? 'opacity-50 grayscale' : ''}`}>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <div className="flex justify-between items-start mb-2">
-                                         <p className="text-[10px] text-amber-400 font-black uppercase font-mono">Due: {task.due_date}</p>
-                                         <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                    </div>
-                                    <h5 className="text-white font-bold mb-1 line-clamp-1">{task.title}</h5>
-                                    <p className="text-slate-400 text-xs line-clamp-2 mb-4">{task.task_description}</p>
+                                    <label className="text-slate-400 text-xs font-bold uppercase mb-1 block">Clock In</label>
+                                    <input type="time" required value={manualEntry.clock_in} onChange={e => setManualEntry({...manualEntry, clock_in: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all"/>
                                 </div>
-                                <button 
-                                    onClick={() => handleStatusUpdate(task.id, 'Completed')} 
-                                    disabled={updatingTaskId !== null}
-                                    className="w-full py-2 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white text-[10px] font-black uppercase rounded-lg transition-all flex justify-center items-center gap-2"
-                                >
-                                    {updatingTaskId === task.id ? (
-                                        <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                    ) : 'Quick Complete'}
-                                </button>
+                                <div>
+                                    <label className="text-slate-400 text-xs font-bold uppercase mb-1 block">Clock Out</label>
+                                    <input type="time" required value={manualEntry.clock_out} onChange={e => setManualEntry({...manualEntry, clock_out: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all"/>
+                                </div>
                             </div>
-                        )) : (
-                            <div className="col-span-3 py-10 text-center bg-slate-900/20 rounded-2xl border border-dashed border-slate-800">
-                                <p className="text-slate-500 text-sm italic">No urgent tasks at the moment. Great job!</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className={`transition-all duration-700 transform ${isClockedIn ? 'opacity-100 translate-y-0' : 'opacity-40 pointer-events-none translate-y-4'}`}>
-                    <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-8 shadow-2xl">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 text-xl">📝</div>
                             <div>
-                                <h4 className="text-lg font-bold text-white">Daily Task Log</h4>
-                                <p className="text-sm text-slate-500">Document your daily activities</p>
+                                <label className="text-slate-400 text-xs font-bold uppercase mb-1 block">Status</label>
+                                <select value={manualEntry.status} onChange={e => setManualEntry({...manualEntry, status: e.target.value as ManualEntryState['status']})} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all">
+                                    <option value="Present">Present</option>
+                                    <option value="Late">Late</option>
+                                    <option value="Absent">Absent</option>
+                                </select>
                             </div>
-                        </div>
-                        <textarea 
-                            value={taskDescription}
-                            onChange={(e) => setTaskDescription(e.target.value)}
-                            disabled={!isClockedIn}
-                            placeholder={isClockedIn ? "Example: Developing the Dashboard UI..." : "Clock in to start logging tasks"}
-                            className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl p-5 text-slate-200 focus:outline-none focus:border-blue-500 min-h-32"
-                        />
-                        <div className="flex justify-end mt-4">
-                            <button onClick={handleUpdateTask} disabled={isSubmitting || !isClockedIn} className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-sm font-bold transition-all shadow-lg">
-                                {isSubmitting ? 'Syncing...' : 'Update Task Description'}
-                            </button>
-                        </div>
+                            <div className="flex gap-3 pt-6">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-800 transition-colors">Cancel</button>
+                                <button type="submit" className="flex-1 px-6 py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all active:scale-95">Save Entry</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Dashboard Sections (Header, Stats, Table) remains same as previous clean version */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black text-white tracking-tight italic">
+                        STUDENT<span className="text-blue-500 text-stroke-thin">PORTAL</span>
+                    </h1>
+                    <p className="text-slate-400 font-medium font-mono uppercase tracking-widest text-sm">
+                        {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </p>
+                </div>
+                
+                <div className="flex flex-wrap gap-3">
+                    <button onClick={() => setIsModalOpen(true)} className="px-6 py-4 rounded-xl font-bold text-blue-400 border border-blue-500/30 hover:bg-blue-500/10 transition-all active:scale-95">
+                        📝 Manual Entry
+                    </button>
+                    {hasCompletedShift && !isClockedIn && (
+                        <button onClick={() => handleClockToggle('resume')} className="px-8 py-4 rounded-xl font-bold bg-amber-500/10 text-amber-500 border border-amber-500/50 hover:bg-amber-500 transition-all active:scale-95">
+                            🔄 Resume Shift
+                        </button>
+                    )}
+                    <button 
+                        onClick={() => handleClockToggle()}
+                        disabled={!isClockedIn && hasCompletedShift}
+                        className={`px-10 py-4 rounded-xl font-bold transition-all shadow-lg text-lg ${
+                            isClockedIn 
+                                ? 'bg-red-500/10 text-red-500 border border-red-500 hover:bg-red-500 hover:text-white' 
+                                : hasCompletedShift 
+                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                                    : 'bg-emerald-500 text-slate-900 hover:scale-105 active:scale-95'
+                        }`}
+                    >
+                        {!isClockedIn && hasCompletedShift ? '✅ Shift Done' : isClockedIn ? '⏹ End Shift' : '▶ Begin Shift'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl group">
+                    <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em]">Total Progress</p>
+                    <h3 className="text-5xl font-bold mt-3 text-white tabular-nums">
+                        {report.accumulated_hours.toFixed(1)} <span className="text-lg text-slate-500 font-medium">/ {totalTargetHours}h</span>
+                    </h3>
+                    <div className="w-full bg-slate-900/50 h-3 rounded-full mt-8 overflow-hidden border border-slate-700/50">
+                        <div className="bg-linear-to-r from-blue-600 to-emerald-500 h-full rounded-full transition-all duration-1000" style={{ width: `${progressPercentage}%` }}></div>
                     </div>
                 </div>
 
-                <div className="bg-[#1e293b] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
-                    <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-                        <h4 className="text-lg font-bold text-white">📅 Recent Attendance</h4>
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono">Real-time Logs</span>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-slate-900/50 text-slate-500 text-[10px] uppercase font-black tracking-widest">
-                                <tr>
-                                    <th className="px-8 py-4">Date</th>
-                                    <th className="px-8 py-4">Clock In</th>
-                                    <th className="px-8 py-4">Clock Out</th>
-                                    <th className="px-8 py-4">Hours</th>
-                                    <th className="px-8 py-4 text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-800/50">
-                                {history.length > 0 ? history.map((row) => (
-                                    <tr key={row.id} className="hover:bg-slate-800/30 transition-colors">
-                                        <td className="px-8 py-5 text-sm font-bold text-slate-300">{row.date}</td>
-                                        <td className="px-8 py-5 text-sm font-mono text-emerald-400 font-bold">{row.clock_in}</td>
-                                        <td className="px-8 py-5 text-sm font-mono text-slate-400">
-                                            {row.clock_out ? <span className="text-red-400 font-bold">{row.clock_out}</span> : <span className="text-slate-600 italic animate-pulse">Session Active...</span>}
-                                        </td>
-                                        <td className="px-8 py-5 text-sm font-mono text-slate-300">{row.total_hours ? `${Number(row.total_hours).toFixed(2)}h` : '--'}</td>
-                                        <td className="px-8 py-5 text-right">
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${row.status === 'Present' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>{row.status}</span>
-                                        </td>
-                                    </tr>
-                                )) : <tr><td colSpan={5} className="px-8 py-10 text-center text-slate-500 text-sm italic">No records found.</td></tr>}
-                            </tbody>
-                        </table>
+                <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl group">
+                    <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em]">Attendance Summary</p>
+                    <div className="flex justify-between items-center mt-3">
+                        <h3 className="text-5xl font-bold text-white tabular-nums">{report.days_present} <span className="text-lg text-slate-500 font-medium uppercase tracking-widest">Days</span></h3>
+                        <div className="text-right">
+                            <p className="text-amber-400 text-sm font-black italic">{report.days_late} LATE ARRIVALS</p>
+                            <p className="text-slate-600 text-[10px] uppercase font-bold">System Verified</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </>
+
+            <div className="bg-[#1e293b] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+                <div className="p-6 border-b border-slate-800 bg-slate-900/20 flex justify-between items-center">
+                    <h4 className="text-lg font-bold text-white">📅 Attendance History</h4>
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-slate-900/50 text-slate-500 text-[10px] uppercase font-black tracking-[0.15em]">
+                            <tr>
+                                <th className="px-8 py-5">Date</th>
+                                <th className="px-8 py-5">Clock In</th>
+                                <th className="px-8 py-5">Clock Out</th>
+                                <th className="px-8 py-5">Total Hours</th>
+                                <th className="px-8 py-5 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/50">
+                            {history.length > 0 ? history.map((row) => (
+                                <tr key={row.id} className="hover:bg-slate-800/30 transition-colors group">
+                                    <td className="px-8 py-5 text-sm font-bold text-slate-300">{row.date}</td>
+                                    <td className="px-8 py-5 text-sm font-mono text-emerald-400 group-hover:text-emerald-300 transition-colors">{row.clock_in}</td>
+                                    <td className="px-8 py-5 text-sm font-mono text-slate-400">
+                                        {row.clock_out ? <span className="text-red-400/80">{row.clock_out}</span> : <span className="italic text-blue-400 animate-pulse font-bold">Active...</span>}
+                                    </td>
+                                    <td className="px-8 py-5 text-sm font-mono text-slate-300">
+                                        {row.total_hours ? `${Number(row.total_hours).toFixed(2)}h` : '--'}
+                                    </td>
+                                    <td className="px-8 py-5 text-right">
+                                        <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                            row.status === 'Present' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 
+                                            row.status === 'Late' ? 'bg-amber-500/10 text-amber-400 border border-amber-400/20' : 
+                                            'bg-red-500/10 text-red-500 border border-red-500/20'
+                                        }`}>
+                                            {row.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr><td colSpan={5} className="px-8 py-16 text-center text-slate-500 text-sm italic font-mono">No records found.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     );
 };
 

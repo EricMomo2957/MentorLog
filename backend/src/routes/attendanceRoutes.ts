@@ -6,6 +6,7 @@ import {
     getMyAttendanceHistory // Make sure this is exported in your controller
 } from '../controllers/attendanceController';
 import { protect } from '../middleware/authMiddleware'; 
+import { addManualLog } from '../controllers/attendanceController';
 
 const router = Router();
 
@@ -19,5 +20,5 @@ router.get('/history', protect, getMyAttendanceHistory);
 // --- ADMIN ACTIONS ---
 router.get('/all', protect, getAllAttendance);
 router.get('/weekly-report', protect, getWeeklyReport);
-
+router.post('/manual-log', protect, addManualLog);
 export default router;
