@@ -22,6 +22,7 @@ import StudentProfile from './pages/student/StudentProfile';
 import StudentSettings from './pages/student/StudentSettings';
 import StudentCalendar from './pages/student/StudentCalendar';
 
+
 function App() {
   return (
     <Router>

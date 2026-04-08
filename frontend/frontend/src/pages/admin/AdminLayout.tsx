@@ -2,14 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import logoPhoto from '../../assets/mentorlogOption.png'; 
 
-// 1. Removed the Task interface since it's no longer used here
-
 interface AdminLayoutProps {
     children: React.ReactNode;
-    // 2. Removed tasks? from the props interface
 }
 
-// 3. Removed tasks from the component arguments
 const AdminLayout = ({ children }: AdminLayoutProps) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -25,6 +21,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
         { path: '/manage-students', label: 'Student Directory', icon: '👥' },
         { path: '/manage-attendance', label: 'Attendance Logs', icon: '📅' },
+        { path: '/manage-requests', label: 'Manage Requests', icon: '📩' }, // Added new link here
         { path: '/admin-calendar', label: 'Schedules & Events', icon: '🗓️' },
         { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
         { path: '/admin-profile', label: 'My Profile', icon: '👤' },
@@ -35,7 +32,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
             {/* --- SIDEBAR --- */}
             <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50 overflow-hidden">
-                <div className="mb-10 px-2 shrink-0">
+                <div className="mb-8 px-2 shrink-0">
                     <div className="flex items-center gap-4 mb-8">
                         <div className="relative group">
                             <div className="absolute -inset-1 bg-blue-500/20 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
@@ -74,8 +71,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     </Link>
                 </div>
 
-                {/* --- MAIN NAV --- */}
-                <nav className="flex-1 overflow-y-hidden space-y-1.5 mb-8 pr-2">
+                {/* --- MAIN NAV (Changed overflow-y-hidden to auto for better accessibility) --- */}
+                <nav className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 mb-6 pr-2">
                     {navLinks.map((link) => {
                         const isActive = location.pathname === link.path;
                         return (
@@ -95,7 +92,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                 </nav>
 
                 {/* --- LOGOUT SECTION --- */}
-                <div className="pt-6 border-t border-slate-800/60 shrink-0">
+                <div className="pt-4 border-t border-slate-800/60 shrink-0">
                     <button 
                         onClick={() => setShowLogoutModal(true)} 
                         className="w-full flex items-center justify-between px-5 py-3.5 rounded-xl text-sm font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group border border-transparent hover:border-red-500/20"
