@@ -8,7 +8,7 @@ import {
     adminOnly 
 } from '../controllers/adminController';
 import { protect } from '../middleware/authMiddleware';
-
+import { getAllRequests, updateRequestStatus } from '../controllers/requestController';
 const router = express.Router();
 
 /**
