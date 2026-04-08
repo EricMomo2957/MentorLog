@@ -13,6 +13,7 @@ import WeeklyReports from './pages/admin/WeeklyReports';
 import ManageTasks from './pages/admin/ManageTasks'; 
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminCalendar from './pages/admin/AdminCalendar';
+import ManageRequest from './pages/admin/ManageRequest';
 
 // Student Imports
 import StudentLayout from './pages/student/StudentLayout';
@@ -21,8 +22,7 @@ import MyTasks from './pages/student/MyTasks';
 import StudentProfile from './pages/student/StudentProfile';
 import StudentSettings from './pages/student/StudentSettings';
 import StudentCalendar from './pages/student/StudentCalendar';
-import ManageRequest from './pages/admin/ManageRequest';
-
+import StudentRequest from './pages/student/StudentRequest'; // Import the new component
 
 function App() {
   return (
@@ -38,6 +38,7 @@ function App() {
           { path: "/admin-dashboard", element: <AdminDashboard /> },
           { path: "/manage-students", element: <ManageStudents /> },
           { path: "/manage-attendance", element: <ManageAttendance /> },
+          { path: "/manage-requests", element: <ManageRequest /> }, // Added here for clean mapping
           { path: "/admin-calendar", element: <AdminCalendar /> }, 
           { path: "/manage-tasks", element: <ManageTasks /> },
           { path: "/weekly-reports", element: <WeeklyReports /> },
@@ -64,6 +65,7 @@ function App() {
           { path: "/student-profile", element: <StudentProfile /> },
           { path: "/settings", element: <StudentSettings /> },
           { path: "/campus-events", element: <StudentCalendar /> },
+          { path: "/student-request", element: <StudentRequest /> }, // The New Student Submission Page
           { 
             path: "/my-attendance", 
             element: (
@@ -86,15 +88,7 @@ function App() {
             } 
           />
         ))}
-        // Inside your Routes in App.tsx
-        <Route 
-          path="/manage-requests" 
-          element={
-            <AdminLayout>
-              <ManageRequest />
-            </AdminLayout>
-          } 
-        />
+
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

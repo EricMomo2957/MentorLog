@@ -45,7 +45,6 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                     }`}>
                         🏠 Control Center
                     </Link>
-                    
 
                     <Link to="/tasks" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
                         isActive('/tasks') 
@@ -55,13 +54,21 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         📝 My Tasks
                     </Link>
 
-                    {/* NEW: CAMPUS EVENTS LINK */}
                     <Link to="/campus-events" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
                         isActive('/campus-events') 
                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
                         : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
                     }`}>
                         🗓️ Campus Events
+                    </Link>
+
+                    {/* ADDED: STUDENT REQUEST LINK */}
+                    <Link to="/student-request" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
+                        isActive('/student-request') 
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
+                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
+                    }`}>
+                        📩 Service Request
                     </Link>
 
                     <div className="pt-6 mt-6 border-t border-slate-800">
