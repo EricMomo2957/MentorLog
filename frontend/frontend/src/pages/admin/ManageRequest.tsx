@@ -12,13 +12,13 @@ interface ServiceRequest {
 }
 
 const ManageRequest = () => {
-    // Updated to match your new Option 1 Route prefix
     const REQUEST_API_URL = 'http://localhost:5000/api/requests'; 
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<RequestStatus | 'All'>('All');
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+    // Toast Timer
     useEffect(() => {
         if (toast) {
             const timer = setTimeout(() => setToast(null), 3000);
@@ -27,11 +27,16 @@ const ManageRequest = () => {
     }, [toast]);
 
     const fetchRequests = useCallback(async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setToast({ message: "No authentication token found", type: 'error' });
+            return;
+        }
+
         setLoading(true);
         try {
-            // URL updated to /api/requests/all
             const response = await fetch(`${REQUEST_API_URL}/all`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
             if (Array.isArray(data)) {
@@ -50,28 +55,30 @@ const ManageRequest = () => {
     }, [fetchRequests]);
 
     const handleUpdateStatus = async (requestId: number, newStatus: RequestStatus) => {
+        const token = localStorage.getItem('token');
         try {
-            // URL updated to /api/requests/:id/status
             const response = await fetch(`${REQUEST_API_URL}/${requestId}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ status: newStatus })
             });
 
             if (response.ok) {
+                // Optimized UI: Update local state immediately
                 setRequests(prev => prev.map(req => 
                     req.id === requestId ? { ...req, status: newStatus } : req
                 ));
-                setToast({ message: `Request marked as ${newStatus}`, type: 'success' });
+                setToast({ message: `Request successfully marked as ${newStatus}`, type: 'success' });
             } else {
-                setToast({ message: "Update failed", type: 'error' });
+                const errorData = await response.json();
+                setToast({ message: errorData.message || "Update failed", type: 'error' });
             }
         } catch (error) {
             console.error("Update failed:", error);
-            setToast({ message: "Network error", type: 'error' });
+            setToast({ message: "Network error occurred", type: 'error' });
         }
     };
 
@@ -88,6 +95,7 @@ const ManageRequest = () => {
 
     return (
         <div className="max-w-6xl mx-auto p-6 space-y-6 pb-20">
+            {/* Toast Notification */}
             {toast && (
                 <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-2xl shadow-xl border transition-all animate-in fade-in slide-in-from-top-4 ${
                     toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-red-500/10 border-red-500 text-red-500'
@@ -98,6 +106,7 @@ const ManageRequest = () => {
                 </div>
             )}
 
+            {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
                 <div>
                     <h1 className="text-3xl font-black text-white italic tracking-tight">
@@ -125,6 +134,7 @@ const ManageRequest = () => {
                 </div>
             </div>
 
+            {/* Content Section */}
             <div className="grid gap-4">
                 {loading ? (
                     <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-20 text-center">
@@ -151,6 +161,7 @@ const ManageRequest = () => {
                                     </div>
                                 </div>
 
+                                {/* Action Buttons */}
                                 <div className="flex flex-row md:flex-col justify-end gap-2 shrink-0">
                                     <button 
                                         disabled={req.status === 'Processing'}
