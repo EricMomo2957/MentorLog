@@ -21,6 +21,7 @@ import MyTasks from './pages/student/MyTasks';
 import StudentProfile from './pages/student/StudentProfile';
 import StudentSettings from './pages/student/StudentSettings';
 import StudentCalendar from './pages/student/StudentCalendar';
+import ManageRequest from './pages/admin/ManageRequest';
 
 
 function App() {
@@ -85,7 +86,15 @@ function App() {
             } 
           />
         ))}
-
+        // Inside your Routes in App.tsx
+        <Route 
+          path="/manage-requests" 
+          element={
+            <AdminLayout>
+              <ManageRequest />
+            </AdminLayout>
+          } 
+        />
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
