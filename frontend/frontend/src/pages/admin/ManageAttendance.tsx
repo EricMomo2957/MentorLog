@@ -15,6 +15,7 @@ const ManageAttendance = () => {
     const [loading, setLoading] = useState(true);
 
     const fetchAllAttendance = async () => {
+        setLoading(true);
         try {
             const response = await fetch('http://localhost:5000/api/attendance/all', {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -34,75 +35,94 @@ const ManageAttendance = () => {
         fetchAllAttendance();
     }, []);
 
-    const getStatusColor = (status: string) => {
+    const getStatusStyle = (status: string) => {
         switch (status) {
-            case 'Present': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-            case 'Late': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-            default: return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+            case 'Present': return 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5';
+            case 'Late': return 'text-amber-500 border-amber-500/30 bg-amber-500/5';
+            default: return 'text-slate-500 border-slate-700 bg-slate-800/20';
         }
     };
 
     return (
-        <div className="space-y-8">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">Student Attendance</h1>
-                    <p className="text-slate-400 mt-1 text-sm font-medium">Monitor and manage all student time logs in real-time.</p>
+        <div className="max-w-6xl mx-auto py-10 px-4 bg-[#020617] text-slate-200 space-y-8">
+            
+            {/* LEDGER HEADER */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0f172a] p-8 border border-slate-800 rounded-sm">
+                <div className="space-y-1">
+                    <h1 className="text-[10px] font-black tracking-[0.4em] text-slate-500 uppercase">Attendance Monitoring System</h1>
+                    <h2 className="text-4xl font-light text-white tracking-tighter uppercase">
+                        Student <span className="font-bold text-blue-500 italic underline decoration-blue-500/30 underline-offset-8">Attendance</span>
+                    </h2>
+                    <p className="text-[10px] font-mono text-slate-600 mt-2 uppercase">Real-time verification of student time logs and duration.</p>
                 </div>
+
                 <button 
                     onClick={fetchAllAttendance}
-                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2"
+                    className="px-8 py-4 bg-slate-900 text-blue-400 border border-slate-700 rounded-sm font-black uppercase tracking-widest text-[11px] hover:bg-slate-800 active:scale-95 transition-all flex items-center gap-3"
                 >
-                    <span className="text-lg">🔄</span> Refresh Logs
+                    <span className="animate-spin-slow">↻</span> Synchronize Data
                 </button>
             </div>
 
-            {/* Attendance Table */}
-            <div className="bg-[#0f172a]/50 border border-slate-800 rounded-3xl overflow-hidden backdrop-blur-md">
+            {/* TRANSACTION LOG TABLE */}
+            <div className="bg-[#0f172a] border border-slate-800 rounded-sm overflow-hidden shadow-2xl">
+                <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/30 flex justify-between items-center">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Live Entry Ledger</h3>
+                    <div className="text-[10px] font-mono text-slate-600 uppercase">{records.length} Logs Active</div>
+                </div>
+
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left font-mono">
                         <thead>
-                            <tr className="border-b border-slate-800 bg-slate-900/50">
-                                <th className="px-6 py-5 text-[10px] uppercase tracking-widest text-slate-500 font-bold">Student Name</th>
-                                <th className="px-6 py-5 text-[10px] uppercase tracking-widest text-slate-500 font-bold">Date</th>
-                                <th className="px-6 py-5 text-[10px] uppercase tracking-widest text-slate-500 font-bold">Clock In</th>
-                                <th className="px-6 py-5 text-[10px] uppercase tracking-widest text-slate-500 font-bold">Clock Out</th>
-                                <th className="px-6 py-5 text-[10px] uppercase tracking-widest text-slate-500 font-bold">Duration</th>
-                                <th className="px-6 py-5 text-[10px] uppercase tracking-widest text-slate-500 font-bold text-center">Status</th>
+                            <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800 bg-slate-900/20">
+                                <th className="px-8 py-5">Identity Ref.</th>
+                                <th className="px-8 py-5">Date Index</th>
+                                <th className="px-8 py-5">Time In / Out</th>
+                                <th className="px-8 py-5">Duration</th>
+                                <th className="px-8 py-5 text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
                             {loading ? (
                                 Array(5).fill(0).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td colSpan={6} className="px-6 py-4 bg-slate-800/10 h-12"></td>
+                                        <td colSpan={5} className="px-8 py-6 bg-slate-900/10">
+                                            <div className="h-2 bg-slate-800 rounded-full w-full"></div>
+                                        </td>
                                     </tr>
                                 ))
                             ) : records.length > 0 ? (
                                 records.map((record) => (
-                                    <tr key={record.id} className="hover:bg-blue-500/5 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-blue-400">
-                                                    {record.student_name.charAt(0)}
+                                    <tr key={record.id} className="hover:bg-slate-800/30 transition-colors group">
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-8 h-8 rounded-sm bg-slate-900 border border-slate-700 flex items-center justify-center text-[11px] font-black text-blue-500">
+                                                    {record.student_name.charAt(0).toUpperCase()}
                                                 </div>
-                                                <span className="text-sm font-bold text-slate-200 group-hover:text-white">{record.student_name}</span>
+                                                <span className="text-xs font-bold text-slate-200 uppercase tracking-tight">{record.student_name}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-slate-400 font-medium">
-                                            {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        <td className="px-8 py-5">
+                                            <div className="text-xs text-slate-400 uppercase">
+                                                {new Date(record.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-emerald-400/80 font-mono font-bold">{record.clock_in}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-400 font-mono italic">
-                                            {record.clock_out || 'Session Active...'}
+                                        <td className="px-8 py-5">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-emerald-500 font-bold">{record.clock_in}</span>
+                                                <span className={`text-[10px] ${record.clock_out ? 'text-slate-500' : 'text-blue-500 italic'}`}>
+                                                    {record.clock_out || '>> ACTIVE'}
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm font-bold text-slate-300">
-                                            {record.total_hours ? `${Number(record.total_hours).toFixed(2)} hrs` : '--'}
+                                        <td className="px-8 py-5">
+                                            <div className="text-xs font-black text-slate-400">
+                                                {record.total_hours ? `${Number(record.total_hours).toFixed(2)}H` : '---'}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-8 py-5">
                                             <div className="flex justify-center">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border tracking-tighter ${getStatusColor(record.status)}`}>
+                                                <span className={`px-4 py-1.5 border rounded-sm text-[9px] font-black uppercase tracking-widest ${getStatusStyle(record.status)}`}>
                                                     {record.status}
                                                 </span>
                                             </div>
@@ -111,14 +131,20 @@ const ManageAttendance = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium italic">
-                                        No attendance records found in the database.
+                                    <td colSpan={5} className="px-8 py-16 text-center text-slate-600 font-mono text-[10px] uppercase tracking-widest">
+                                        [ No transaction records found ]
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            {/* FOOTER AUDIT NOTE */}
+            <div className="text-[9px] font-mono text-slate-700 uppercase flex justify-between px-2">
+                <span>System Time: {new Date().toLocaleTimeString()}</span>
+                <span>Verification Status: encrypted-node-500</span>
             </div>
         </div>
     );
