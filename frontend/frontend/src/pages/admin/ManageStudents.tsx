@@ -121,7 +121,7 @@ const ManageStudents = () => {
                                     <h3 className="text-lg font-black text-white uppercase italic tracking-tighter leading-tight group-hover:text-blue-400 transition-colors">
                                         {student.full_name}
                                     </h3>
-                                    <p className="text-[10px] font-bold text-slate-500 truncate max-w-[200px]">{student.email}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 truncate max-w-50">{student.email}</p>
                                 </div>
                                 <div className="w-12 h-12 bg-black border border-slate-800 flex items-center justify-center text-xl font-black text-slate-700 group-hover:text-blue-500 transition-all italic">
                                     {student.full_name.charAt(0)}
@@ -172,7 +172,7 @@ const ManageStudents = () => {
 
             {/* Edit Modal (Keeping your existing logic/styles but with corrected z-indexes) */}
             {editingStudent && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4">
                     <div className="bg-[#020617] border-2 border-slate-800 w-full max-w-lg p-10 shadow-[0_0_80px_rgba(0,0,0,1)] relative">
                         <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-blue-500 -translate-x-1 -translate-y-1"></div>
                         <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-10 border-b-2 border-slate-800 pb-5">
@@ -211,7 +211,7 @@ const ManageStudents = () => {
                         </div>
                         <div className="flex gap-4 mt-12">
                             <button onClick={() => setEditingStudent(null)} className="flex-1 py-4 border border-slate-800 text-slate-600 font-black text-[10px] uppercase tracking-widest hover:text-white hover:bg-slate-900 transition-all">Abort_Changes</button>
-                            <button onClick={handleUpdate} className="flex-[2] py-4 bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-600 hover:text-white transition-all shadow-xl">Commit_Registry</button>
+                            <button onClick={handleUpdate} className="flex-2 py-4 bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-600 hover:text-white transition-all shadow-xl">Commit_Registry</button>
                         </div>
                     </div>
                 </div>
