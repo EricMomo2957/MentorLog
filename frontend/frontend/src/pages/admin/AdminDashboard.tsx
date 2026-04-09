@@ -1,40 +1,46 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
-    PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, 
+    PieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
     BarChart, Bar, XAxis, YAxis, CartesianGrid 
 } from 'recharts';
 import TaskFeed from './TaskFeed';
 
 // --- TYPES ---
-interface User {
-    id: number;
-    full_name: string;
-    email: string;
-    role: 'admin' | 'student';
-    created_at: string;
+interface User { 
+    id: number; 
+    full_name: string; 
+    email: string; 
+    role: 'admin' | 'student'; 
+    created_at: string; 
 }
 
-interface AttendanceLog {
-    id: number;
-    student_name: string;
-    clock_in: string;
-    clock_out: string | null;
-    status: 'Present' | 'Late' | 'Absent' | 'Excused';
-    is_active: boolean;
+interface AttendanceLog { 
+    id: number; 
+    student_name: string; 
+    clock_in: string; 
+    clock_out: string | null; 
+    status: 'Present' | 'Late' | 'Absent' | 'Excused'; 
+    is_active: boolean | number; 
 }
 
-interface TaskLog {
-    id: number;
+interface TaskLog { 
+    id: number; 
     user_id: number; 
     student_name?: string; 
-    title: string;
-    task_description: string;
-    status: 'Pending' | 'In-Progress' | 'Completed';
-    due_date: string;
+    title: string; 
+    task_description: string; 
+    status: 'Pending' | 'In-Progress' | 'Completed'; 
+    due_date: string; 
 }
 
-const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
+// Fixed type for the reduce accumulator to avoid 'any' error
+interface ChartData {
+    name: string;
+    tasks: number;
+}
+
 const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge';
+const LEDGER_THEME = ['#0ea5e9', '#334155', '#475569', '#1e293b']; 
 
 const AdminDashboard = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -42,8 +48,6 @@ const AdminDashboard = () => {
     const [tasks, setTasks] = useState<TaskLog[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
-    // --- TASK ASSIGNMENT STATE ---
     const [showModal, setShowModal] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
     const [formData, setFormData] = useState({ title: '', description: '', due_date: '' });
@@ -52,84 +56,64 @@ const AdminDashboard = () => {
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
         const token = localStorage.getItem('token');
-        const headers = { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        };
-
+        const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
         try {
             const [userRes, attRes, taskRes] = await Promise.all([
                 fetch('http://localhost:5000/api/admin/users/all', { headers }), 
                 fetch('http://localhost:5000/api/attendance/all', { headers }),
                 fetch('http://localhost:5000/api/tasks/all', { headers })
             ]);
-
             const userData = await userRes.json();
             const attData = await attRes.json();
             const taskData = await taskRes.json();
-
+            
             if (userData.success) setUsers(userData.data || []);
             if (attData.success) setLogs(attData.data || []);
             if (taskData.success) setTasks(taskData.data || []);
-            
         } catch (err) {
-            console.error("Dashboard Fetch Error:", err);
+            console.error("Fetch Error:", err);
         } finally {
-            setTimeout(() => setIsLoading(false), 400);
+            // Prevent state updates if component unmounts (optional but cleaner)
+            setIsLoading(false);
         }
     }, []);
 
-    useEffect(() => {
-        fetchAllData();
+    useEffect(() => { 
+        fetchAllData(); 
     }, [fetchAllData]);
 
-    // --- LOGIC: ASSIGN TASK ---
     const handleAssignTask = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedStudent) {
-            console.error("No student selected");
-            return;
-        }
-
+        if (!selectedStudent) return;
         setIsSubmitting(true);
-
-        const newTask = {
-            user_id: selectedStudent.id,
-            title: formData.title,
-            task_description: formData.description,
-            due_date: formData.due_date
-        };
-
         try {
             const response = await fetch(`${PHP_BRIDGE_URL}/post-task-admin.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTask)
+                body: JSON.stringify({
+                    user_id: selectedStudent.id,
+                    title: formData.title,
+                    task_description: formData.description,
+                    due_date: formData.due_date
+                })
             });
-            
-            const resText = await response.text();
-            const resData = JSON.parse(resText);
-            
+            const resData = await response.json();
             if (resData.status === "success") {
-                alert(`Task assigned to ${selectedStudent.full_name}!`);
                 setShowModal(false);
                 setFormData({ title: '', description: '', due_date: '' });
                 fetchAllData(); 
-            } else {
-                alert("Error: " + (resData.message || "Failed to post task"));
             }
-        } catch (error) {
-            console.error("Assignment failed:", error);
-            alert("Connection error. Is the PHP server running?");
-        } finally {
-            setIsSubmitting(false);
+        } catch (error) { 
+            console.error(error); 
+        } finally { 
+            setIsSubmitting(false); 
         }
     };
 
-    // --- DERIVED STATS ---
-    const totalUsers = users.length;
-    const totalTasks = tasks.length;
-    const activeCount = logs.filter(log => log.is_active === true || Number(log.is_active) === 1).length;
+    // Stats Logic
+    const activeSessions = logs.filter(l => l.is_active === true || l.is_active === 1).length;
+    const totalPresentAndLate = logs.filter(l => l.status === 'Present' || l.status === 'Late').length;
+    const attendanceRate = logs.length > 0 ? ((totalPresentAndLate / logs.length) * 100).toFixed(1) : "0.0";
     
     const attendanceStats = [
         { name: 'Present', value: logs.filter(l => l.status === 'Present').length },
@@ -138,129 +122,122 @@ const AdminDashboard = () => {
         { name: 'Excused', value: logs.filter(l => l.status === 'Excused').length },
     ].filter(item => item.value > 0);
 
-    const taskBarData = Object.values(tasks.reduce((acc: Record<string, {name: string, tasks: number}>, curr) => {
-        const identifier = curr.student_name || `ID: ${curr.user_id}`;
-        const displayName = identifier.split(' ')[0];
-        acc[identifier] = { name: displayName, tasks: (acc[identifier]?.tasks || 0) + 1 };
+    // Corrected the 'any' error by providing proper Record types
+    const taskBarData = Object.values(tasks.reduce((acc: Record<string, ChartData>, curr) => {
+        const name = (curr.student_name || `ID:${curr.user_id}`).split(' ')[0];
+        if (!acc[name]) {
+            acc[name] = { name, tasks: 0 };
+        }
+        acc[name].tasks += 1;
         return acc;
     }, {}));
 
-    const filteredUsers = users.filter(user => 
-        user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const totalPresentAndLate = logs.filter(l => l.status === 'Present' || l.status === 'Late').length;
-    const attendanceRate = logs.length > 0 ? ((totalPresentAndLate / logs.length) * 100).toFixed(0) : 0;
-
     return (
-        <div className="animate-in fade-in duration-500 pb-20">
-            {/* Header Section */}
-            <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">
-                        Admin <span className="text-blue-500">Analytics</span>
-                    </h1>
-                    <p className="text-slate-400 mt-1">Real-time oversight and user management.</p>
+        <div className="font-mono text-slate-300">
+            {/* --- TOP HUD --- */}
+            <div className="flex flex-col md:flex-row justify-between items-end mb-12 border-b-2 border-slate-800 pb-6">
+                <div className="space-y-1">
+                    <div className="text-blue-500 text-[10px] font-black tracking-[0.4em] uppercase">SYSTEM_ANALYTICS_v2.0</div>
+                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">Administrative <span className="not-italic text-slate-600">Overview</span></h1>
                 </div>
                 <button 
-                    onClick={fetchAllData} 
-                    disabled={isLoading}
-                    className="p-3 bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all disabled:opacity-50"
+                    onClick={fetchAllData}
+                    className="p-4 border border-slate-800 bg-slate-900/50 hover:border-blue-500/50 transition-all group"
                 >
-                    <svg className={`w-5 h-5 text-blue-400 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
+                    <div className={`w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
                 </button>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {/* --- METRIC TABLE GRID --- */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-l border-slate-800 mb-12 shadow-2xl">
                 {[
-                    { label: 'Total Users', val: totalUsers, color: 'text-blue-500', glow: 'shadow-blue-500/10' },
-                    { label: 'Total Tasks', val: totalTasks, color: 'text-purple-500', glow: 'shadow-purple-500/10' },
-                    { label: 'Active Now', val: activeCount, color: 'text-emerald-500', glow: 'shadow-emerald-500/10' },
-                    { label: 'Attendance Rate', val: `${attendanceRate}%`, color: 'text-amber-500', glow: 'shadow-amber-500/10' }
+                    { label: 'USER_REGISTRY', val: users.length, unit: 'UID' },
+                    { label: 'TASK_PENDING', val: tasks.length, unit: 'LOG' },
+                    { label: 'ACTIVE_SESSION', val: activeSessions, unit: 'CUR' },
+                    { label: 'COMPLIANCE_IDX', val: `${attendanceRate}%`, unit: 'PCT' }
                 ].map((stat, i) => (
-                    <div key={i} className={`bg-[#1e293b]/50 backdrop-blur-sm p-6 rounded-2xl border border-slate-800 shadow-xl ${stat.glow}`}>
-                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">{stat.label}</p>
-                        <h4 className={`text-3xl font-black mt-2 ${stat.color}`}>{isLoading ? '---' : stat.val}</h4>
+                    <div key={i} className="p-8 border-r border-b border-slate-800 hover:bg-slate-900/40 transition-colors group">
+                        <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest mb-4 group-hover:text-blue-500">{stat.label}</p>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-4xl font-black text-white">{stat.val}</span>
+                            <span className="text-[10px] text-slate-700 font-bold uppercase">{stat.unit}</span>
+                        </div>
                     </div>
                 ))}
             </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div className="bg-[#1e293b]/50 backdrop-blur-sm p-8 rounded-3xl border border-slate-800 h-96 shadow-2xl">
-                    <h3 className="text-white font-bold mb-8 text-xs uppercase tracking-[0.2em]">Attendance Distribution</h3>
+            {/* --- DATA VISUALIZATION LEDGER --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-slate-800 border border-slate-800 mb-12">
+                <div className="bg-[#020617] p-10">
+                    <div className="border-l-4 border-blue-500 pl-4 mb-10">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Log: Attendance_Data</h3>
+                    </div>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            {attendanceStats.length > 0 ? (
-                                <PieChart>
-                                    <Pie data={attendanceStats} innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="value">
-                                        {attendanceStats.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />)}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }} />
-                                    <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: '10px' }}/>
-                                </PieChart>
-                            ) : <div className="text-center py-20 text-slate-500 italic">No logs found</div>}
+                            <PieChart>
+                                <Pie data={attendanceStats} innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="value">
+                                    {attendanceStats.map((_, index) => <Cell key={`cell-${index}`} fill={LEDGER_THEME[index % LEDGER_THEME.length]} stroke="#020617" strokeWidth={4} />)}
+                                </Pie>
+                                <Tooltip contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', fontFamily: 'monospace', fontSize: '10px' }} />
+                            </PieChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="bg-[#1e293b]/50 backdrop-blur-sm p-8 rounded-3xl border border-slate-800 h-96 shadow-2xl">
-                    <h3 className="text-white font-bold mb-8 text-xs uppercase tracking-[0.2em]">Task Submissions</h3>
+                <div className="bg-[#020617] p-10">
+                    <div className="border-l-4 border-slate-700 pl-4 mb-10">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Log: Task_Registry_Volume</h3>
+                    </div>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={taskBarData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                                <XAxis dataKey="name" stroke="#64748b" fontSize={10} />
-                                <YAxis stroke="#64748b" fontSize={10} />
-                                <Tooltip cursor={{fill: '#334155', opacity: 0.4}} contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }} />
-                                <Bar dataKey="tasks" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                                <CartesianGrid strokeDasharray="2 2" vertical={false} stroke="#1e293b" />
+                                <XAxis dataKey="name" stroke="#475569" fontSize={10} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#475569" fontSize={10} axisLine={false} tickLine={false} />
+                                <Bar dataKey="tasks" fill="#0ea5e9" barSize={12} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
             </div>
 
-            {/* User Directory + Task Feed */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between px-2">
-                        <h3 className="text-white font-bold text-xs uppercase tracking-[0.2em]">User Directory</h3>
-                        <input
-                            type="text"
-                            placeholder="Search students..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-[#1e293b]/80 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white w-64 outline-none"
+            {/* --- DIRECTORY SECTION --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div className="lg:col-span-2">
+                    <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-2">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 underline underline-offset-8">Master_User_Registry</h3>
+                        <input 
+                            type="text" placeholder="FILTER_BY_IDENTIFIER..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                            className="bg-transparent border border-slate-800 px-4 py-2 text-[10px] text-white focus:border-blue-500 outline-none w-64 font-black uppercase"
                         />
                     </div>
-                    <div className="bg-[#1e293b]/40 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+                    
+                    <div className="border border-slate-800 bg-slate-900/10">
                         <table className="w-full text-left">
-                            <thead className="bg-slate-900/40 text-slate-500 text-[10px] uppercase font-black border-b border-slate-800">
-                                <tr>
-                                    <th className="p-6">User Profile</th>
-                                    <th className="p-6">Action</th>
+                            <thead className="bg-slate-800/30 text-[9px] uppercase text-slate-500 font-black">
+                                <tr className="border-b border-slate-800">
+                                    <th className="px-6 py-4">FILE_INDEX</th>
+                                    <th className="px-6 py-4">USER_CREDENTIALS</th>
+                                    <th className="px-6 py-4 text-right">DIRECTIVE</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800/40 text-sm">
-                                {filteredUsers.map((user) => (
-                                    <tr key={user.id} className="hover:bg-blue-500/5 transition-colors group">
-                                        <td className="p-6">
+                            <tbody className="divide-y divide-slate-800/50">
+                                {users.filter(u => u.full_name.toLowerCase().includes(searchTerm.toLowerCase())).map((user) => (
+                                    <tr key={user.id} className="hover:bg-blue-500/5 group">
+                                        <td className="px-6 py-4 text-[10px] text-slate-600 font-bold">#{user.id.toString().padStart(4, '0')}</td>
+                                        <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-slate-200">{user.full_name}</span>
-                                                <span className="text-[11px] text-slate-500 font-mono">{user.email}</span>
+                                                <span className="text-sm font-black text-slate-200 uppercase tracking-tighter">{user.full_name}</span>
+                                                <span className="text-[10px] text-slate-500 italic lowercase">{user.email}</span>
                                             </div>
                                         </td>
-                                        <td className="p-6 text-right">
+                                        <td className="px-6 py-4 text-right">
                                             {user.role === 'student' && (
                                                 <button 
                                                     onClick={() => { setSelectedStudent(user); setShowModal(true); }}
-                                                    className="bg-blue-600/10 text-blue-400 border border-blue-500/20 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all"
+                                                    className="border border-slate-800 bg-black px-4 py-2 text-[9px] font-black uppercase text-slate-500 hover:text-white hover:border-blue-500 transition-all"
                                                 >
-                                                    Assign Task
+                                                    [ EXECUTE_TASK ]
                                                 </button>
                                             )}
                                         </td>
@@ -270,64 +247,46 @@ const AdminDashboard = () => {
                         </table>
                     </div>
                 </div>
+
                 <div className="lg:col-span-1">
-                    <TaskFeed tasks={tasks} />
+                    <div className="flex items-center gap-2 mb-6 border-b border-slate-800 pb-2">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 italic">Sequential_Event_Feed</h3>
+                    </div>
+                    <div className="border border-slate-800 p-4 bg-slate-950/50">
+                        <TaskFeed tasks={tasks} />
+                    </div>
                 </div>
             </div>
 
-            {/* --- ASSIGN TASK MODAL --- */}
+            {/* --- MODAL (System Prompt Style) --- */}
             {showModal && selectedStudent && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-[#1e293b] border border-slate-700 w-full max-w-md rounded-3xl p-8 shadow-2xl">
-                        <h2 className="text-xl font-black text-white uppercase tracking-tight mb-2">Assign <span className="text-blue-500">Task</span></h2>
-                        <p className="text-slate-400 text-xs mb-6">Assigning to: <span className="text-slate-200 font-bold">{selectedStudent.full_name}</span></p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-sm">
+                    <div className="bg-[#020617] border-2 border-slate-800 w-full max-w-md p-10 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-24 h-px bg-blue-500" />
                         
-                        <form onSubmit={handleAssignTask} className="space-y-4">
-                            <div>
-                                <label className="text-[10px] font-black uppercase text-slate-500 mb-1.5 block">Task Title</label>
-                                <input 
-                                    required
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500 outline-none"
-                                    placeholder="e.g. Weekly Report"
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                />
+                        <div className="mb-10">
+                            <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Directive_Form_001</h2>
+                            <p className="text-[10px] text-slate-600 font-black uppercase mt-1">Assign_Target: <span className="text-slate-300">{selectedStudent.full_name}</span></p>
+                        </div>
+                        
+                        <form onSubmit={handleAssignTask} className="space-y-8">
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase text-slate-600 tracking-widest">Obj_Title</label>
+                                <input required className="w-full bg-transparent border-b border-slate-800 p-2 text-sm text-white focus:border-blue-500 outline-none uppercase" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} placeholder="REQUIRED_FIELD" />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase text-slate-500 mb-1.5 block">Description</label>
-                                <textarea 
-                                    required
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white h-24 focus:border-blue-500 outline-none"
-                                    placeholder="Describe the objective..."
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                />
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase text-slate-600 tracking-widest">Obj_Description</label>
+                                <textarea required className="w-full bg-slate-950 border border-slate-800 p-4 text-sm text-white h-24 focus:border-blue-500 outline-none resize-none" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="INPUT_DATA_STREAM" />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase text-slate-500 mb-1.5 block">Due Date</label>
-                                <input 
-                                    required
-                                    type="date"
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500 outline-none"
-                                    value={formData.due_date}
-                                    onChange={(e) => setFormData({...formData, due_date: e.target.value})}
-                                />
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase text-slate-600 tracking-widest">Term_Date</label>
+                                <input required type="date" className="w-full bg-transparent border-b border-slate-800 p-2 text-sm text-white focus:border-blue-500 outline-none" value={formData.due_date} onChange={(e) => setFormData({...formData, due_date: e.target.value})} />
                             </div>
-                            <div className="flex gap-3 pt-4">
-                                <button 
-                                    type="button" 
-                                    disabled={isSubmitting}
-                                    onClick={() => setShowModal(false)} 
-                                    className="flex-1 px-4 py-3 text-xs font-black uppercase text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    disabled={isSubmitting}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-blue-900/40 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isSubmitting ? 'Sending...' : 'Send Task'}
+                            
+                            <div className="flex gap-4 pt-6">
+                                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-slate-600 hover:text-red-500 transition-colors">Abort</button>
+                                <button type="submit" disabled={isSubmitting} className="flex-2 bg-white text-black py-4 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-500 hover:text-white transition-all disabled:opacity-20">
+                                    {isSubmitting ? 'PROCESSING...' : 'CONFIRM_DIRECTIVE'}
                                 </button>
                             </div>
                         </form>
