@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
 // 1. IMPORT YOUR LOGO ASSET
-// Make sure your logo file is in src/assets and the name matches
 import mentorLogLogo from '../assets/mentorlogOption.png'; 
 
 const Login = () => {
@@ -12,6 +11,7 @@ const Login = () => {
         password: ''
     });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,22 +21,23 @@ const Login = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
         
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
             
-            if (response.status === 200) {
-                console.log("Login Response Data:", response.data);
+            // Your new authController returns { success: true, token, user: { id, role, name } }
+            if (response.data.success) {
+                const { token, user } = response.data;
 
-                const { token, role, full_name, id, user_id, user } = response.data;
-                const finalUserId = id || user_id || (user && user.id);
-
+                // Store data using the keys your dashboard and requests expect
                 localStorage.setItem('token', token);
-                localStorage.setItem('role', role);
-                localStorage.setItem('userName', full_name);
-                localStorage.setItem('userId', String(finalUserId));
+                localStorage.setItem('role', user.role);
+                localStorage.setItem('userName', user.name); // This maps to full_name
+                localStorage.setItem('userId', String(user.id));
                 
-                if (role === 'admin') {
+                // Redirect based on role
+                if (user.role === 'admin') {
                     navigate('/admin-dashboard');
                 } else {
                     navigate('/student-dashboard');
@@ -48,6 +49,8 @@ const Login = () => {
             } else {
                 setError('An unexpected error occurred.');
             }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -73,12 +76,11 @@ const Login = () => {
                 </div>
                 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-shake">
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-bounce">
                         <span>⚠️</span> {error}
                     </div>
                 )}
 
-                {/* FIXED: Form tags properly opened and closed */}
                 <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                     <div className="space-y-1.5">
                         <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Email Address</label>
@@ -105,9 +107,10 @@ const Login = () => {
                     
                     <button 
                         type="submit" 
-                        className="w-full bg-linear-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-black uppercase tracking-widest py-4 rounded-xl mt-4 transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-emerald-500/10"
+                        disabled={loading}
+                        className="w-full bg-linear-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-black uppercase tracking-widest py-4 rounded-xl mt-4 transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-emerald-500/10 disabled:opacity-50"
                     >
-                        Sign In
+                        {loading ? 'Authenticating...' : 'Sign In'}
                     </button>
                 </form>
 

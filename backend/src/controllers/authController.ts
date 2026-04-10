@@ -3,37 +3,53 @@ import pool from '../config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
+
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     try {
+        // 1. Database user lookup
         const [rows]: any = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         
-        if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         const user = rows[0];
+
+        // 2. Password comparison
         const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
 
-        if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
-
-        // --- UPDATED TOKEN LOGIC (7 DAY EXPIRATION) ---
+        // 3. UPDATED TOKEN LOGIC
+        // We now include full_name in the payload so the Protect Middleware can read it
         const token = jwt.sign(
-            { id: user.id, role: user.role }, 
-            (process.env.JWT_SECRET as string) || 'secretkey', 
+            { 
+                id: user.id, 
+                role: user.role, 
+                full_name: user.full_name // Added for request identity
+            }, 
+            JWT_SECRET, 
             { expiresIn: '7d' } 
         );
 
-        // Send response to frontend
+        // 4. Send unified response to frontend
         res.status(200).json({ 
+            success: true,
             token, 
-            id: user.id, 
-            role: user.role, 
-            full_name: user.full_name 
+            user: { 
+                id: user.id, 
+                role: user.role, 
+                name: user.full_name 
+            } 
         });
 
     } catch (error) {
         console.error("Login Error:", error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Login failed' });
     }
 };
 
@@ -49,7 +65,7 @@ export const register = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        // 2. Hash the password (using 10 salt rounds)
+        // 2. Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // 3. Insert into database
@@ -58,7 +74,7 @@ export const register = async (req: Request, res: Response) => {
             [full_name, email, hashedPassword, role || 'student']
         );
 
-        res.status(201).json({ message: 'User registered successfully' });
+        res.status(201).json({ success: true, message: 'User registered successfully' });
     } catch (error) {
         console.error("Registration Error:", error);
         res.status(500).json({ message: 'Error registering user' });

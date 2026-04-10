@@ -3,17 +3,19 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
-// 1. Define the User interface
+// 1. Updated interface to include full_name for JWT decoding
 interface DecodedToken {
     id: number;
     role: string;
+    full_name: string; 
 }
 
-// 2. Extend the Express Request interface to recognize req.user
+// 2. Updated Express Request extension to recognize full_name in controllers
 export interface AuthRequest extends Request {
     user?: {
         id: number;
         role: string;
+        full_name: string; 
     };
 }
 
@@ -28,14 +30,15 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         try {
             token = req.headers.authorization.split(' ')[1];
 
-            // Verify token
+            // Verify token and cast to our DecodedToken interface
             const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
 
             // Attach user to request
-            // .toLowerCase() ensures "Admin" or "ADMIN" matches our "admin" logic
+            // CRITICAL: full_name is assigned here so req.user.full_name works in requestController
             req.user = {
                 id: decoded.id,
-                role: decoded.role.toLowerCase()
+                role: decoded.role.toLowerCase(),
+                full_name: decoded.full_name 
             };
 
             return next();
@@ -52,7 +55,6 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
 /**
  * Admin Only Middleware
- * Checks if the user has the 'admin' role
  */
 export const adminOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
@@ -66,7 +68,6 @@ export const adminOnly = (req: AuthRequest, res: Response, next: NextFunction) =
 
 /**
  * Student Only Middleware
- * Useful for student-specific routes like submitting requests
  */
 export const studentOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'student') {
@@ -80,7 +81,6 @@ export const studentOnly = (req: AuthRequest, res: Response, next: NextFunction)
 
 /**
  * Legacy Support Alias
- * This fixes the error in taskRoutes.ts and other files still 
- * importing 'verifyToken'.
+ * Maintains compatibility with files using verifyToken
  */
 export const verifyToken = protect;

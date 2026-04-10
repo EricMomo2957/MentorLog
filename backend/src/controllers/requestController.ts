@@ -1,53 +1,68 @@
+// src/controllers/requestController.ts
 import { Response } from 'express';
 import db from '../config/db';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 type RequestStatus = 'Pending' | 'Processing' | 'Accepted' | 'Rejected';
 
-// 1. Submit Request (Student Side)
+/**
+ * 1. Submit Request (Student Side)
+ */
 export const submitRequest = async (req: AuthRequest, res: Response) => {
-    // 1. Pull urgency from body
-    // 2. Use req.user?.id from the token instead of trusting the frontend body for student_id
-    const { student_name, subject, message, urgency } = req.body;
-    const studentIdFromToken = req.user?.id; 
+    const { subject, message, urgency } = req.body;
+    
+    // Extract identity safely
+    const studentId = req.user?.id; 
+    // Use type assertion or optional chaining to avoid "property does not exist" error
+    const studentName = (req.user as any)?.full_name || "Unknown Student"; 
 
     if (!subject || !message) {
-        return res.status(400).json({ message: "Subject and message are required" });
+        return res.status(400).json({ success: false, message: "Subject and message are required" });
     }
 
     try {
         const query = `
-            INSERT INTO service_requests (student_id, student_name, subject, message, urgency) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO service_requests (student_id, student_name, subject, message, urgency, status) 
+            VALUES (?, ?, ?, ?, ?, 'Pending')
         `;
-        // Use studentIdFromToken for better security
-        await db.execute(query, [studentIdFromToken, student_name, subject, message, urgency || 'Normal']);
         
-        res.status(201).json({ message: "Request submitted successfully" });
+        await db.execute(query, [
+            studentId, 
+            studentName, 
+            subject, 
+            message, 
+            urgency || 'Normal'
+        ]);
+        
+        res.status(201).json({ success: true, message: "Request submitted successfully" });
     } catch (error) {
         console.error("Submission Error:", error);
-        res.status(500).json({ message: "Database error", error });
+        res.status(500).json({ success: false, message: "Database error", error });
     }
 };
 
-// 2. Get All Requests (Admin Side)
+/**
+ * 2. Get All Requests (Admin Side)
+ */
 export const getAllRequests = async (_req: AuthRequest, res: Response) => {
     try {
-        // Fetching urgency and status so Admin can sort/filter
         const [rows] = await db.execute('SELECT * FROM service_requests ORDER BY created_at DESC');
-        res.status(200).json(rows);
+        res.status(200).json({ success: true, data: rows });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching data", error });
+        console.error("Fetch Error:", error);
+        res.status(500).json({ success: false, message: "Error fetching data", error });
     }
 };
 
-// 3. Update Status (Admin Side)
+/**
+ * 3. Update Status (Admin Side)
+ */
 export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { status } = req.body as { status: RequestStatus };
 
     if (!status) {
-        return res.status(400).json({ message: "Status is required" });
+        return res.status(400).json({ success: false, message: "Status is required" });
     }
 
     try {
@@ -55,11 +70,44 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
         const [result]: any = await db.execute(query, [status, id]);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Request not found" });
+            return res.status(404).json({ success: false, message: "Request not found" });
         }
 
-        res.status(200).json({ message: `Request status updated to ${status}` });
+        res.status(200).json({ success: true, message: `Request status updated to ${status}` });
     } catch (error) {
-        res.status(500).json({ message: "Update failed", error });
+        console.error("Update Error:", error);
+        res.status(500).json({ success: false, message: "Update failed", error });
+    }
+};
+
+/**
+ * 4. Get Student's Own Requests (Student Side)
+ * Fixed to match your specific DB column 'student_id'
+ */
+export const getMyRequests = async (req: AuthRequest, res: Response) => {
+    try {
+        const studentId = req.user?.id; 
+
+        if (!studentId) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+
+        // Note: I used 'student_id' to match your INSERT query above. 
+        // If your table uses 'user_id', change the string below.
+        const [rows] = await db.execute(
+            'SELECT * FROM service_requests WHERE student_id = ? ORDER BY created_at DESC',
+            [studentId] 
+        );
+
+        res.status(200).json({
+            success: true,
+            data: rows
+        });
+    } catch (error) {
+        console.error("Internal Query Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
     }
 };
