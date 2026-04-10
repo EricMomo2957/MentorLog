@@ -14,6 +14,7 @@ import ManageTasks from './pages/admin/ManageTasks';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminCalendar from './pages/admin/AdminCalendar';
 import ManageRequest from './pages/admin/ManageRequest';
+//import ManageFeedback from './pages/admin/ManageFeedback'; // Import the new component
  // Import the new component
 
 // Student Imports
@@ -24,7 +25,7 @@ import StudentProfile from './pages/student/StudentProfile';
 import StudentSettings from './pages/student/StudentSettings';
 import StudentCalendar from './pages/student/StudentCalendar';
 import StudentRequest from './pages/student/StudentRequest'; // Import the new component
-
+//import StudentFeedback from './pages/student/StudentFeedback'; // Import the new component
 function App() {
   return (
     <Router>
@@ -45,6 +46,7 @@ function App() {
           { path: "/weekly-reports", element: <WeeklyReports /> },
           { path: "/admin-profile", element: <AdminProfile /> }, 
           { path: "/admin-settings", element: <AdminSettings /> },
+          //{ path: "/manage-feedback", element: <ManageFeedback /> }
         ].map((route) => (
           <Route 
             key={route.path}
@@ -67,6 +69,7 @@ function App() {
           { path: "/settings", element: <StudentSettings /> },
           { path: "/campus-events", element: <StudentCalendar /> },
           { path: "/student-request", element: <StudentRequest /> }, // The New Student Submission Page
+          //{ path: "/submit-feedback", element: <StudentFeedback /> }, // The New Student Feedback Page
           { 
             path: "/my-attendance", 
             element: (
