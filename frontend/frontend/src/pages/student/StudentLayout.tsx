@@ -72,18 +72,6 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         📩 Service Request
                     </Link>
 
-                    <Link 
-                        to="/student-feedback" 
-                        className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                            isActive('/student-feedback') 
-                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
-                            : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                        }`}
-                    >
-                        <span className="text-lg">💬</span> 
-                        <span className="uppercase tracking-wider text-[11px]">System Feedback</span>
-                    </Link>
-
                     <div className="pt-6 mt-6 border-t border-slate-800">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Account</p>
                         

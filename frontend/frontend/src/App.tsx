@@ -14,7 +14,7 @@ import ManageTasks from './pages/admin/ManageTasks';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminCalendar from './pages/admin/AdminCalendar';
 import ManageRequest from './pages/admin/ManageRequest';
-import ManageFeedback from './pages/admin/ManageFeedback'; // Import the new component
+ // Import the new component
 
 // Student Imports
 import StudentLayout from './pages/student/StudentLayout';
@@ -45,7 +45,6 @@ function App() {
           { path: "/weekly-reports", element: <WeeklyReports /> },
           { path: "/admin-profile", element: <AdminProfile /> }, 
           { path: "/admin-settings", element: <AdminSettings /> },
-          { path: "/manage-feedback", element: <ManageFeedback /> }
         ].map((route) => (
           <Route 
             key={route.path}

@@ -26,7 +26,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
         { path: '/admin-profile', label: 'My Profile', icon: '👤' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
-        { path: '/manage-feedback', label: 'Feedback', icon: '💬' },
     ];
 
     return (
