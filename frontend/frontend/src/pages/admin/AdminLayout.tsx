@@ -24,9 +24,11 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/manage-requests', label: 'Manage Requests', icon: '📩' }, // Added new link here
         { path: '/admin-calendar', label: 'Schedules & Events', icon: '🗓️' },
         { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
+        { path: '/manage-feedback', label: 'Student Feedback', icon: '💬' },
+        //{ path: '/manage-announcements', label: 'Manage Announcements', icon: '📢' },
         { path: '/admin-profile', label: 'My Profile', icon: '👤' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
-        { path: '/manage-feedback', label: 'Student Feedback', icon: '💬' },
+        
     ];
 
     return (

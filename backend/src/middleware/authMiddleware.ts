@@ -3,25 +3,29 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
-// 1. Updated interface to include full_name for JWT decoding
+// Interface for JWT payload decoding
 interface DecodedToken {
     id: number;
     role: string;
     full_name: string; 
 }
 
-// 2. Updated Express Request extension to recognize full_name in controllers
+/**
+ * 1. EXTENDED AUTH REQUEST INTERFACE
+ * Includes 'user' for JWT data and 'file' for Multer (Announcement Photos)
+ */
 export interface AuthRequest extends Request {
     user?: {
         id: number;
         role: string;
-        full_name: string; 
+        full_name?: string; 
     };
+    file?: any; // Crucial for Multer image uploads
 }
 
 /**
- * Protect Middleware
- * Checks for Bearer token and attaches user data to request
+ * 2. PROTECT MIDDLEWARE
+ * Verifies JWT and populates req.user
  */
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
     let token;
@@ -30,11 +34,10 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         try {
             token = req.headers.authorization.split(' ')[1];
 
-            // Verify token and cast to our DecodedToken interface
+            // Verify token
             const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
 
-            // Attach user to request
-            // CRITICAL: full_name is assigned here so req.user.full_name works in requestController
+            // Attach user data to request for use in controllers
             req.user = {
                 id: decoded.id,
                 role: decoded.role.toLowerCase(),
@@ -54,20 +57,20 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 };
 
 /**
- * Admin Only Middleware
+ * 3. ADMIN ONLY MIDDLEWARE
  */
 export const adminOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
         res.status(403).json({ 
-            message: 'Access denied: You do not have permission to access this resource.' 
+            message: 'Access denied: Admin privileges required.' 
         });
     }
 };
 
 /**
- * Student Only Middleware
+ * 4. STUDENT ONLY MIDDLEWARE
  */
 export const studentOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'student') {
@@ -80,7 +83,6 @@ export const studentOnly = (req: AuthRequest, res: Response, next: NextFunction)
 };
 
 /**
- * Legacy Support Alias
- * Maintains compatibility with files using verifyToken
+ * 5. COMPATIBILITY ALIAS
  */
 export const verifyToken = protect;
