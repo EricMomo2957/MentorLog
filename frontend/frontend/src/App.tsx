@@ -27,6 +27,7 @@ import StudentSettings from './pages/student/StudentSettings';
 import StudentCalendar from './pages/student/StudentCalendar';
 import StudentRequest from './pages/student/StudentRequest'; // Import the new component
 import StudentFeedback from './pages/student/StudentFeedback'; // Import the new component
+import StudentAnnouncements from './pages/student/StudentAnnouncements';
 
 
 function App() {
@@ -74,6 +75,7 @@ function App() {
           { path: "/campus-events", element: <StudentCalendar /> },
           { path: "/student-request", element: <StudentRequest /> }, // The New Student Submission Page
           { path: "/submit-feedback", element: <StudentFeedback /> }, // The New Student Feedback Page
+          { path: "/announcements", element: <StudentAnnouncements /> },
           { 
             path: "/my-attendance", 
             element: (
