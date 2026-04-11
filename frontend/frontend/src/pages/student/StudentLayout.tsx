@@ -60,7 +60,7 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
                         : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
                     }`}>
-                        🗓️ Campus Events
+                        🗓️ Personal Events
                     </Link>
                     
                     {/* ADDED: STUDENT FEEDBACK LINK */}
@@ -78,7 +78,7 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
                         : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
                     }`}>
-                        📩 Service Request
+                        📩 Request Paper
                     </Link>
 
                     {/* ADDED: STUDENT ANNOUNCEMENT LINK */}
@@ -87,7 +87,7 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold' 
                         : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
                     }`}>
-                        📢 Campus Bulletin
+                        📢 Office  Bulletin 
                     </Link>
 
                     <div className="pt-6 mt-6 border-t border-slate-800">
