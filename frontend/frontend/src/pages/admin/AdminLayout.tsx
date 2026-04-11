@@ -19,14 +19,14 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
     const navLinks = [
         { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
-        { path: '/manage-students', label: 'Student Directory', icon: '👥' },
-        { path: '/manage-attendance', label: 'Attendance Logs', icon: '📅' },
-        { path: '/manage-requests', label: 'Manage Requests', icon: '📩' }, // Added new link here
-        { path: '/admin-calendar', label: 'Schedules & Events', icon: '🗓️' },
-        { path: '/manage-tasks', label: 'Tasks', icon: '📝' },
-        { path: '/manage-feedback', label: 'Student Feedback', icon: '💬' },
+        { path: '/manage-tasks', label: 'Manage OJT Tasks', icon: '📝' },
+        { path: '/manage-students', label: 'Manage Interns', icon: '👥' },
         { path: '/manage-announcements', label: 'Manage Announcements', icon: '📢' },
+        { path: '/manage-requests', label: 'Manage Requests', icon: '📩' },
+        { path: '/manage-attendance', label: 'Manage Attendance Logs', icon: '📅' },
+        { path: '/manage-feedback', label: 'Manage Feedback', icon: '💬' },
         { path: '/admin-profile', label: 'My Profile', icon: '👤' },
+        { path: '/admin-calendar', label: 'Admin Calendar', icon: '🗓️' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
         
     ];
