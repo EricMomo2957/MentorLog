@@ -16,6 +16,7 @@ import AdminCalendar from './pages/admin/AdminCalendar';
 import ManageRequest from './pages/admin/ManageRequest';
 import ManageFeedback from './pages/admin/ManageFeedback'; // Import the new component
 import ManageAnnouncement from './pages/admin/ManageAnnouncement';
+import ReportAnalytics from './pages/admin/ReportAnalytics';
  // Import the new component
 
 // Student Imports
@@ -51,6 +52,7 @@ function App() {
           { path: "/admin-profile", element: <AdminProfile /> }, 
           { path: "/admin-settings", element: <AdminSettings /> },
           { path: "/manage-feedback", element: <ManageFeedback /> },
+          { path: "/admin/reports", element: <ReportAnalytics /> },
           { path: "/manage-announcements", element: <ManageAnnouncement /> }
         ].map((route) => (
           <Route 
