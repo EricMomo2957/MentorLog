@@ -59,9 +59,9 @@ const Login = () => {
                         <img 
                             src={ojtPicture} 
                             alt="OJT Preview" 
-                            className="w-full h-auto max-h-[320px] object-cover"
+                            className="w-full h-auto max-h-80 object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#020617]/50 to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-t from-[#020617]/50 to-transparent" />
                     </div>
                 </div>
             </div>
