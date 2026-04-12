@@ -80,3 +80,32 @@ export const register = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error registering user' });
     }
 };
+export const forgotPassword = async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    try {
+        // 1. Check if the student exists
+        const [users]: any = await pool.query('SELECT full_name FROM users WHERE email = ?', [email]);
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'No account found with this email.' });
+        }
+
+        const studentName = users[0].full_name;
+
+        // 2. SAVE the request to the new database table for the Admin
+        await pool.query(
+            'INSERT INTO password_resets (full_name, email, status) VALUES (?, ?, ?)',
+            [studentName, email, 'pending']
+        );
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Request sent! An admin will review your account access shortly.' 
+        });
+
+    } catch (error) {
+        console.error("Forgot Password Error:", error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};

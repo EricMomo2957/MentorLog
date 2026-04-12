@@ -18,6 +18,7 @@ import ManageRequest from './pages/admin/ManageRequest';
 import ManageFeedback from './pages/admin/ManageFeedback'; // Import the new component
 import ManageAnnouncement from './pages/admin/ManageAnnouncement';
 import ReportAnalytics from './pages/admin/ReportAnalytics';
+import ManageForgotPassword from './pages/admin/ManageForgotPassword'; // Import the new component
  // Import the new component
 
 // Student Imports
@@ -56,7 +57,8 @@ function App() {
           { path: "/admin-settings", element: <AdminSettings /> },
           { path: "/manage-feedback", element: <ManageFeedback /> },
           { path: "/admin/reports", element: <ReportAnalytics /> },
-          { path: "/manage-announcements", element: <ManageAnnouncement /> }
+          { path: "/manage-announcements", element: <ManageAnnouncement /> },
+          { path: "/manage-forgot-password", element: <ManageForgotPassword /> }, // Added here for clean mapping
         ].map((route) => (
           <Route 
             key={route.path}

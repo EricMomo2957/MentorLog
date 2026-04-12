@@ -27,6 +27,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/manage-feedback', label: 'Manage Feedback', icon: '💬' },
         { path: '/admin-profile', label: 'My Profile', icon: '👤' },
         { path: '/admin/reports', label: 'Report Analytics', icon: '📈' },
+        { path: '/manage-forgot-password', label: 'Forgot Password Requests', icon: '🔑' },
         { path: '/admin-calendar', label: 'Admin Calendar', icon: '🗓️' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
     ];
