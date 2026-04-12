@@ -29,13 +29,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/admin/reports', label: 'Report Analytics', icon: '📈' },
         { path: '/admin-calendar', label: 'Admin Calendar', icon: '🗓️' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
-        
     ];
 
     return (
-        <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
+        <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30 overflow-hidden">
             {/* --- SIDEBAR --- */}
-            <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50 overflow-hidden">
+            <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50">
                 <div className="mb-8 px-2 shrink-0">
                     <div className="flex items-center gap-4 mb-8">
                         <div className="relative group">
@@ -75,8 +74,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     </Link>
                 </div>
 
-                {/* --- MAIN NAV (Changed overflow-y-hidden to auto for better accessibility) --- */}
-                <nav className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 mb-6 pr-2">
+                {/* --- MAIN NAV (Hiding scrollbar via CSS classes) --- */}
+                <nav className="flex-1 overflow-y-auto space-y-1.5 mb-6 pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {navLinks.map((link) => {
                         const isActive = location.pathname === link.path;
                         return (
