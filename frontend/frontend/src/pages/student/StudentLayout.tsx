@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import logoPhoto from "../../assets/mentorlogOption.png"; 
 
@@ -22,135 +22,117 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
     const isActive = (path: string) => location.pathname === path;
 
     return (
-        <div className="flex min-h-screen bg-[#0f172a] text-white font-sans">
-            {/* STUDENT SIDE NAV */}
-            <aside className="w-64 bg-[#1e293b] border-r border-slate-700 p-6 flex flex-col fixed h-full shadow-2xl z-40">
-                <div className="mb-10">
-                    <img src={logoPhoto} alt="MentorLog Logo" className="h-12 w-auto object-contain mb-4 mx-auto block" />
+        <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans">
+            {/* --- CSS OVERRIDE TO FORCE REMOVE SCROLLBAR --- */}
+            <style>
+                {`
+                    .no-scrollbar::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .no-scrollbar {
+                        -ms-overflow-style: none;
+                        scrollbar-width: none;
+                    }
+                `}
+            </style>
+
+            {/* --- SIDE NAVIGATION --- */}
+            <aside className="w-72 bg-[#0f172a] border-r border-slate-800/50 flex flex-col fixed h-full shadow-2xl z-40">
+                
+                {/* Brand Section */}
+                <div className="p-8">
+                    <div className="flex items-center gap-3 mb-8">
+                        <img src={logoPhoto} alt="MentorLog" className="h-10 w-auto drop-shadow-lg" />
+                        <h2 className="text-2xl font-black tracking-tighter text-white italic uppercase">
+                            MENTOR<span className="text-emerald-400 not-italic">LOG</span>
+                        </h2>
+                    </div>
                     
-                    <h2 className="text-xl font-black text-emerald-400 tracking-tight text-center">MENTOR<span className="text-white">LOG</span></h2>
-                    <div className="mt-4 p-3 bg-slate-900/50 rounded-xl border border-slate-700/50">
-                        <p className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Logged in as</p>
-                        <p className="text-sm text-emerald-400 font-bold truncate">{userName}</p>
+                    <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800/50 shadow-inner">
+                        <p className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em] mb-1">Student Session</p>
+                        <p className="text-sm text-white font-bold truncate flex items-center gap-2">
+                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                            {userName}
+                        </p>
                     </div>
                 </div>
 
-                <nav className="flex-1 space-y-2">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Menu</p>
+                {/* Nav Links - Switched to custom 'no-scrollbar' class */}
+                <nav className="flex-1 px-4 space-y-1 overflow-y-auto no-scrollbar">
+                    <p className="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Main Navigation</p>
                     
-                    <Link to="/student-dashboard" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                        isActive('/student-dashboard') 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
-                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                    }`}>
-                        🏠 Control Center
-                    </Link>
-                    
-
-                    <Link to="/tasks" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                        isActive('/tasks') 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
-                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                    }`}>
-                        📝 My Tasks
-                    </Link>
-
-                    <Link to="/campus-events" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                        isActive('/campus-events') 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
-                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                    }`}>
-                        🗓️ Personal Events
-                    </Link>
-                    
-                    {/* ADDED: STUDENT FEEDBACK LINK */}
-                    <Link to="/submit-feedback" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                        isActive('/submit-feedback') 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
-                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                    }`}>
-                        📣 Student Feedback
-                    </Link>
-
-                    {/* ADDED: STUDENT REQUEST LINK */}
-                    <Link to="/student-request" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                        isActive('/student-request') 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
-                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                    }`}>
-                        📩 Request Paper
-                    </Link>
-
-                    {/* ADDED: STUDENT ANNOUNCEMENT LINK */}
-                    <Link to="/announcements" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                        isActive('/announcements') 
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold' 
-                        : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                    }`}>
-                        📢 Office  Bulletin 
-                    </Link>
-
-                    <div className="pt-6 mt-6 border-t border-slate-800">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Account</p>
-                        
-                        <Link to="/student-profile" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                            isActive('/student-profile') 
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
-                            : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                        }`}>
-                            👤 My Profile
+                    {[
+                        { path: '/student-dashboard', label: 'Control Center', icon: '🏠' },
+                        { path: '/tasks', label: 'My Tasks', icon: '📝' },
+                        { path: '/campus-events', label: 'Personal Events', icon: '🗓️' },
+                        { path: '/submit-feedback', label: 'Student Feedback', icon: '📣' },
+                        { path: '/student-request', label: 'Request Paper', icon: '📩' },
+                        { path: '/announcements', label: 'Office Bulletin', icon: '📢' },
+                    ].map((link) => (
+                        <Link 
+                            key={link.path}
+                            to={link.path} 
+                            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all group border ${
+                                isActive(link.path) 
+                                ? 'bg-emerald-500/10 text-emerald-400 font-bold border-emerald-500/20 shadow-lg shadow-emerald-500/5' 
+                                : 'text-slate-400 border-transparent hover:bg-slate-800/50 hover:text-white'
+                            }`}
+                        >
+                            <span className={`text-lg transition-transform group-hover:scale-110 ${isActive(link.path) ? 'opacity-100' : 'opacity-50'}`}>
+                                {link.icon}
+                            </span>
+                            <span className="text-sm tracking-wide">{link.label}</span>
                         </Link>
+                    ))}
 
-                        <Link to="/settings" className={`flex items-center gap-3 p-3 rounded-lg transition-all border ${
-                            isActive('/settings') 
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold' 
-                            : 'text-slate-400 border-transparent hover:bg-slate-700/50 hover:text-white'
-                        }`}>
-                            ⚙️ Settings
-                        </Link>
+                    <div className="pt-8 px-4">
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4 border-t border-slate-800/50 pt-8">Preference</p>
                     </div>
+
+                    <Link to="/student-profile" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all border ${isActive('/student-profile') ? 'bg-emerald-500/10 text-emerald-400 font-bold border-emerald-500/20' : 'text-slate-400 border-transparent hover:bg-slate-800/50 hover:text-white'}`}>
+                        <span className="text-lg opacity-50">👤</span>
+                        <span className="text-sm">My Profile</span>
+                    </Link>
+
+                    <Link to="/settings" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all border ${isActive('/settings') ? 'bg-emerald-500/10 text-emerald-400 font-bold border-emerald-500/20' : 'text-slate-400 border-transparent hover:bg-slate-800/50 hover:text-white'}`}>
+                        <span className="text-lg opacity-50">⚙️</span>
+                        <span className="text-sm">Settings</span>
+                    </Link>
                 </nav>
 
-                <button 
-                    onClick={handleLogout} 
-                    className="mt-8 flex items-center justify-center gap-3 p-3 w-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all text-sm font-bold border border-red-500/20"
-                >
-                    <span className="text-lg">🚪</span> Logout
-                </button>
+                {/* Logout Action */}
+                <div className="p-4 mt-auto">
+                    <button 
+                        onClick={handleLogout} 
+                        className="flex items-center justify-center gap-3 py-4 w-full bg-slate-900 hover:bg-red-500/10 text-slate-400 hover:text-red-400 rounded-2xl transition-all text-xs font-bold border border-slate-800 hover:border-red-500/20 group uppercase tracking-widest"
+                    >
+                        <span className="transition-transform group-hover:rotate-12 text-lg">🚪</span> 
+                        Sign Out Account
+                    </button>
+                </div>
             </aside>
 
-            {/* MAIN CONTENT AREA */}
-            <main className="flex-1 ml-64 p-10 bg-[#0f172a]">
-                <div className="max-w-7xl mx-auto">
+            {/* --- MAIN CONTENT --- */}
+            <main className="flex-1 ml-72 min-h-screen relative overflow-x-hidden">
+                <div className="p-10 max-w-7xl mx-auto">
                     {children}
                 </div>
+                <div className="fixed top-0 right-0 w-125 h-125 bg-emerald-500/5 blur-[120px] rounded-full -mr-64 -mt-64 pointer-events-none" />
             </main>
 
-            {/* LOGOUT CONFIRMATION MODAL */}
+            {/* --- LOGOUT MODAL --- */}
             {isLogoutModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-[#1e293b] w-full max-w-sm rounded-4xl border border-slate-700 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-8 text-center">
-                            <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto text-3xl border border-red-500/20 mb-6">
-                                👋
-                            </div>
-                            
-                            <h3 className="text-2xl font-black text-white mb-2 italic tracking-tight">Ready to leave?</h3>
-                            <p className="text-slate-400 text-sm font-medium mb-8">Are you sure you want to log out of <span className="text-emerald-400 font-bold">MentorLog</span>?</p>
-
-                            <div className="flex gap-3">
-                                <button 
-                                    onClick={confirmLogout}
-                                    className="flex-1 py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black text-sm transition-all shadow-lg shadow-red-500/20"
-                                >
-                                    YES, LOG ME OUT
-                                </button>
-                                <button 
-                                    onClick={() => setIsLogoutModalOpen(false)}
-                                    className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl font-bold text-sm transition-all"
-                                >
-                                    Cancel
-                                </button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-[#0f172a] w-full max-w-sm rounded-[2.5rem] border border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-10 text-center">
+                            <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-4xl border border-red-500/20 mb-8 shadow-inner">👋</div>
+                            <h3 className="text-2xl font-black text-white mb-3 tracking-tight italic">Leaving so soon?</h3>
+                            <p className="text-slate-500 text-sm font-medium mb-10 px-4 leading-relaxed">
+                                Make sure your progress is saved before logging out of <span className="text-emerald-400 font-bold">MentorLog</span>.
+                            </p>
+                            <div className="grid gap-3">
+                                <button onClick={confirmLogout} className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black text-xs tracking-widest transition-all shadow-lg shadow-red-600/20 active:scale-95">LOG ME OUT NOW</button>
+                                <button onClick={() => setIsLogoutModalOpen(false)} className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl font-bold text-xs tracking-widest transition-all active:scale-95">STAY ON DASHBOARD</button>
                             </div>
                         </div>
                     </div>
