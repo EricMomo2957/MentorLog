@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-
-// 1. IMPORT YOUR LOGO ASSET
 import mentorLogLogo from '../assets/mentorlogOption.png'; 
+import ojtPicture from '../assets/ojt-picture.jpg';
 
 const Login = () => {
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    });
+    const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -22,105 +18,113 @@ const Login = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
-        
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
-            
-            // Your new authController returns { success: true, token, user: { id, role, name } }
             if (response.data.success) {
                 const { token, user } = response.data;
-
-                // Store data using the keys your dashboard and requests expect
                 localStorage.setItem('token', token);
                 localStorage.setItem('role', user.role);
-                localStorage.setItem('userName', user.name); // This maps to full_name
+                localStorage.setItem('userName', user.name);
                 localStorage.setItem('userId', String(user.id));
-                
-                // Redirect based on role
-                if (user.role === 'admin') {
-                    navigate('/admin-dashboard');
-                } else {
-                    navigate('/student-dashboard');
-                }
+                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                user.role === 'admin' ? navigate('/admin-dashboard') : navigate('/student-dashboard');
             }
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.message || 'Invalid email or password.');
-            } else {
-                setError('An unexpected error occurred.');
-            }
-        } finally {
-            setLoading(false);
-        }
+            setError(axios.isAxiosError(err) ? err.response?.data?.message || 'Invalid credentials' : 'Error occurred');
+        } finally { setLoading(false); }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0f172a] text-white font-sans px-4">
-            <div className="bg-[#1e293b] p-10 rounded-3xl shadow-2xl w-full max-w-md border border-slate-700 relative overflow-hidden group">
-                
-                {/* LOGO HEADER SECTION */}
-                <div className="flex flex-col items-center mb-8 relative z-10 text-center">
-                    <div className="w-24 h-24 rounded-2xl flex items-center justify-center p-2 mb-4 bg-slate-900/50 border border-slate-700 shadow-inner group-hover:border-emerald-500/50 transition-colors duration-500">
+        /* Added h-screen and overflow-hidden to lock the page height */
+        <div className="h-screen w-full flex bg-[#020617] text-slate-200 font-sans overflow-hidden">
+            
+            {/* --- LEFT SIDE: VISUAL BRANDING --- */}
+            <div className="hidden lg:flex lg:w-1/2 h-full relative overflow-hidden flex-col items-center justify-center p-12 bg-linear-to-br from-[#0f172a] to-[#020617] border-r border-slate-800/50">
+                {/* Decorative Background Circles */}
+                <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full -ml-48 -mt-48" />
+                <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-600/10 blur-[120px] rounded-full -mr-48 -mb-48" />
+
+                <div className="relative z-10 max-w-lg">
+                    <img src={mentorLogLogo} alt="Logo" className="w-16 h-16 mb-6 drop-shadow-2xl" />
+                    <h1 className="text-5xl font-black tracking-tighter text-white mb-4 leading-tight">
+                        Experience the <br />
+                        <span className="bg-linear-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent italic">Future of OJT.</span>
+                    </h1>
+                    <p className="text-base text-slate-400 font-medium leading-relaxed mb-8">
+                        Streamline your internship journey with MentorLog. Real-time tracking and simplified management.
+                    </p>
+
+                    {/* The new Photo - locked with max-height to prevent scrolling */}
+                    <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
                         <img 
-                            src={mentorLogLogo} 
-                            alt="MentorLog Logo" 
-                            className="w-full h-full object-contain" 
+                            src={ojtPicture} 
+                            alt="OJT Preview" 
+                            className="w-full h-auto max-h-[320px] object-cover"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#020617]/50 to-transparent" />
                     </div>
-                    <h2 className="text-3xl font-black bg-linear-to-r from-emerald-400 via-blue-400 to-emerald-400 bg-clip-text text-transparent tracking-tight">
-                        MENTOR<span className="text-white">LOG</span>
-                    </h2>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
-                        OJT Management System
+                </div>
+            </div>
+
+            {/* --- RIGHT SIDE: LOGIN FORM --- */}
+            <div className="w-full lg:w-1/2 h-full flex items-center justify-center p-6 sm:p-12 overflow-hidden">
+                <div className="w-full max-w-md space-y-6">
+                    <div className="text-center lg:text-left">
+                        <h2 className="text-3xl font-black text-white tracking-tight mb-2">Welcome Back</h2>
+                        <p className="text-slate-500 font-medium text-sm">Please enter your details to sign in.</p>
+                    </div>
+
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm flex items-center gap-3">
+                            <span>⚠️</span> {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Email Address</label>
+                            <input 
+                                type="email" name="email" placeholder="name@university.edu" 
+                                onChange={handleChange} required 
+                                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm font-medium" 
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between items-center px-1">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Password</label>
+                                <button type="button" className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest">Forgot?</button>
+                            </div>
+                            <input 
+                                type="password" name="password" placeholder="••••••••" 
+                                onChange={handleChange} required 
+                                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm font-medium" 
+                            />
+                        </div>
+                        
+                        <button 
+                            type="submit" disabled={loading}
+                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50"
+                        >
+                            {loading ? 'Authenticating...' : 'Continue to Dashboard'}
+                        </button>
+                    </form>
+
+                    <div className="relative py-2">
+                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
+                        <div className="relative flex justify-center text-[10px] uppercase"><span className="bg-[#020617] px-4 text-slate-600 font-bold tracking-widest">or</span></div>
+                    </div>
+
+                    <Link 
+                        to="/register" 
+                        className="block w-full text-center py-4 bg-transparent border border-slate-800 hover:bg-slate-900 text-slate-300 font-bold rounded-2xl transition-all"
+                    >
+                        Create new account
+                    </Link>
+
+                    <p className="text-center text-slate-700 text-[10px] font-bold uppercase tracking-[0.3em] pt-4">
+                        © 2026 MentorLog • Cebu City
                     </p>
                 </div>
-                
-                {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-bounce">
-                        <span>⚠️</span> {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
-                    <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Email Address</label>
-                        <input 
-                            type="email" 
-                            name="email" 
-                            placeholder="name@university.edu" 
-                            onChange={handleChange} 
-                            required 
-                            className="w-full p-3.5 rounded-xl bg-[#0f172a] border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-700 text-sm" 
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="block text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Password</label>
-                        <input 
-                            type="password" 
-                            name="password" 
-                            placeholder="••••••••" 
-                            onChange={handleChange} 
-                            required 
-                            className="w-full p-3.5 rounded-xl bg-[#0f172a] border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-700 text-sm" 
-                        />
-                    </div>
-                    
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        className="w-full bg-linear-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-black uppercase tracking-widest py-4 rounded-xl mt-4 transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-emerald-500/10 disabled:opacity-50"
-                    >
-                        {loading ? 'Authenticating...' : 'Sign In'}
-                    </button>
-                </form>
-
-                <p className="mt-8 text-center text-slate-500 text-xs relative z-10">
-                    Don't have an account? <Link to="/register" className="text-emerald-400 font-bold hover:text-blue-400 transition-colors">Register here</Link>
-                </p>
-
-                {/* DECORATIVE BACKGROUND ELEMENTS */}
-                <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-600/10 transition-all duration-700"></div>
-                <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-emerald-600/10 transition-all duration-700"></div>
             </div>
         </div>
     );
