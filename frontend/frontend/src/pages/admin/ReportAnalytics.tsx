@@ -22,7 +22,7 @@ ChartJS.register(
     Title
 );
 
-// Defined interface for strict typing to prevent "any" errors
+// Updated interface with nested attendance details
 interface SystemStats {
     announcements: number;
     attendance: number;
@@ -31,6 +31,11 @@ interface SystemStats {
     requests: number; 
     tasks: number;
     users: number;
+    attendanceDetails?: {
+        present: number;
+        late: number;
+        absent: number;
+    };
 }
 
 const ReportAnalytics = () => {
@@ -62,15 +67,14 @@ const ReportAnalytics = () => {
         </div>
     );
 
+    // 1. General System Metrics Data
     const labels = ['Announcements', 'Attendance', 'Events', 'Feedbacks', 'Services', 'Tasks', 'Users'];
-    
-    // Updated dataValues with safe fallbacks and correct mapping to backend keys
     const dataValues = [
         stats?.announcements || 0,
         stats?.attendance || 0,
         stats?.events || 0,
         stats?.feedbacks || 0,
-        stats?.requests || 0, // Matches 'requests' key from analyticsController
+        stats?.requests || 0,
         stats?.tasks || 0,
         stats?.users || 0
     ];
@@ -88,6 +92,29 @@ const ReportAnalytics = () => {
                 'rgba(139, 92, 246, 0.8)', // Violet
                 'rgba(236, 72, 153, 0.8)', // Pink
                 'rgba(100, 116, 139, 0.8)' // Slate
+            ],
+            borderColor: '#1e293b',
+            borderWidth: 2,
+        }]
+    };
+
+    // 2. Attendance Specific Data
+    const attendanceLabels = ['Present', 'Late', 'Absent'];
+    const attendanceValues = [
+        stats?.attendanceDetails?.present || 0,
+        stats?.attendanceDetails?.late || 0,
+        stats?.attendanceDetails?.absent || 0
+    ];
+
+    const attendanceChartData = {
+        labels: attendanceLabels,
+        datasets: [{
+            label: 'Attendance Status',
+            data: attendanceValues,
+            backgroundColor: [
+                'rgba(16, 185, 129, 0.8)', // Emerald/Green for Present
+                'rgba(245, 158, 11, 0.8)', // Amber/Yellow for Late
+                'rgba(239, 68, 68, 0.8)',  // Red for Absent
             ],
             borderColor: '#1e293b',
             borderWidth: 2,
@@ -130,20 +157,28 @@ const ReportAnalytics = () => {
                 </p>
             </div>
 
-            {/* Visual Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Pie Chart Card */}
+            {/* Visual Charts Section - 3 Column Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* System Metrics Pie Chart */}
                 <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-800 shadow-2xl">
                     <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 text-slate-400">Data Distribution Mix</h3>
-                    <div className="h-96"> 
+                    <div className="h-72"> 
                         <Pie data={chartData} options={options} />
+                    </div>
+                </div>
+
+                {/* Attendance Status Pie Chart */}
+                <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-800 shadow-2xl">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 text-slate-400">Attendance Breakdown</h3>
+                    <div className="h-72"> 
+                        <Pie data={attendanceChartData} options={options} />
                     </div>
                 </div>
 
                 {/* Bar Chart Card */}
                 <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-800 shadow-2xl">
                     <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 text-slate-400">Module Volume Comparison</h3>
-                    <div className="h-96">
+                    <div className="h-72">
                         <Bar 
                             data={chartData} 
                             options={{
