@@ -22,7 +22,7 @@ ChartJS.register(
     Title
 );
 
-// Updated interface with nested attendance details
+// Interface matching the backend response structure
 interface SystemStats {
     announcements: number;
     attendance: number;
@@ -35,6 +35,11 @@ interface SystemStats {
         present: number;
         late: number;
         absent: number;
+    };
+    taskDetails?: {
+        pending: number;
+        inProcess: number; // This maps to the data from getStatusCount('tasks', 'In-Progress')
+        completed: number;
     };
 }
 
@@ -121,6 +126,29 @@ const ReportAnalytics = () => {
         }]
     };
 
+    // 3. Task Status Bar Data (Updated to match DB 'In-Progress')
+    const taskLabels = ['Pending', 'In-Progress', 'Completed'];
+    const taskValues = [
+        stats?.taskDetails?.pending || 0,
+        stats?.taskDetails?.inProcess || 0,
+        stats?.taskDetails?.completed || 0
+    ];
+
+    const taskChartData = {
+        labels: taskLabels,
+        datasets: [{
+            label: 'Tasks Status',
+            data: taskValues,
+            backgroundColor: [
+                'rgba(239, 68, 68, 0.8)',  // Red for Pending
+                'rgba(59, 130, 246, 0.8)', // Blue for In-Progress
+                'rgba(16, 185, 129, 0.8)', // Emerald for Completed
+            ],
+            borderRadius: 8,
+            borderWidth: 0,
+        }]
+    };
+
     const options = {
         responsive: true,
         maintainAspectRatio: false,
@@ -146,7 +174,7 @@ const ReportAnalytics = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto p-6 md:p-10 space-y-10 text-white min-h-screen">
+        <div className="max-w-7xl mx-auto p-6 md:p-10 space-y-10 text-white min-h-screen bg-[#0f172a]">
             {/* Header Section */}
             <div>
                 <h1 className="text-4xl font-black uppercase italic tracking-tighter">
@@ -157,8 +185,8 @@ const ReportAnalytics = () => {
                 </p>
             </div>
 
-            {/* Visual Charts Section - 3 Column Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Visual Charts Section - 2x2 Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* System Metrics Pie Chart */}
                 <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-800 shadow-2xl">
                     <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 text-slate-400">Data Distribution Mix</h3>
@@ -175,7 +203,24 @@ const ReportAnalytics = () => {
                     </div>
                 </div>
 
-                {/* Bar Chart Card */}
+                {/* Task Status Bar Chart */}
+                <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-800 shadow-2xl">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 text-slate-400">Task Progress Overview</h3>
+                    <div className="h-72">
+                        <Bar 
+                            data={taskChartData} 
+                            options={{
+                                ...options,
+                                plugins: {
+                                    ...options.plugins,
+                                    legend: { display: false }
+                                }
+                            }} 
+                        />
+                    </div>
+                </div>
+
+                {/* Module Volume Comparison Bar Chart */}
                 <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-800 shadow-2xl">
                     <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 text-slate-400">Module Volume Comparison</h3>
                     <div className="h-72">

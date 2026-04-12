@@ -2,11 +2,16 @@ import { Response } from 'express';
 import db from '../config/db';
 import { AuthRequest } from '../middleware/authMiddleware';
 
-// Helper function to count total rows safely
+// Define an interface for database count results to avoid 'any'
+interface CountResult {
+    count: number;
+}
+
+// 1. Helper function to count total rows safely
 const getCount = async (tableName: string): Promise<number> => {
     try {
-        const [rows]: any = await db.execute(`SELECT COUNT(*) as count FROM ${tableName}`);
-        return rows[0].count;
+        const [rows] = await db.execute(`SELECT COUNT(*) as count FROM ${tableName}`) as [CountResult[], any];
+        return rows[0]?.count || 0;
     } catch (error: any) {
         if (error.errno === 1146) {
             console.warn(`⚠️ Warning: Table '${tableName}' not found. Returning 0.`);
@@ -16,24 +21,25 @@ const getCount = async (tableName: string): Promise<number> => {
     }
 };
 
-// Helper function to count specific attendance statuses
-const getStatusCount = async (status: string): Promise<number> => {
+// 2. Flexible Helper function to count specific statuses in any table
+const getStatusCount = async (tableName: string, status: string): Promise<number> => {
     try {
-        // Adjust 'status' to match your actual column name in the attendance table
-        const [rows]: any = await db.execute(
-            `SELECT COUNT(*) as count FROM attendance WHERE status = ?`, 
+        // Using [status] as a parameter to prevent SQL injection
+        const [rows] = await db.execute(
+            `SELECT COUNT(*) as count FROM ${tableName} WHERE status = ?`, 
             [status]
-        );
-        return rows[0].count;
+        ) as [CountResult[], any];
+        return rows[0]?.count || 0;
     } catch (error: any) {
-        console.error(`Error fetching status ${status}:`, error);
+        if (error.errno === 1146) return 0;
+        console.error(`Error fetching status ${status} from ${tableName}:`, error);
         return 0;
     }
 };
 
 export const getSystemStats = async (req: AuthRequest, res: Response) => {
     try {
-        // 1. Fetch General Module Totals
+        // A. Fetch General Module Totals
         const [
             announcements,
             attendance,
@@ -52,14 +58,22 @@ export const getSystemStats = async (req: AuthRequest, res: Response) => {
             getCount('users')
         ]);
 
-        // 2. Fetch Specific Attendance Details for the new Pie Chart
+        // B. Fetch Attendance Breakdown (Pie Chart)
         const [present, late, absent] = await Promise.all([
-            getStatusCount('Present'),
-            getStatusCount('Late'),
-            getStatusCount('Absent')
+            getStatusCount('attendance', 'Present'),
+            getStatusCount('attendance', 'Late'),
+            getStatusCount('attendance', 'Absent')
         ]);
 
-        // 3. Send the structured response
+        // C. Fetch Task Breakdown (New Bar Graph)
+        // UPDATED: Used 'In-Progress' (Capital P) to match your DB Enum
+        const [pending, inProgress, completed] = await Promise.all([
+            getStatusCount('tasks', 'Pending'),
+            getStatusCount('tasks', 'In-Progress'), 
+            getStatusCount('tasks', 'Completed')
+        ]);
+
+        // D. Send the structured response matching your Frontend Interface
         res.status(200).json({
             success: true,
             data: {
@@ -74,6 +88,11 @@ export const getSystemStats = async (req: AuthRequest, res: Response) => {
                     present,
                     late,
                     absent
+                },
+                taskDetails: {
+                    pending,
+                    inProcess: inProgress, // Mapped to the key your frontend expects
+                    completed
                 }
             }
         });
