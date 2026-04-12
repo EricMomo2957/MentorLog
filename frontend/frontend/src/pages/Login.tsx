@@ -92,7 +92,13 @@ const Login = () => {
                         <div className="space-y-1.5">
                             <div className="flex justify-between items-center px-1">
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Password</label>
-                                <button type="button" className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest">Forgot?</button>
+                                {/* UPDATED: Changed from button to Link and updated text */}
+                                <Link 
+                                    to="/forgot-password" 
+                                    className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest"
+                                >
+                                    Forgot Password?
+                                </Link>
                             </div>
                             <input 
                                 type="password" name="password" placeholder="••••••••" 
