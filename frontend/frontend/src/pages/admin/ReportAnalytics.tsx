@@ -38,8 +38,14 @@ interface SystemStats {
     };
     taskDetails?: {
         pending: number;
-        inProcess: number; // This maps to the data from getStatusCount('tasks', 'In-Progress')
+        inProcess: number; 
         completed: number;
+    };
+    requestDetails?: {
+        pending: number;
+        processing: number;
+        accepted: number;
+        rejected: number;
     };
 }
 
@@ -126,7 +132,7 @@ const ReportAnalytics = () => {
         }]
     };
 
-    // 3. Task Status Bar Data (Updated to match DB 'In-Progress')
+    // 3. Task Status Bar Data
     const taskLabels = ['Pending', 'In-Progress', 'Completed'];
     const taskValues = [
         stats?.taskDetails?.pending || 0,
@@ -143,6 +149,31 @@ const ReportAnalytics = () => {
                 'rgba(239, 68, 68, 0.8)',  // Red for Pending
                 'rgba(59, 130, 246, 0.8)', // Blue for In-Progress
                 'rgba(16, 185, 129, 0.8)', // Emerald for Completed
+            ],
+            borderRadius: 8,
+            borderWidth: 0,
+        }]
+    };
+
+    // 4. Service Request Bar Data
+    const requestLabels = ['Pending', 'Processing', 'Accepted', 'Rejected'];
+    const requestValues = [
+        stats?.requestDetails?.pending || 0,
+        stats?.requestDetails?.processing || 0,
+        stats?.requestDetails?.accepted || 0,
+        stats?.requestDetails?.rejected || 0
+    ];
+
+    const requestChartData = {
+        labels: requestLabels,
+        datasets: [{
+            label: 'Service Requests',
+            data: requestValues,
+            backgroundColor: [
+                'rgba(245, 158, 11, 0.8)', // Amber (Pending)
+                'rgba(59, 130, 246, 0.8)', // Blue (Processing)
+                'rgba(16, 185, 129, 0.8)', // Emerald (Accepted)
+                'rgba(239, 68, 68, 0.8)',  // Red (Rejected)
             ],
             borderRadius: 8,
             borderWidth: 0,
@@ -220,18 +251,15 @@ const ReportAnalytics = () => {
                     </div>
                 </div>
 
-                {/* Module Volume Comparison Bar Chart */}
+                {/* Service Request Bar Chart */}
                 <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-800 shadow-2xl">
-                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 text-slate-400">Module Volume Comparison</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-widest mb-8 text-slate-400">Service Request Status</h3>
                     <div className="h-72">
                         <Bar 
-                            data={chartData} 
-                            options={{
+                            data={requestChartData} 
+                            options={{ 
                                 ...options, 
-                                plugins: { 
-                                    ...options.plugins, 
-                                    legend: { display: false }
-                                }
+                                plugins: { ...options.plugins, legend: { display: false } } 
                             }} 
                         />
                     </div>

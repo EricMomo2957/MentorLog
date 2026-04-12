@@ -73,6 +73,15 @@ export const getSystemStats = async (req: AuthRequest, res: Response) => {
             getStatusCount('tasks', 'Completed')
         ]);
 
+        // NEW: D. Fetch Service Request Breakdown
+        // Ensure these strings match your database ENUM exactly
+        const [sPending, sProcessing, sAccepted, sRejected] = await Promise.all([
+            getStatusCount('service_requests', 'Pending'),
+            getStatusCount('service_requests', 'Processing'),
+            getStatusCount('service_requests', 'Accepted'),
+            getStatusCount('service_requests', 'Rejected')
+        ]);
+
         // D. Send the structured response matching your Frontend Interface
         res.status(200).json({
             success: true,
@@ -93,7 +102,15 @@ export const getSystemStats = async (req: AuthRequest, res: Response) => {
                     pending,
                     inProcess: inProgress, // Mapped to the key your frontend expects
                     completed
+                },
+                // NEW: Service Request Details
+                requestDetails: {
+                    pending: sPending,
+                    processing: sProcessing,
+                    accepted: sAccepted,
+                    rejected: sRejected
                 }
+
             }
         });
     } catch (error) {
