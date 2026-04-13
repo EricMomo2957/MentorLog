@@ -13,7 +13,7 @@ import requestRoutes from './routes/requestRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
 import { announcementRouter } from './routes/announcementRoutes';
 import { analyticsRouter } from './routes/analyticsRoutes';
-//import progressRoutes from './routes/progressTrackingRoutes';
+import progressRoutes from './routes/progressTrackingRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -46,7 +46,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/feedback', feedbackRoutes);
-//app.use('/api/progress', progressRoutes);
+app.use('/api/progress', progressRoutes);
 // 4. Announcements & Analytics
 app.use('/api/announcements', announcementRouter);
 app.use('/api/analytics', analyticsRouter);
