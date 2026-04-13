@@ -31,7 +31,7 @@ import StudentCalendar from './pages/student/StudentCalendar';
 import StudentRequest from './pages/student/StudentRequest'; // Import the new component
 import StudentFeedback from './pages/student/StudentFeedback'; // Import the new component
 import StudentAnnouncements from './pages/student/StudentAnnouncements';
-//import AdminProgressTracker from './pages/admin/AdminProgressTracker';
+import AdminProgressTracker from './pages/admin/AdminProgressTracker';
 
 
 function App() {
@@ -60,7 +60,7 @@ function App() {
           { path: "/admin/reports", element: <ReportAnalytics /> },
           { path: "/manage-announcements", element: <ManageAnnouncement /> },
           { path: "/manage-forgot-password", element: <ManageForgotPassword /> }, // Added here for clean mapping
-          //{ path: "/admin/progress-tracker", element: <AdminProgressTracker /> }, // Added here for clean mapping  
+          { path: "/admin/progress-tracker", element: <AdminProgressTracker /> }, // Added here for clean mapping  
         ].map((route) => (
           <Route 
             key={route.path}
