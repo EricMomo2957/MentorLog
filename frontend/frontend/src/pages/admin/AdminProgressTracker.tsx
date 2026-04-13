@@ -34,7 +34,7 @@ const AdminProgressTracker = () => {
     return (
         <div className="min-h-screen bg-[#0a0f1c] text-slate-300 p-8 font-sans">
             {/* --- HEADER --- */}
-            <div className="max-w-[1400px] mx-auto mb-10">
+            <div className="max-w-350 mx-auto mb-10">
                 <div className="flex justify-between items-end border-b border-slate-800 pb-8">
                     <div>
                         <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.3em] mb-2">Administrative Control</p>
@@ -58,7 +58,7 @@ const AdminProgressTracker = () => {
             </div>
 
             {/* --- PROGRESS TABLE --- */}
-            <div className="max-w-[1400px] mx-auto bg-[#0d1424] border border-slate-800 rounded-sm overflow-hidden shadow-2xl">
+            <div className="max-w-350 mx-auto bg-[#0d1424] border border-slate-800 rounded-sm overflow-hidden shadow-2xl">
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-[#111a2e] border-b border-slate-800">
@@ -80,11 +80,11 @@ const AdminProgressTracker = () => {
                                     <td className="p-5 text-xs text-slate-400">
                                         <span className="text-[#00df9a]">{intern.total_hours_rendered}h</span> / {intern.required_hours}h
                                     </td>
-                                    <td className="p-5 w-[300px]">
+                                    <td className="p-5 w-75">
                                         <div className="flex items-center gap-3">
                                             <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
                                                 <div 
-                                                    className="h-full bg-gradient-to-r from-blue-600 to-[#00df9a] transition-all duration-1000"
+                                                    className="h-full bg-linear-to-r from-blue-600 to-[#00df9a] transition-all duration-1000"
                                                     style={{ width: `${percent}%` }}
                                                 />
                                             </div>
