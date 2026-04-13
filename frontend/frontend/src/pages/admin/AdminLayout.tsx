@@ -30,6 +30,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/manage-forgot-password', label: 'Forgot Password Requests', icon: '🔑' },
         { path: '/admin-calendar', label: 'Admin Calendar', icon: '🗓️' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
+        { path: '/admin/progress-tracker', label: 'Progress Tracker', icon: '📊' },
     ];
 
     return (
