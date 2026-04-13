@@ -13,4 +13,5 @@ router.get('/intern-progress', getInternsProgress);
 // Get detailed logs for a specific intern
 router.get('/intern-logs/:studentId', getIndividualInternLogs);
 
+
 export default router;
