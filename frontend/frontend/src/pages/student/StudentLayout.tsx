@@ -94,6 +94,11 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         <span className="text-sm">My Profile</span>
                     </Link>
 
+                    <Link to="/StudentAsk" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all border ${isActive('/StudentAsk') ? 'bg-emerald-500/10 text-emerald-400 font-bold border-emerald-500/20' : 'text-slate-400 border-transparent hover:bg-slate-800/50 hover:text-white'}`}>
+                        <span className="text-lg opacity-50">❓</span>
+                        <span className="text-sm">Ask a Question</span>
+                    </Link>
+
                     <Link to="/settings" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all border ${isActive('/settings') ? 'bg-emerald-500/10 text-emerald-400 font-bold border-emerald-500/20' : 'text-slate-400 border-transparent hover:bg-slate-800/50 hover:text-white'}`}>
                         <span className="text-lg opacity-50">⚙️</span>
                         <span className="text-sm">Settings</span>

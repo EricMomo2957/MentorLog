@@ -33,6 +33,7 @@ import StudentCalendar from './pages/student/StudentCalendar';
 import StudentRequest from './pages/student/StudentRequest'; // Import the new component
 import StudentFeedback from './pages/student/StudentFeedback'; // Import the new component
 import StudentAnnouncements from './pages/student/StudentAnnouncements';
+//import StudentAsk from './pages/student/StudentAskQuestion'; // Import the new component  
 
 
 function App() {
@@ -87,6 +88,7 @@ function App() {
           { path: "/student-request", element: <StudentRequest /> }, // The New Student Submission Page
           { path: "/submit-feedback", element: <StudentFeedback /> }, // The New Student Feedback Page
           { path: "/announcements", element: <StudentAnnouncements /> },
+          //{ path: "/StudentAsk", element: <StudentAsk /> },
           { 
             path: "/my-attendance", 
             element: (

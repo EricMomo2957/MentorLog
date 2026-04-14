@@ -48,3 +48,26 @@ export const adminReply = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Failed to send reply" });
     }
 };
+
+// Add this to your Controller to handle ANY reply (Admin or Intern)
+export const postReply = async (req: Request, res: Response) => {
+    const { question_id, sender_id, sender_role, reply_text } = req.body;
+    try {
+        await db.execute(
+            `INSERT INTO question_replies (question_id, sender_id, sender_role, reply_text) VALUES (?, ?, ?, ?)`,
+            [question_id, sender_id, sender_role, reply_text]
+        );
+
+        // If intern replies, set status back to 'pending' for admin to see
+        // If admin replies, set status to 'replied'
+        const newStatus = sender_role === 'intern' ? 'pending' : 'replied';
+        await db.execute(
+            `UPDATE intern_questions SET status = ? WHERE id = ?`,
+            [newStatus, question_id]
+        );
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: "Reply failed" });
+    }
+};
