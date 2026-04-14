@@ -19,6 +19,8 @@ import ManageFeedback from './pages/admin/ManageFeedback'; // Import the new com
 import ManageAnnouncement from './pages/admin/ManageAnnouncement';
 import ReportAnalytics from './pages/admin/ReportAnalytics';
 import ManageForgotPassword from './pages/admin/ManageForgotPassword'; // Import the new component
+import AdminProgressTracker from './pages/admin/AdminProgressTracker';
+import ManageAskQuestion from './pages/admin/ManageAskQuestion';
  // Import the new component
 
 // Student Imports
@@ -31,7 +33,6 @@ import StudentCalendar from './pages/student/StudentCalendar';
 import StudentRequest from './pages/student/StudentRequest'; // Import the new component
 import StudentFeedback from './pages/student/StudentFeedback'; // Import the new component
 import StudentAnnouncements from './pages/student/StudentAnnouncements';
-import AdminProgressTracker from './pages/admin/AdminProgressTracker';
 
 
 function App() {
@@ -60,7 +61,8 @@ function App() {
           { path: "/admin/reports", element: <ReportAnalytics /> },
           { path: "/manage-announcements", element: <ManageAnnouncement /> },
           { path: "/manage-forgot-password", element: <ManageForgotPassword /> }, // Added here for clean mapping
-          { path: "/admin/progress-tracker", element: <AdminProgressTracker /> }, // Added here for clean mapping  
+          { path: "/admin/progress-tracker", element: <AdminProgressTracker /> }, // Added here for clean mapping 
+          { path: "/ask-question", element: <ManageAskQuestion /> }, 
         ].map((route) => (
           <Route 
             key={route.path}
