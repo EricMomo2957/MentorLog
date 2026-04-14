@@ -24,6 +24,7 @@ const StudentAskQuestion = () => {
     const [thread, setThread] = useState<Reply[]>([]);
     const [replyText, setReplyText] = useState("");
     
+    // Hardcoded ID - ensure your backend can handle this ID
     const studentId = 1; 
 
     // 1. Memoized data fetcher
@@ -36,24 +37,24 @@ const StudentAskQuestion = () => {
         }
     }, [studentId]);
 
-    // 2. Updated Effect: 
-    // We call it once on mount. To stop ESLint from complaining about the dependency, 
-    // we ensure the function is wrapped in useCallback (which it is) and the 
-    // studentId is stable.
-    useEffect(() => {
-        let isMounted = true;
-        
-        const loadInitialData = async () => {
-            if (isMounted) {
-                await fetchMyQuestions();
-            }
-        };
+    // 2. Initial load with mount protection
+        useEffect(() => {
+    let isMounted = true;
 
-        loadInitialData();
+    // Wrap the call in an async function inside the effect
+    const loadData = async () => {
+        if (isMounted) {
+            await fetchMyQuestions();
+        }
+    };
 
-        return () => { isMounted = false; };
-    }, [fetchMyQuestions]); // Stable because of useCallback
+    loadData();
 
+    return () => { 
+        isMounted = false; // Prevents memory leaks and extra renders
+    };
+}, [fetchMyQuestions]);
+    // 3. Thread loader
     const loadThread = useCallback(async (q: Question) => {
         try {
             setSelectedQ(q);
@@ -64,19 +65,34 @@ const StudentAskQuestion = () => {
         }
     }, []);
 
+    // 4. Submission Handler with Debug Logs
     const handleNewInquiry = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log("Submit button clicked!", { subject, message });
+
+        if (!subject.trim() || !message.trim()) {
+            alert("Please fill in all fields before submitting.");
+            return;
+        }
+
         try {
-            await axios.post('http://localhost:5000/api/questions/ask', {
+            const response = await axios.post('http://localhost:5000/api/questions/ask', {
                 student_id: studentId,
                 subject,
                 message
             });
+            console.log("Server Response:", response.data);
+            
+            // Reset form
             setSubject("");
             setMessage("");
+            
+            // Refresh list
             fetchMyQuestions();
+            alert("Inquiry submitted successfully!");
         } catch (err) {
             console.error("Post error:", err);
+            alert("Failed to submit inquiry. Check console for details.");
         }
     };
 
@@ -100,6 +116,7 @@ const StudentAskQuestion = () => {
         <div className="min-h-screen bg-[#0a0f1c] text-slate-300 p-8 font-sans">
             <div className="max-w-350 mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
+                {/* --- LEFT: NEW FORM --- */}
                 <div className="lg:col-span-4 space-y-6">
                     <div className="mb-8">
                         <p className="text-[10px] font-black text-[#00df9a] uppercase tracking-[0.4em] mb-2">Service Desk</p>
@@ -126,12 +143,16 @@ const StudentAskQuestion = () => {
                                 placeholder="DESCRIBE YOUR CONCERN..."
                             />
                         </div>
-                        <button type="submit" className="w-full py-3 bg-[#00df9a] text-black font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all">
+                        <button 
+                            type="submit" 
+                            className="w-full py-3 bg-[#00df9a] text-black font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all cursor-pointer"
+                        >
                             Submit Inquiry
                         </button>
                     </form>
                 </div>
 
+                {/* --- RIGHT: HISTORY & CHAT --- */}
                 <div className="lg:col-span-8 bg-[#0d1424] border border-slate-800 flex flex-col h-[75vh] shadow-2xl relative">
                     {!selectedQ ? (
                         <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">

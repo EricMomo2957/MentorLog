@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
 
+// Fixed the (error) to (error: unknown) to resolve the ESLint "any" errors
 export const getAllQuestions = async (req: Request, res: Response) => {
     try {
         const [rows] = await db.execute(`
@@ -10,7 +11,7 @@ export const getAllQuestions = async (req: Request, res: Response) => {
             ORDER BY q.created_at DESC
         `);
         res.status(200).json(rows);
-    } catch (error) {
+    } catch (error: unknown) {
         res.status(500).json({ message: "Error fetching questions" });
     }
 };
@@ -23,8 +24,23 @@ export const getConversation = async (req: Request, res: Response) => {
             [id]
         );
         res.status(200).json(replies);
-    } catch (error) {
+    } catch (error: unknown) {
         res.status(500).json({ message: "Error fetching conversation" });
+    }
+};
+
+// --- ADD THIS FUNCTION TO HANDLE THE NEW INQUIRY ---
+export const askQuestion = async (req: Request, res: Response) => {
+    const { student_id, subject, message } = req.body;
+    try {
+        await db.execute(
+            `INSERT INTO intern_questions (student_id, subject, message, status) VALUES (?, ?, ?, 'pending')`,
+            [student_id, subject, message]
+        );
+        res.status(201).json({ success: true, message: "Question submitted successfully" });
+    } catch (error: unknown) {
+        console.error(error);
+        res.status(500).json({ message: "Error submitting question" });
     }
 };
 
@@ -69,5 +85,20 @@ export const postReply = async (req: Request, res: Response) => {
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ message: "Reply failed" });
+    }
+};
+
+// Add this to your AskQuestionController.tsx
+export const getQuestionsByStudent = async (req: Request, res: Response) => {
+    const { student_id } = req.params;
+    try {
+        const [rows] = await db.execute(
+            `SELECT * FROM intern_questions WHERE student_id = ? ORDER BY created_at DESC`,
+            [student_id]
+        );
+        res.status(200).json(rows);
+    } catch (error: unknown) {
+        console.error("Controller Error:", error);
+        res.status(500).json({ message: "Error fetching student questions" });
     }
 };
