@@ -14,7 +14,7 @@ import feedbackRoutes from './routes/feedbackRoutes';
 import { announcementRouter } from './routes/announcementRoutes';
 import { analyticsRouter } from './routes/analyticsRoutes';
 import progressRoutes from './routes/progressTrackingRoutes';
-//import askQuestionRoutes from './routes/AskQuestionRoutes';
+import askQuestionRoutes from './routes/AskQuestionRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -51,7 +51,7 @@ app.use('/api/progress', progressRoutes);
 // 4. Announcements & Analytics
 app.use('/api/announcements', announcementRouter);
 app.use('/api/analytics', analyticsRouter);
-//app.use('/api/questions', askQuestionRoutes);
+app.use('/api/questions', askQuestionRoutes);
 
 // ==========================================
 // Server Configuration
