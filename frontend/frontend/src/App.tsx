@@ -63,7 +63,7 @@ function App() {
           { path: "/manage-announcements", element: <ManageAnnouncement /> },
           { path: "/manage-forgot-password", element: <ManageForgotPassword /> }, // Added here for clean mapping
           { path: "/admin/progress-tracker", element: <AdminProgressTracker /> }, // Added here for clean mapping 
-          { path: "/ask-question", element: <ManageAskQuestion /> }, 
+          { path: "/admin/ask-question", element: <ManageAskQuestion /> },
         ].map((route) => (
           <Route 
             key={route.path}
@@ -111,7 +111,7 @@ function App() {
             } 
           />
         ))}
-
+        
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
