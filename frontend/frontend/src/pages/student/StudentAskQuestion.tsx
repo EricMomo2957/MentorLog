@@ -23,37 +23,32 @@ const StudentAskQuestion = () => {
     const [selectedQ, setSelectedQ] = useState<Question | null>(null);
     const [thread, setThread] = useState<Reply[]>([]);
     const [replyText, setReplyText] = useState("");
-    
-    // Hardcoded ID - ensure your backend can handle this ID
-    const studentId = 1; 
 
-    // 1. Memoized data fetcher
+    // Get the dynamic ID from localStorage
+    const studentId = localStorage.getItem('userId');
+
+    // 1. Memoized fetcher using dynamic studentId
     const fetchMyQuestions = useCallback(async () => {
+        if (!studentId) return;
         try {
-            const res = await axios.get(`http://localhost:5000/api/questions/student/${studentId}`);
-            setMyQuestions(res.data);
+            const response = await axios.get(`http://localhost:5000/api/questions/student/${studentId}`);
+            // Note: Changed to setMyQuestions to match your state variable
+            setMyQuestions(response.data);
         } catch (err) {
-            console.error("Fetch error:", err);
+            console.error("Error fetching your specific questions:", err);
         }
     }, [studentId]);
 
-    // 2. Initial load with mount protection
-        useEffect(() => {
-    let isMounted = true;
+    // 2. Initial load effect
+    useEffect(() => {
+        const loadData = async () => {
+            if (studentId) {
+                await fetchMyQuestions();
+            }
+        };
+        loadData();
+    }, [fetchMyQuestions, studentId]);
 
-    // Wrap the call in an async function inside the effect
-    const loadData = async () => {
-        if (isMounted) {
-            await fetchMyQuestions();
-        }
-    };
-
-    loadData();
-
-    return () => { 
-        isMounted = false; // Prevents memory leaks and extra renders
-    };
-}, [fetchMyQuestions]);
     // 3. Thread loader
     const loadThread = useCallback(async (q: Question) => {
         try {
@@ -65,39 +60,34 @@ const StudentAskQuestion = () => {
         }
     }, []);
 
-    // 4. Submission Handler with Debug Logs
+    // 4. Submission Handler
     const handleNewInquiry = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Submit button clicked!", { subject, message });
-
-        if (!subject.trim() || !message.trim()) {
+        if (!subject.trim() || !message.trim() || !studentId) {
             alert("Please fill in all fields before submitting.");
             return;
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/api/questions/ask', {
+            await axios.post('http://localhost:5000/api/questions/ask', {
                 student_id: studentId,
                 subject,
                 message
             });
-            console.log("Server Response:", response.data);
             
-            // Reset form
             setSubject("");
             setMessage("");
-            
-            // Refresh list
             fetchMyQuestions();
             alert("Inquiry submitted successfully!");
         } catch (err) {
             console.error("Post error:", err);
-            alert("Failed to submit inquiry. Check console for details.");
+            alert("Failed to submit inquiry.");
         }
     };
 
+    // 5. Reply Handler
     const handleReply = async () => {
-        if (!replyText.trim() || !selectedQ) return;
+        if (!replyText.trim() || !selectedQ || !studentId) return;
         try {
             await axios.post('http://localhost:5000/api/questions/reply', {
                 question_id: selectedQ.id,
