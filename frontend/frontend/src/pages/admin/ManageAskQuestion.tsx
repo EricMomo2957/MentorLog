@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import axios, { AxiosError } from 'axios';
 
 interface Question {
     id: number;
@@ -24,52 +24,68 @@ const ManageAskQuestion = () => {
     const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
     const [thread, setThread] = useState<Reply[]>([]);
     const [replyText, setReplyText] = useState("");
+    
+    // Use a ref to prevent unnecessary re-runs and satisfy strict ESLint rules
+    const isInitialMount = useRef(true);
 
-    // FIX: Wrap fetchQuestions in useCallback to prevent cascading renders
     const fetchQuestions = useCallback(async () => {
         try {
             const res = await axios.get('http://localhost:5000/api/questions/all');
             setQuestions(res.data);
         } catch (err) {
-            console.error("Error fetching questions:", err);
+            const error = err as AxiosError;
+            console.error("Error fetching questions:", error);
         }
     }, []);
 
-    const loadThread = async (q: Question) => {
+    const loadThread = useCallback(async (q: Question) => {
         try {
-            setSelectedQuestion(q);
             const res = await axios.get(`http://localhost:5000/api/questions/thread/${q.id}`);
             setThread(res.data);
+            setSelectedQuestion(q);
         } catch (err) {
-            console.error("Error loading thread:", err);
+            const error = err as AxiosError;
+            console.error("Error loading thread:", error);
+        }
+    }, []);
+
+    // FIX: Using a mounting check to satisfy the "cascading renders" linting error
+    useEffect(() => {
+    const loadInitialData = async () => {
+        if (isInitialMount.current) {
+            await fetchQuestions();
+            isInitialMount.current = false;
         }
     };
-
-    // FIX: fetchQuestions is now a stable dependency
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchQuestions();
-    }, [fetchQuestions]);
+    void loadInitialData(); // 'void' tells the linter we know this is async
+}, [fetchQuestions]);
 
     const handleReply = async () => {
-        if (!replyText.trim() || !selectedQuestion) return;
+    if (!replyText.trim() || !selectedQuestion) return;
+    
+    const adminId = localStorage.getItem('userId') || '1';
+
+    try {
+        await axios.post('http://localhost:5000/api/questions/reply', {
+            question_id: selectedQuestion.id,
+            sender_id: parseInt(adminId), // Changed from admin_id
+            sender_role: 'admin',         // Added this!
+            reply_text: replyText
+        });
         
-        try {
-            await axios.post('http://localhost:5000/api/questions/reply', {
-                question_id: selectedQuestion.id,
-                admin_id: 1, // Replace with your auth logic
-                reply_text: replyText
-            });
-            setReplyText("");
-            await loadThread(selectedQuestion); 
-        } catch (err) {
-            console.error("Error sending reply:", err);
-        }
-    };
+        setReplyText(""); 
+        await loadThread(selectedQuestion); 
+        await fetchQuestions(); 
+        alert("Response Transmitted Successfully!"); 
+    } catch (err) {
+        console.error("Error sending reply:", err);
+        alert("Failed to transmit response.");
+    }
+};
 
     return (
         <div className="min-h-screen bg-[#0a0f1c] text-slate-300 p-8 flex gap-6 font-sans">
-            {/* --- INBOX SIDEBAR --- */}
+            {/* Sidebar View */}
             <div className="w-1/3 bg-[#0d1424] border border-slate-800 rounded-sm overflow-hidden flex flex-col h-[85vh] shadow-2xl">
                 <div className="p-5 border-b border-slate-800 bg-[#111a2e] flex justify-between items-center">
                     <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Question Inbox</h2>
@@ -105,7 +121,7 @@ const ManageAskQuestion = () => {
                 </div>
             </div>
 
-            {/* --- CONVERSATION VIEW --- */}
+            {/* Main Conversation View */}
             <div className="flex-1 bg-[#0d1424] border border-slate-800 rounded-sm flex flex-col h-[85vh] shadow-2xl overflow-hidden">
                 {selectedQuestion ? (
                     <>
@@ -115,7 +131,6 @@ const ManageAskQuestion = () => {
                         </div>
                         
                         <div className="flex-1 p-8 overflow-y-auto space-y-6 bg-[#0a0f1c]/30 custom-scrollbar">
-                            {/* Original Student Query */}
                             <div className="bg-[#1a253d] p-5 rounded-sm border-l-2 border-[#00df9a] relative shadow-lg">
                                 <div className="absolute -top-2.5 left-4 bg-[#00df9a] text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter">
                                     Student Inquiry
@@ -123,21 +138,15 @@ const ManageAskQuestion = () => {
                                 <p className="text-sm text-slate-300 leading-relaxed italic">"{selectedQuestion.message}"</p>
                             </div>
 
-                            {/* Thread of Replies */}
                             {thread.map((r) => (
-                                <div 
-                                    key={r.id} 
-                                    className={`flex ${r.sender_role === 'admin' ? 'justify-end' : 'justify-start'}`}
-                                >
+                                <div key={r.id} className={`flex ${r.sender_role === 'admin' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[80%] p-4 rounded-sm border ${
                                         r.sender_role === 'admin' 
                                         ? 'bg-[#111a2e] border-blue-900/50 border-r-4 border-r-blue-600' 
                                         : 'bg-slate-800/40 border-slate-700 border-l-4 border-l-slate-500'
                                     }`}>
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                                {r.sender_role}
-                                            </span>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{r.sender_role}</span>
                                             <span className="text-[8px] font-mono text-slate-600">
                                                 {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -148,7 +157,6 @@ const ManageAskQuestion = () => {
                             ))}
                         </div>
 
-                        {/* Input Area */}
                         <div className="p-6 border-t border-slate-800 bg-[#111a2e]">
                             <div className="flex gap-3 bg-[#0a0f1c] border border-slate-800 p-2 focus-within:border-blue-500 transition-all shadow-inner">
                                 <input 
@@ -158,10 +166,7 @@ const ManageAskQuestion = () => {
                                     placeholder="TYPE YOUR OFFICIAL RESPONSE..."
                                     className="flex-1 bg-transparent px-3 py-2 text-xs text-white outline-none placeholder:text-slate-700 uppercase tracking-wider"
                                 />
-                                <button 
-                                    onClick={handleReply} 
-                                    className="bg-blue-600 hover:bg-[#00df9a] text-white hover:text-black font-black text-[10px] px-8 uppercase transition-all flex items-center gap-2"
-                                >
+                                <button onClick={handleReply} className="bg-blue-600 hover:bg-[#00df9a] text-white hover:text-black font-black text-[10px] px-8 uppercase transition-all flex items-center gap-2">
                                     Transmit <span>→</span>
                                 </button>
                             </div>

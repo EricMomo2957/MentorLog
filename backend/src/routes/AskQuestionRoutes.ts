@@ -4,30 +4,34 @@ import {
     getAllQuestions, 
     getConversation, 
     postReply,
-    getQuestionsByStudent // Add this one for the student's dashboard
+    getQuestionsByStudent,
 } from '../controllers/AskQuestionController';
 
 const router = express.Router();
 
-// --- STUDENT ROUTES ---
+/**
+ * --- STUDENT ROUTES ---
+ */
 
-// Ask a new question
+// Route for students to submit a new question
 router.post('/ask', askQuestion);
 
-// Get questions for a specific student (Required for your React useEffect)
-// This matches your axios call: /api/questions/student/:studentId
+// Get all questions filtered by a specific student ID
+// This is used for the Student Dashboard's "My Inquiries" section
 router.get('/student/:student_id', getQuestionsByStudent);
 
-// Get the specific thread (replies) of a question
+// Get the full message thread (all replies) for a specific question ID
 router.get('/thread/:id', getConversation);
 
-// Post a new reply (shared by Admin and Intern)
+// Route for both students and admins to add to the reply thread
 router.post('/reply', postReply);
 
 
-// --- ADMIN ROUTES ---
+/**
+ * --- ADMIN / MANAGEMENT ROUTES ---
+ */
 
-// Get list of all questions from all students
+// Get every question in the system (for the Inbox sidebar)
 router.get('/all', getAllQuestions);
 
 export default router;

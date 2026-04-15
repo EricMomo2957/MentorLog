@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
 
-// Fixed the (error) to (error: unknown) to resolve the ESLint "any" errors
 export const getAllQuestions = async (req: Request, res: Response) => {
     try {
         const [rows] = await db.execute(`
@@ -29,7 +28,6 @@ export const getConversation = async (req: Request, res: Response) => {
     }
 };
 
-// --- ADD THIS FUNCTION TO HANDLE THE NEW INQUIRY ---
 export const askQuestion = async (req: Request, res: Response) => {
     const { student_id, subject, message } = req.body;
     try {
@@ -44,38 +42,21 @@ export const askQuestion = async (req: Request, res: Response) => {
     }
 };
 
-export const adminReply = async (req: Request, res: Response) => {
-    const { question_id, admin_id, reply_text } = req.body;
-    try {
-        // 1. Insert the reply into the thread
-        await db.execute(
-            `INSERT INTO question_replies (question_id, sender_id, sender_role, reply_text) VALUES (?, ?, 'admin', ?)`,
-            [question_id, admin_id, reply_text]
-        );
-
-        // 2. Update main question status to 'replied'
-        await db.execute(
-            `UPDATE intern_questions SET status = 'replied' WHERE id = ?`,
-            [question_id]
-        );
-
-        res.status(200).json({ message: "Reply sent successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Failed to send reply" });
-    }
-};
-
-// Add this to your Controller to handle ANY reply (Admin or Intern)
+// Unified Reply Function to avoid confusion
 export const postReply = async (req: Request, res: Response) => {
     const { question_id, sender_id, sender_role, reply_text } = req.body;
     try {
+        // Ensure all required fields exist
+        if (!question_id || !sender_id || !sender_role || !reply_text) {
+             res.status(400).json({ message: "Missing required fields" });
+             return;
+        }
+
         await db.execute(
             `INSERT INTO question_replies (question_id, sender_id, sender_role, reply_text) VALUES (?, ?, ?, ?)`,
             [question_id, sender_id, sender_role, reply_text]
         );
 
-        // If intern replies, set status back to 'pending' for admin to see
-        // If admin replies, set status to 'replied'
         const newStatus = sender_role === 'intern' ? 'pending' : 'replied';
         await db.execute(
             `UPDATE intern_questions SET status = ? WHERE id = ?`,
@@ -83,14 +64,15 @@ export const postReply = async (req: Request, res: Response) => {
         );
 
         res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ message: "Reply failed" });
+    } catch (error: unknown) {
+        const err = error as Error;
+        console.error("Reply Error:", err.message);
+        res.status(500).json({ message: "Reply failed", error: err.message });
     }
 };
 
-// Add this to your AskQuestionController.tsx
 export const getQuestionsByStudent = async (req: Request, res: Response) => {
-    const { student_id } = req.params;
+    const { student_id } = req.params; 
     try {
         const [rows] = await db.execute(
             `SELECT * FROM intern_questions WHERE student_id = ? ORDER BY created_at DESC`,
@@ -98,7 +80,8 @@ export const getQuestionsByStudent = async (req: Request, res: Response) => {
         );
         res.status(200).json(rows);
     } catch (error: unknown) {
-        console.error("Controller Error:", error);
-        res.status(500).json({ message: "Error fetching student questions" });
+        const err = error as Error;
+        console.error("Database Error:", err.message);
+        res.status(500).json({ message: "Server Error" });
     }
 };
