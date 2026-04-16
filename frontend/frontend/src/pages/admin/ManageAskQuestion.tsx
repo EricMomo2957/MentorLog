@@ -25,7 +25,6 @@ const ManageAskQuestion = () => {
     const [thread, setThread] = useState<Reply[]>([]);
     const [replyText, setReplyText] = useState("");
     
-    // Use a ref to prevent unnecessary re-runs and satisfy strict ESLint rules
     const isInitialMount = useRef(true);
 
     const fetchQuestions = useCallback(async () => {
@@ -49,39 +48,59 @@ const ManageAskQuestion = () => {
         }
     }, []);
 
-    // FIX: Using a mounting check to satisfy the "cascading renders" linting error
     useEffect(() => {
-    const loadInitialData = async () => {
-        if (isInitialMount.current) {
-            await fetchQuestions();
-            isInitialMount.current = false;
-        }
-    };
-    void loadInitialData(); // 'void' tells the linter we know this is async
-}, [fetchQuestions]);
+        const loadInitialData = async () => {
+            if (isInitialMount.current) {
+                await fetchQuestions();
+                isInitialMount.current = false;
+            }
+        };
+        void loadInitialData();
+    }, [fetchQuestions]);
 
     const handleReply = async () => {
-    if (!replyText.trim() || !selectedQuestion) return;
-    
-    const adminId = localStorage.getItem('userId') || '1';
-
-    try {
-        await axios.post('http://localhost:5000/api/questions/reply', {
-            question_id: selectedQuestion.id,
-            sender_id: parseInt(adminId), // Changed from admin_id
-            sender_role: 'admin',         // Added this!
-            reply_text: replyText
-        });
+        if (!replyText.trim() || !selectedQuestion) return;
         
-        setReplyText(""); 
-        await loadThread(selectedQuestion); 
-        await fetchQuestions(); 
-        alert("Response Transmitted Successfully!"); 
-    } catch (err) {
-        console.error("Error sending reply:", err);
-        alert("Failed to transmit response.");
-    }
-};
+        const adminId = localStorage.getItem('userId') || '1';
+
+        try {
+            await axios.post('http://localhost:5000/api/questions/reply', {
+                question_id: selectedQuestion.id,
+                sender_id: parseInt(adminId),
+                sender_role: 'admin',
+                reply_text: replyText
+            });
+            
+            setReplyText(""); 
+            await loadThread(selectedQuestion); 
+            await fetchQuestions(); 
+            alert("Response Transmitted Successfully!"); 
+        } catch (err) {
+            console.error("Error sending reply:", err);
+            alert("Failed to transmit response.");
+        }
+    };
+
+    const handleDelete = async (e: React.MouseEvent, id: number) => {
+        e.stopPropagation(); 
+        
+        if (!window.confirm("Are you sure you want to permanently delete this inquiry?")) return;
+
+        try {
+            await axios.delete(`http://localhost:5000/api/questions/delete/${id}`);
+            
+            if (selectedQuestion?.id === id) {
+                setSelectedQuestion(null);
+                setThread([]);
+            }
+            
+            await fetchQuestions(); 
+            alert("Inquiry purged successfully.");
+        } catch (err) {
+            console.error("Purge Error:", err);
+            alert("Failed to delete the record.");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#0a0f1c] text-slate-300 p-8 flex gap-6 font-sans">
@@ -98,14 +117,23 @@ const ManageAskQuestion = () => {
                         <button 
                             key={q.id} 
                             onClick={() => loadThread(q)}
-                            className={`w-full text-left p-5 border-b border-slate-800 transition-all border-l-2 ${
+                            className={`w-full text-left p-5 border-b border-slate-800 transition-all border-l-2 relative group ${
                                 selectedQuestion?.id === q.id 
                                 ? 'bg-[#1a253d] border-l-[#00df9a]' 
                                 : 'hover:bg-[#141d33] border-l-transparent'
                             }`}
                         >
+                            {/* DELETE BUTTON */}
+                            <div 
+                                onClick={(e) => handleDelete(e, q.id)}
+                                className="absolute top-4 right-4 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1"
+                                title="Delete Inquiry"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                            </div>
+
                             <p className="text-[10px] font-bold text-[#00df9a] uppercase tracking-wider mb-1">{q.student_name}</p>
-                            <p className="text-sm text-white font-medium truncate">{q.subject}</p>
+                            <p className="text-sm text-white font-medium truncate pr-6">{q.subject}</p>
                             <div className="flex justify-between items-center mt-3">
                                 <span className={`text-[8px] px-2 py-0.5 rounded-sm font-black uppercase ${
                                     q.status === 'pending' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
