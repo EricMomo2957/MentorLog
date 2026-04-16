@@ -85,3 +85,20 @@ export const getQuestionsByStudent = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+export const deleteQuestion = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+        // 1. Delete associated replies first (Foreign Key constraint safety)
+        await db.execute(`DELETE FROM question_replies WHERE question_id = ?`, [id]);
+        
+        // 2. Delete the main question
+        await db.execute(`DELETE FROM intern_questions WHERE id = ?`, [id]);
+
+        res.status(200).json({ success: true, message: "Deleted successfully" });
+    } catch (error: unknown) {
+        const err = error as Error;
+        console.error("Delete Error:", err.message);
+        res.status(500).json({ message: "Server Error during deletion" });
+    }
+};

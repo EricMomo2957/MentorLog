@@ -5,6 +5,7 @@ import {
     getConversation, 
     postReply,
     getQuestionsByStudent,
+    deleteQuestion
 } from '../controllers/AskQuestionController';
 
 const router = express.Router();
@@ -26,6 +27,7 @@ router.get('/thread/:id', getConversation);
 // Route for both students and admins to add to the reply thread
 router.post('/reply', postReply);
 
+router.delete('/delete/:id', deleteQuestion);
 
 /**
  * --- ADMIN / MANAGEMENT ROUTES ---
