@@ -6,7 +6,8 @@ import fs from 'fs';
 import { 
     createAnnouncement, 
     getAnnouncements, 
-    deleteAnnouncement 
+    deleteAnnouncement,
+    updateAnnouncement // Added this import
 } from '../controllers/announcementController';
 import { protect, adminOnly } from '../middleware/authMiddleware';
 
@@ -62,8 +63,17 @@ router.post(
 // GET: All users (Students & Admins) see the news
 router.get('/all', getAnnouncements);
 
-// DELETE: Admin removes an announcement
-router.delete('/:id', protect, adminOnly, deleteAnnouncement);
+// PUT: Admin updates an existing announcement (handles text and optional new image)
+router.put(
+    '/update/:id', 
+    protect, 
+    adminOnly, 
+    upload.single('image'), 
+    updateAnnouncement
+);
 
-// Using Named Export as requested
+// DELETE: Admin removes an announcement
+router.delete('/delete/:id', protect, adminOnly, deleteAnnouncement);
+
+// Using Named Export
 export const announcementRouter = router;

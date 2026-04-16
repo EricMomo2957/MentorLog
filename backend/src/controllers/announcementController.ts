@@ -110,3 +110,47 @@ export const deleteAnnouncement = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ success: false, message: "Failed to delete announcement" });
     }
 };
+
+/**
+ * 4. Update Announcement (Admin Only)
+ */
+export const updateAnnouncement = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { title, content } = req.body;
+
+    try {
+        // Find existing to check for old image
+        const [rows]: any = await db.execute('SELECT image_url FROM announcements WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(404).json({ success: false, message: "Announcement not found" });
+        }
+
+        const oldImageUrl = rows[0].image_url;
+        let newImageUrl = oldImageUrl;
+
+        // If a new file was uploaded
+        if (req.file) {
+            newImageUrl = `/uploads/announcements/${req.file.filename}`;
+            // Delete the old physical file if it exists
+            if (oldImageUrl) {
+                const oldPath = path.join(__dirname, '../../', oldImageUrl);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
+        }
+
+        const query = `
+            UPDATE announcements 
+            SET title = ?, content = ?, image_url = ? 
+            WHERE id = ?
+        `;
+        
+        await db.execute(query, [title, content, newImageUrl, id]);
+
+        res.status(200).json({ success: true, message: "Announcement updated successfully" });
+    } catch (error) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        console.error("Update Error:", error);
+        res.status(500).json({ success: false, message: "Failed to update announcement" });
+    }
+};
