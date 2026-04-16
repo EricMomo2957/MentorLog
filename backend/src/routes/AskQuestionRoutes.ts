@@ -5,7 +5,8 @@ import {
     getConversation, 
     postReply,
     getQuestionsByStudent,
-    deleteQuestion
+    deleteQuestion,
+    updateReply
 } from '../controllers/AskQuestionController';
 
 const router = express.Router();
@@ -28,6 +29,8 @@ router.get('/thread/:id', getConversation);
 router.post('/reply', postReply);
 
 router.delete('/delete/:id', deleteQuestion);
+
+router.put('/reply/:id', updateReply);
 
 /**
  * --- ADMIN / MANAGEMENT ROUTES ---

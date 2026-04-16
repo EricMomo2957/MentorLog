@@ -102,3 +102,31 @@ export const deleteQuestion = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Server Error during deletion" });
     }
 };
+
+export const updateReply = async (req: Request, res: Response) => {
+    const { id } = req.params; // This is the reply ID
+    const { reply_text } = req.body;
+
+    try {
+        if (!reply_text) {
+            res.status(400).json({ message: "Reply text is required" });
+            return;
+        }
+
+        const [result]: any = await db.execute(
+            `UPDATE question_replies SET reply_text = ? WHERE id = ?`,
+            [reply_text, id]
+        );
+
+        if (result.affectedRows === 0) {
+            res.status(404).json({ message: "Reply not found" });
+            return;
+        }
+
+        res.status(200).json({ success: true, message: "Reply updated" });
+    } catch (error: unknown) {
+        const err = error as Error;
+        console.error("Update Error:", err.message);
+        res.status(500).json({ message: "Server Error during update" });
+    }
+};

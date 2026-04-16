@@ -25,6 +25,9 @@ const ManageAskQuestion = () => {
     const [thread, setThread] = useState<Reply[]>([]);
     const [replyText, setReplyText] = useState("");
     
+    // NEW STATES FOR EDITING
+    const [editingReplyId, setEditingReplyId] = useState<number | null>(null);
+    
     const isInitialMount = useRef(true);
 
     const fetchQuestions = useCallback(async () => {
@@ -42,6 +45,8 @@ const ManageAskQuestion = () => {
             const res = await axios.get(`http://localhost:5000/api/questions/thread/${q.id}`);
             setThread(res.data);
             setSelectedQuestion(q);
+            setEditingReplyId(null); // Reset edit mode when switching questions
+            setReplyText("");
         } catch (err) {
             const error = err as AxiosError;
             console.error("Error loading thread:", error);
@@ -58,42 +63,55 @@ const ManageAskQuestion = () => {
         void loadInitialData();
     }, [fetchQuestions]);
 
+    // PREPARE EDIT MODE
+    const startEdit = (reply: Reply) => {
+        setEditingReplyId(reply.id);
+        setReplyText(reply.reply_text);
+    };
+
     const handleReply = async () => {
         if (!replyText.trim() || !selectedQuestion) return;
         
         const adminId = localStorage.getItem('userId') || '1';
 
         try {
-            await axios.post('http://localhost:5000/api/questions/reply', {
-                question_id: selectedQuestion.id,
-                sender_id: parseInt(adminId),
-                sender_role: 'admin',
-                reply_text: replyText
-            });
+            if (editingReplyId) {
+                // UPDATE LOGIC
+                await axios.put(`http://localhost:5000/api/questions/reply/${editingReplyId}`, {
+                    reply_text: replyText
+                });
+                alert("Response Updated!");
+            } else {
+                // CREATE LOGIC
+                await axios.post('http://localhost:5000/api/questions/reply', {
+                    question_id: selectedQuestion.id,
+                    sender_id: parseInt(adminId),
+                    sender_role: 'admin',
+                    reply_text: replyText
+                });
+                alert("Response Transmitted Successfully!");
+            }
             
             setReplyText(""); 
+            setEditingReplyId(null);
             await loadThread(selectedQuestion); 
             await fetchQuestions(); 
-            alert("Response Transmitted Successfully!"); 
         } catch (err) {
-            console.error("Error sending reply:", err);
-            alert("Failed to transmit response.");
+            console.error("Error processing reply:", err);
+            alert("Action failed.");
         }
     };
 
     const handleDelete = async (e: React.MouseEvent, id: number) => {
         e.stopPropagation(); 
-        
         if (!window.confirm("Are you sure you want to permanently delete this inquiry?")) return;
 
         try {
             await axios.delete(`http://localhost:5000/api/questions/delete/${id}`);
-            
             if (selectedQuestion?.id === id) {
                 setSelectedQuestion(null);
                 setThread([]);
             }
-            
             await fetchQuestions(); 
             alert("Inquiry purged successfully.");
         } catch (err) {
@@ -123,7 +141,6 @@ const ManageAskQuestion = () => {
                                 : 'hover:bg-[#141d33] border-l-transparent'
                             }`}
                         >
-                            {/* DELETE BUTTON */}
                             <div 
                                 onClick={(e) => handleDelete(e, q.id)}
                                 className="absolute top-4 right-4 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1"
@@ -159,6 +176,7 @@ const ManageAskQuestion = () => {
                         </div>
                         
                         <div className="flex-1 p-8 overflow-y-auto space-y-6 bg-[#0a0f1c]/30 custom-scrollbar">
+                            {/* Original Question */}
                             <div className="bg-[#1a253d] p-5 rounded-sm border-l-2 border-[#00df9a] relative shadow-lg">
                                 <div className="absolute -top-2.5 left-4 bg-[#00df9a] text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter">
                                     Student Inquiry
@@ -166,18 +184,31 @@ const ManageAskQuestion = () => {
                                 <p className="text-sm text-slate-300 leading-relaxed italic">"{selectedQuestion.message}"</p>
                             </div>
 
+                            {/* Thread Replies */}
                             {thread.map((r) => (
                                 <div key={r.id} className={`flex ${r.sender_role === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[80%] p-4 rounded-sm border ${
+                                    <div className={`max-w-[80%] p-4 rounded-sm border relative group/reply ${
                                         r.sender_role === 'admin' 
                                         ? 'bg-[#111a2e] border-blue-900/50 border-r-4 border-r-blue-600' 
                                         : 'bg-slate-800/40 border-slate-700 border-l-4 border-l-slate-500'
                                     }`}>
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{r.sender_role}</span>
-                                            <span className="text-[8px] font-mono text-slate-600">
-                                                {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                                        <div className="flex items-center justify-between gap-6 mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{r.sender_role}</span>
+                                                <span className="text-[8px] font-mono text-slate-600">
+                                                    {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            
+                                            {/* EDIT BUTTON FOR ADMIN REPLIES */}
+                                            {r.sender_role === 'admin' && (
+                                                <button 
+                                                    onClick={() => startEdit(r)}
+                                                    className="opacity-0 group-hover/reply:opacity-100 transition-opacity text-[9px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-tighter"
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
                                         </div>
                                         <p className="text-sm text-slate-200 leading-snug">{r.reply_text}</p>
                                     </div>
@@ -185,17 +216,34 @@ const ManageAskQuestion = () => {
                             ))}
                         </div>
 
+                        {/* Input Area */}
                         <div className="p-6 border-t border-slate-800 bg-[#111a2e]">
-                            <div className="flex gap-3 bg-[#0a0f1c] border border-slate-800 p-2 focus-within:border-blue-500 transition-all shadow-inner">
+                            {editingReplyId && (
+                                <div className="flex justify-between items-center mb-2 px-1">
+                                    <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest animate-pulse">
+                                        Editing Mode Active
+                                    </span>
+                                    <button 
+                                        onClick={() => { setEditingReplyId(null); setReplyText(""); }}
+                                        className="text-[8px] text-slate-500 hover:text-white uppercase font-bold"
+                                    >
+                                        Cancel Edit
+                                    </button>
+                                </div>
+                            )}
+                            <div className={`flex gap-3 bg-[#0a0f1c] border p-2 focus-within:border-blue-500 transition-all shadow-inner ${editingReplyId ? 'border-amber-500/50' : 'border-slate-800'}`}>
                                 <input 
                                     value={replyText}
                                     onChange={(e) => setReplyText(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleReply()}
-                                    placeholder="TYPE YOUR OFFICIAL RESPONSE..."
+                                    placeholder={editingReplyId ? "MODIFY YOUR RESPONSE..." : "TYPE YOUR OFFICIAL RESPONSE..."}
                                     className="flex-1 bg-transparent px-3 py-2 text-xs text-white outline-none placeholder:text-slate-700 uppercase tracking-wider"
                                 />
-                                <button onClick={handleReply} className="bg-blue-600 hover:bg-[#00df9a] text-white hover:text-black font-black text-[10px] px-8 uppercase transition-all flex items-center gap-2">
-                                    Transmit <span>→</span>
+                                <button 
+                                    onClick={handleReply} 
+                                    className={`${editingReplyId ? 'bg-amber-600' : 'bg-blue-600'} hover:bg-[#00df9a] text-white hover:text-black font-black text-[10px] px-8 uppercase transition-all flex items-center gap-2`}
+                                >
+                                    {editingReplyId ? 'Update' : 'Transmit'} <span>→</span>
                                 </button>
                             </div>
                         </div>
