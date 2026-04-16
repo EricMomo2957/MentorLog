@@ -34,7 +34,7 @@ const ManageAskQuestion = () => {
         try {
             const res = await axios.get('http://localhost:5000/api/questions/all');
             setQuestions(res.data);
-        } catch (err) {
+        } catch (err: unknown) {
             const error = err as AxiosError;
             console.error("Error fetching questions:", error);
         }
@@ -45,25 +45,26 @@ const ManageAskQuestion = () => {
             const res = await axios.get(`http://localhost:5000/api/questions/thread/${q.id}`);
             setThread(res.data);
             setSelectedQuestion(q);
-            setEditingReplyId(null); // Reset edit mode when switching questions
+            setEditingReplyId(null); 
             setReplyText("");
-        } catch (err) {
+        } catch (err: unknown) {
             const error = err as AxiosError;
             console.error("Error loading thread:", error);
         }
     }, []);
 
     useEffect(() => {
+        let isMounted = true;
         const loadInitialData = async () => {
             if (isInitialMount.current) {
                 await fetchQuestions();
-                isInitialMount.current = false;
+                if (isMounted) isInitialMount.current = false;
             }
         };
         void loadInitialData();
+        return () => { isMounted = false; };
     }, [fetchQuestions]);
 
-    // PREPARE EDIT MODE
     const startEdit = (reply: Reply) => {
         setEditingReplyId(reply.id);
         setReplyText(reply.reply_text);
@@ -96,7 +97,7 @@ const ManageAskQuestion = () => {
             setEditingReplyId(null);
             await loadThread(selectedQuestion); 
             await fetchQuestions(); 
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Error processing reply:", err);
             alert("Action failed.");
         }
@@ -114,7 +115,7 @@ const ManageAskQuestion = () => {
             }
             await fetchQuestions(); 
             alert("Inquiry purged successfully.");
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Purge Error:", err);
             alert("Failed to delete the record.");
         }
@@ -176,7 +177,6 @@ const ManageAskQuestion = () => {
                         </div>
                         
                         <div className="flex-1 p-8 overflow-y-auto space-y-6 bg-[#0a0f1c]/30 custom-scrollbar">
-                            {/* Original Question */}
                             <div className="bg-[#1a253d] p-5 rounded-sm border-l-2 border-[#00df9a] relative shadow-lg">
                                 <div className="absolute -top-2.5 left-4 bg-[#00df9a] text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter">
                                     Student Inquiry
@@ -184,7 +184,6 @@ const ManageAskQuestion = () => {
                                 <p className="text-sm text-slate-300 leading-relaxed italic">"{selectedQuestion.message}"</p>
                             </div>
 
-                            {/* Thread Replies */}
                             {thread.map((r) => (
                                 <div key={r.id} className={`flex ${r.sender_role === 'admin' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[80%] p-4 rounded-sm border relative group/reply ${
@@ -200,13 +199,17 @@ const ManageAskQuestion = () => {
                                                 </span>
                                             </div>
                                             
-                                            {/* EDIT BUTTON FOR ADMIN REPLIES */}
                                             {r.sender_role === 'admin' && (
                                                 <button 
                                                     onClick={() => startEdit(r)}
-                                                    className="opacity-0 group-hover/reply:opacity-100 transition-opacity text-[9px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-tighter"
+                                                    className="flex items-center gap-1.5 text-[9px] font-black text-blue-400 hover:text-[#00df9a] uppercase tracking-tighter bg-blue-500/10 px-2 py-1 rounded-xs transition-colors group"
                                                 >
-                                                    Edit
+                                                    {/* EDIT LOGO ADDED HERE */}
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                    </svg>
+                                                    EDIT RESPONSE
                                                 </button>
                                             )}
                                         </div>
@@ -216,7 +219,6 @@ const ManageAskQuestion = () => {
                             ))}
                         </div>
 
-                        {/* Input Area */}
                         <div className="p-6 border-t border-slate-800 bg-[#111a2e]">
                             {editingReplyId && (
                                 <div className="flex justify-between items-center mb-2 px-1">
