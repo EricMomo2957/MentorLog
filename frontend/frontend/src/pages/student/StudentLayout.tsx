@@ -99,7 +99,7 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         <span className="text-lg opacity-50">❓</span>
                         <span className="text-sm">Ask a Question</span>
                     </Link>
-                    /*
+                    
                     <Link 
                         to="/submissions" 
                         className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all border ${
