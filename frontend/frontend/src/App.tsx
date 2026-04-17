@@ -21,6 +21,7 @@ import ReportAnalytics from './pages/admin/ReportAnalytics';
 import ManageForgotPassword from './pages/admin/ManageForgotPassword'; // Import the new component
 import AdminProgressTracker from './pages/admin/AdminProgressTracker';
 import ManageAskQuestion from './pages/admin/ManageAskQuestion';
+//import ManageSubmission from './pages/admin/ManageSubmission'; // Adjust path as needed
  // Import the new component
 
 // Student Imports
@@ -34,6 +35,8 @@ import StudentRequest from './pages/student/StudentRequest'; // Import the new c
 import StudentFeedback from './pages/student/StudentFeedback'; // Import the new component
 import StudentAnnouncements from './pages/student/StudentAnnouncements';
 import StudentAsk from './pages/student/StudentAskQuestion'; // Import the new component  
+//import StudentSubmission from './pages/student/StudentSubmission';
+
 
 
 function App() {
@@ -64,6 +67,8 @@ function App() {
           { path: "/manage-forgot-password", element: <ManageForgotPassword /> }, // Added here for clean mapping
           { path: "/admin/progress-tracker", element: <AdminProgressTracker /> }, // Added here for clean mapping 
           { path: "/admin/ask-question", element: <ManageAskQuestion /> },
+          // { path: "/manage-submissions", element: <ManageSubmission /> },
+          // { path: "/admin/manage-submissions", element:<ManageSubmission /> }
         ].map((route) => (
           <Route 
             key={route.path}
@@ -89,6 +94,7 @@ function App() {
           { path: "/submit-feedback", element: <StudentFeedback /> }, // The New Student Feedback Page
           { path: "/announcements", element: <StudentAnnouncements /> },
           { path: "/StudentAsk", element: <StudentAsk /> },
+          // { path: "/submissions", element: <StudentSubmission /> },
           { 
             path: "/my-attendance", 
             element: (

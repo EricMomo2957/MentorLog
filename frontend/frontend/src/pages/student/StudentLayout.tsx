@@ -68,6 +68,7 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         { path: '/submit-feedback', label: 'Student Feedback', icon: '📣' },
                         { path: '/student-request', label: 'Request Paper', icon: '📩' },
                         { path: '/announcements', label: 'Office Bulletin', icon: '📢' },
+                        { path: '/manage-submissions', label: 'Manage Submissions', icon: '📂' },
                     ].map((link) => (
                         <Link 
                             key={link.path}
@@ -98,6 +99,9 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         <span className="text-lg opacity-50">❓</span>
                         <span className="text-sm">Ask a Question</span>
                     </Link>
+                    /*
+                    
+                    
 
                     <Link to="/settings" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all border ${isActive('/settings') ? 'bg-emerald-500/10 text-emerald-400 font-bold border-emerald-500/20' : 'text-slate-400 border-transparent hover:bg-slate-800/50 hover:text-white'}`}>
                         <span className="text-lg opacity-50">⚙️</span>
