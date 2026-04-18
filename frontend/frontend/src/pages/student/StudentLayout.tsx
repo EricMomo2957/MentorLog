@@ -68,7 +68,6 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         { path: '/submit-feedback', label: 'Student Feedback', icon: '📣' },
                         { path: '/student-request', label: 'Request Paper', icon: '📩' },
                         { path: '/announcements', label: 'Office Bulletin', icon: '📢' },
-                        { path: '/manage-submissions', label: 'Manage Submissions', icon: '📂' },
                     ].map((link) => (
                         <Link 
                             key={link.path}
