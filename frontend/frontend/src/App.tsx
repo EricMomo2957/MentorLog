@@ -19,6 +19,7 @@ import ManageFeedback from './pages/admin/ManageFeedback'; // Import the new com
 import ManageAnnouncement from './pages/admin/ManageAnnouncement';
 import ReportAnalytics from './pages/admin/ReportAnalytics';
 import ManageForgotPassword from './pages/admin/ManageForgotPassword'; // Import the new component
+import AdminProgressTracker from './pages/admin/AdminProgressTracker';
 import ManageAskQuestion from './pages/admin/ManageAskQuestion';
 import ManageSubmission from './pages/admin/ManageSubmission'; // Adjust path as needed
  // Import the new component
@@ -35,6 +36,7 @@ import StudentFeedback from './pages/student/StudentFeedback'; // Import the new
 import StudentAnnouncements from './pages/student/StudentAnnouncements';
 import StudentAsk from './pages/student/StudentAskQuestion'; // Import the new component  
 import StudentSubmission from './pages/student/StudentSubmission';
+import ManageAuditLog from './pages/admin/ManageAuditLog';
 
 
 
@@ -63,10 +65,12 @@ function App() {
           { path: "/manage-feedback", element: <ManageFeedback /> },
           { path: "/admin/reports", element: <ReportAnalytics /> },
           { path: "/manage-announcements", element: <ManageAnnouncement /> },
-          { path: "/manage-forgot-password", element: <ManageForgotPassword /> }, // Added here for clean mapping // Added here for clean mapping 
+          { path: "/manage-forgot-password", element: <ManageForgotPassword /> }, // Added here for clean mapping
+          { path: "/admin/progress-tracker", element: <AdminProgressTracker /> }, // Added here for clean mapping 
           { path: "/admin/ask-question", element: <ManageAskQuestion /> },
           { path: "/manage-submissions", element: <ManageSubmission /> },
-          { path: "/admin/manage-submissions", element:<ManageSubmission /> }
+          { path: "/admin/manage-submissions", element:<ManageSubmission /> },
+          { path: "/manage-audit-logs", element: <ManageAuditLog /> }, // Added here for clean mapping
         ].map((route) => (
           <Route 
             key={route.path}

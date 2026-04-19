@@ -21,6 +21,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
         { path: '/manage-tasks', label: 'Manage OJT Tasks', icon: '📝' },
         { path: '/manage-students', label: 'Manage Interns', icon: '👥' },
+        /* --- ADDED AUDIT LOG LINK HERE --- */
+        { path: '/manage-audit-logs', label: 'System Audit Logs', icon: '🛡️' }, 
         { path: '/manage-announcements', label: 'Manage Announcements', icon: '📢' },
         { path: '/manage-requests', label: 'Manage Requests', icon: '📩' },
         { path: '/manage-attendance', label: 'Manage Attendance Logs', icon: '📅' },
@@ -30,6 +32,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/manage-forgot-password', label: 'Forgot Password Requests', icon: '🔑' },
         { path: '/admin-calendar', label: 'Admin Calendar', icon: '🗓️' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
+        { path: '/admin/progress-tracker', label: 'Progress Tracker', icon: '📊' },
         { path: '/admin/ask-question', label: 'Question Inbox', icon: '❓' },
         { path: '/admin/manage-submissions', label: 'Manage Submissions', icon: '📂' },
     ];
@@ -77,7 +80,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     </Link>
                 </div>
 
-                {/* --- MAIN NAV (Hiding scrollbar via CSS classes) --- */}
+                {/* --- MAIN NAV --- */}
                 <nav className="flex-1 overflow-y-auto space-y-1.5 mb-6 pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {navLinks.map((link) => {
                         const isActive = location.pathname === link.path;
