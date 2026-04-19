@@ -35,6 +35,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/admin/progress-tracker', label: 'Progress Tracker', icon: '📊' },
         { path: '/admin/ask-question', label: 'Question Inbox', icon: '❓' },
         { path: '/admin/manage-submissions', label: 'Manage Submissions', icon: '📂' },
+        { path: '/admin/manage-codes', label: 'Manage Reference Codes', icon: '🔑' }
     ];
 
     return (

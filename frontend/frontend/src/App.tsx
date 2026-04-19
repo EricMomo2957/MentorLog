@@ -22,6 +22,7 @@ import ManageForgotPassword from './pages/admin/ManageForgotPassword'; // Import
 import AdminProgressTracker from './pages/admin/AdminProgressTracker';
 import ManageAskQuestion from './pages/admin/ManageAskQuestion';
 import ManageSubmission from './pages/admin/ManageSubmission'; // Adjust path as needed
+import AdminCode from './pages/admin/AdminCode';
  // Import the new component
 
 // Student Imports
@@ -37,6 +38,7 @@ import StudentAnnouncements from './pages/student/StudentAnnouncements';
 import StudentAsk from './pages/student/StudentAskQuestion'; // Import the new component  
 import StudentSubmission from './pages/student/StudentSubmission';
 import ManageAuditLog from './pages/admin/ManageAuditLog';
+
 
 
 
@@ -71,6 +73,7 @@ function App() {
           { path: "/manage-submissions", element: <ManageSubmission /> },
           { path: "/admin/manage-submissions", element:<ManageSubmission /> },
           { path: "/manage-audit-logs", element: <ManageAuditLog /> }, // Added here for clean mapping
+          { path: "/admin/manage-codes", element: <AdminCode /> }
         ].map((route) => (
           <Route 
             key={route.path}
