@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
-
+import { logAction } from '../utils/logger'; // <--- ADD THIS LINE
+import pool from '../config/db';
 /**
  * 1. FETCH ALL USERS (New)
  * Specifically for the Admin Dashboard User Directory
@@ -68,14 +69,33 @@ export const updateStudent = async (req: Request, res: Response) => {
     const { full_name, student_id, ojt_hours_required } = req.body;
 
     try {
+        // 1. Execute the update in the users table
         await db.execute(
             'UPDATE users SET full_name = ?, student_id = ?, ojt_hours_required = ? WHERE id = ? AND role = "student"',
             [full_name, student_id, ojt_hours_required, id]
         );
-        res.status(200).json({ success: true, message: "Student updated successfully" });
+
+        // 2. LOG THE ACTION: Record WHO changed WHAT
+        // We use (req as any).user.id to get the Admin's ID from the token
+        await logAction(
+            (req as any).user.id, 
+            'UPDATE', 
+            'Student Management', 
+            `Updated student: ${full_name} (ID: ${student_id})`
+        );
+
+        // 3. Send success response to the frontend
+        res.status(200).json({ 
+            success: true, 
+            message: "Student updated successfully and logged." 
+        });
+
     } catch (error) {
         console.error("Update Student Error:", error);
-        res.status(500).json({ success: false, message: "Error updating student" });
+        res.status(500).json({ 
+            success: false, 
+            message: "Error updating student" 
+        });
     }
 };
 
@@ -97,13 +117,15 @@ export const deleteStudent = async (req: Request, res: Response) => {
  * 6. ADMIN MIDDLEWARE
  */
 export const adminOnly = (req: any, res: any, next: any) => {
-    if (req.user && req.user.role === 'admin') {
-        next();
+    // Convert to lowercase to ignore case sensitivity issues
+    const role = req.user?.role?.toLowerCase();
+
+    if (req.user && (role === 'admin' || role === 'mentor')) {
+        next(); 
     } else {
-        res.status(403).json({ message: 'Access denied. Admins only.' });
+        return res.status(403).json({ message: "Access denied. Admins only." });
     }
 };
-
 /**
  * 7. UPDATE ADMIN PROFILE (Fixes the "N/A" ID issue)
  */
@@ -121,5 +143,24 @@ export const updateAdminProfile = async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Update Admin Error:", error);
         res.status(500).json({ success: false, message: "Error updating admin profile" });
+    }
+};
+
+// Look for this in your admin controller
+export const getAuditLogs = async (req: Request, res: Response) => {
+    try {
+        // PROBLEM: INNER JOIN hides rows where user_id is null or invalid
+        // FIX: Use LEFT JOIN to see logs even if the name isn't found
+        const [rows] = await pool.query(`
+            SELECT 
+                al.*, 
+                u.full_name as admin_name 
+            FROM audit_logs al
+            LEFT JOIN users u ON al.user_id = u.id 
+            ORDER BY al.created_at DESC
+        `);
+        res.status(200).json(rows);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching logs" });
     }
 };

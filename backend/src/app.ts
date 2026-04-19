@@ -16,6 +16,7 @@ import { analyticsRouter } from './routes/analyticsRoutes';
 import progressRoutes from './routes/progressTrackingRoutes';
 import askQuestionRoutes from './routes/AskQuestionRoutes';
 import documentSubmissionRoutes from './routes/documentSubmissionRoutes';
+
 // Load environment variables
 dotenv.config();
 
@@ -28,17 +29,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files for uploads (Images, Logos, OJT Pictures)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve static files for uploads (OCR Schedules, User Avatars, etc.)
+// Using path.resolve ensures it works regardless of where you start the process
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
 // ==========================================
 // API Routes
 // ==========================================
 
-// 1. Authentication (Login, Register, Forgot Password)
+/**
+ * Note: Your Audit Logs and Admin Profile routes are nested inside adminRoutes.
+ * They are now accessible at:
+ * - GET /api/admin/audit-logs
+ * - PUT /api/admin/profile/:id
+ */
+
+// 1. Authentication
 app.use('/api/auth', authRoutes);
 
-// 2. Admin Logic (User Management, Password Request Table)
+// 2. Admin Logic (Includes Students, Users, and the new Audit Logs)
 app.use('/api/admin', adminRoutes);
 
 // 3. OJT Core Features
@@ -48,13 +57,13 @@ app.use('/api/events', eventRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/progress', progressRoutes);
-// 4. Announcements & Analytics
+
+// 4. Communication & Intelligence
 app.use('/api/announcements', announcementRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/questions', askQuestionRoutes);
 
-
-// 5. Document Submission Management
+// 5. Document Management
 app.use('/api/documents', documentSubmissionRoutes);
 
 // ==========================================
@@ -64,6 +73,7 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log(`🚀 MentorLog Backend running on http://localhost:${PORT}`);
+    console.log(`🛡️  Audit Log System: ACTIVE`);
 });
 
 export default app;

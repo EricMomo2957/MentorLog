@@ -4,26 +4,38 @@ import {
     getAllStudents, 
     updateStudent, 
     deleteStudent,
-    getAllUsers, // 1. Added this import
-    adminOnly 
+    getAllUsers, 
+    adminOnly,
+    getAuditLogs,        // Added for the Audit Log page
+    updateAdminProfile   // Added for the Profile page
 } from '../controllers/adminController';
 import { protect } from '../middleware/authMiddleware';
-import { getAllRequests, updateRequestStatus } from '../controllers/requestController';
+// If you use requestController elsewhere, keep it; otherwise, focus on adminController imports
+
 const router = express.Router();
 
 /**
- * ADMIN DASHBOARD & REPORTING
+ * --- SYSTEM SECURITY & LOGGING ---
  */
+// GET: http://localhost:5000/api/admin/audit-logs
+router.get('/audit-logs', protect, adminOnly, getAuditLogs);
 
+
+/**
+ * --- ADMIN DASHBOARD & PROFILE ---
+ */
 // GET: http://localhost:5000/api/admin/users/all
-// This matches your AdminDashboard.tsx fetch call
 router.get('/users/all', protect, adminOnly, getAllUsers);
 
 // GET: http://localhost:5000/api/admin/summary
 router.get('/summary', protect, adminOnly, getStudentSummary);
 
+// PUT: http://localhost:5000/api/admin/profile/:id
+router.put('/profile/:id', protect, adminOnly, updateAdminProfile);
+
+
 /**
- * STUDENT MANAGEMENT (CRUD)
+ * --- STUDENT MANAGEMENT (CRUD) ---
  */
 // GET: http://localhost:5000/api/admin/students
 router.get('/students', protect, adminOnly, getAllStudents);
