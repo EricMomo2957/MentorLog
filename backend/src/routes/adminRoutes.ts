@@ -6,44 +6,46 @@ import {
     deleteStudent,
     getAllUsers, 
     adminOnly,
-    getAuditLogs,        // Added for the Audit Log page
-    updateAdminProfile   // Added for the Profile page
+    getAuditLogs,
+    updateAdminProfile 
 } from '../controllers/adminController';
+
+// Note: Ensure the function names match your adminCodeController.ts
+import { 
+    getAdminCodes, 
+    createAdminCode, // If you renamed this to generateAdminCode in the controller, update it here
+    deleteAdminCode 
+} from '../controllers/adminCodeController';
+
 import { protect } from '../middleware/authMiddleware';
-// If you use requestController elsewhere, keep it; otherwise, focus on adminController imports
 
 const router = express.Router();
 
 /**
  * --- SYSTEM SECURITY & LOGGING ---
  */
-// GET: http://localhost:5000/api/admin/audit-logs
 router.get('/audit-logs', protect, adminOnly, getAuditLogs);
-
 
 /**
  * --- ADMIN DASHBOARD & PROFILE ---
  */
-// GET: http://localhost:5000/api/admin/users/all
 router.get('/users/all', protect, adminOnly, getAllUsers);
-
-// GET: http://localhost:5000/api/admin/summary
 router.get('/summary', protect, adminOnly, getStudentSummary);
-
-// PUT: http://localhost:5000/api/admin/profile/:id
 router.put('/profile/:id', protect, adminOnly, updateAdminProfile);
-
 
 /**
  * --- STUDENT MANAGEMENT (CRUD) ---
  */
-// GET: http://localhost:5000/api/admin/students
 router.get('/students', protect, adminOnly, getAllStudents);
-
-// PUT: http://localhost:5000/api/admin/students/:id
 router.put('/students/:id', protect, adminOnly, updateStudent);
-
-// DELETE: http://localhost:5000/api/admin/students/:id
 router.delete('/students/:id', protect, adminOnly, deleteStudent);
+
+/**
+ * --- ADMIN REGISTRATION CODES ---
+ * Synchronized with frontend calls: http://localhost:5000/api/admin/admin-codes
+ */
+router.get('/admin-codes', protect, adminOnly, getAdminCodes);
+router.post('/admin-codes', protect, adminOnly, createAdminCode);
+router.delete('/admin-codes/:id', protect, adminOnly, deleteAdminCode);
 
 export default router;

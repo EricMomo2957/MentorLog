@@ -56,23 +56,50 @@ export const login = async (req: Request, res: Response) => {
 // =================== Registration controller =======================
 
 export const register = async (req: Request, res: Response) => {
-    const { full_name, email, password, role } = req.body;
+    // 1. Extract adminCode from req.body alongside other details
+    const { full_name, email, password, role, adminCode } = req.body;
 
     try {
-        // 1. Check if the user already exists
+        // 2. Check if the user already exists
         const [existingUser]: any = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (existingUser.length > 0) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        // 2. Hash the password
+        // 3. ADMIN CODE VALIDATION BLOCK
+        if (role === 'admin') {
+            if (!adminCode) {
+                return res.status(400).json({ message: "Admin Reference Code is required." });
+            }
+
+            // Check if code exists and hasn't been used
+            const [rows]: any = await pool.query(
+                'SELECT * FROM admin_codes WHERE code = ? AND is_used = FALSE',
+                [adminCode]
+            );
+
+            if (rows.length === 0) {
+                return res.status(400).json({ message: "Invalid or already used Admin Code." });
+            }
+        }
+
+        // 4. Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 3. Insert into database
+        // 5. Insert into database
         await pool.query(
             'INSERT INTO users (full_name, email, password, role) VALUES (?, ?, ?, ?)',
             [full_name, email, hashedPassword, role || 'student']
         );
+
+        // 6. CONSUME THE CODE (Mark as used)
+        // Only run this if the registration was successful and the user is an admin
+        if (role === 'admin' && adminCode) {
+            await pool.query(
+                'UPDATE admin_codes SET is_used = TRUE WHERE code = ?', 
+                [adminCode]
+            );
+        }
 
         res.status(201).json({ success: true, message: 'User registered successfully' });
     } catch (error) {
@@ -80,6 +107,7 @@ export const register = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error registering user' });
     }
 };
+
 export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
 
