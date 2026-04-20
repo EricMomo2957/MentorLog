@@ -32,7 +32,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         { path: '/manage-forgot-password', label: 'Forgot Password Requests', icon: '🔑' },
         { path: '/admin-calendar', label: 'Admin Calendar', icon: '🗓️' },
         { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
-        { path: '/admin/progress-tracker', label: 'Progress Tracker', icon: '📊' },
         { path: '/admin/ask-question', label: 'Question Inbox', icon: '❓' },
         { path: '/admin/manage-submissions', label: 'Manage Submissions', icon: '📂' },
         { path: '/admin/manage-codes', label: 'Manage Reference Codes', icon: '🔑' }
