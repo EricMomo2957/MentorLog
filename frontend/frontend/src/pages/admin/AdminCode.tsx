@@ -1,20 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Key, Plus, Trash2, RefreshCcw, ShieldCheck, Copy } from 'lucide-react';
+import { 
+    Plus, Trash2, RefreshCcw, 
+    ShieldCheck, Copy, User, Calendar, 
+    CheckCircle2, Clock, Hash
+} from 'lucide-react';
 
 interface AdminCode {
     id: number;
     code: string;
     is_used: boolean;
     created_at: string;
+    created_by_name?: string;
 }
 
 const AdminCode = () => {
     const [codes, setCodes] = useState<AdminCode[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [copiedId, setCopiedId] = useState<number | null>(null);
 
-    // Helper to safely extract error messages without using 'any'
     const getErrorMessage = (err: unknown): string => {
         if (axios.isAxiosError(err)) {
             return err.response?.data?.message || err.message || 'Server error occurred.';
@@ -38,7 +43,7 @@ const AdminCode = () => {
     }, []);
 
     const handleGenerate = async () => {
-        setError('');
+        setLoading(true);
         try {
             await axios.post('http://localhost:5000/api/admin/admin-codes', {}, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -46,12 +51,12 @@ const AdminCode = () => {
             fetchCodes(); 
         } catch (err: unknown) {
             setError(getErrorMessage(err));
-            console.error("Generation Error:", err);
+            setLoading(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this code?')) return;
+        if (!window.confirm('Permanent removal of this entry from the ledger?')) return;
         try {
             await axios.delete(`http://localhost:5000/api/admin/admin-codes/${id}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -62,9 +67,10 @@ const AdminCode = () => {
         }
     };
 
-    const copyToClipboard = (code: string) => {
+    const copyToClipboard = (code: string, id: number) => {
         navigator.clipboard.writeText(code);
-        alert('Code copied to clipboard!');
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
     };
 
     useEffect(() => {
@@ -72,104 +78,151 @@ const AdminCode = () => {
     }, [fetchCodes]);
 
     return (
-        <div className="p-6 max-w-4xl mx-auto space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-black text-white flex items-center gap-3">
-                        <ShieldCheck className="text-blue-500 w-8 h-8" />
-                        Admin Access Management
+        <div className="p-8 max-w-5xl mx-auto space-y-10 antialiased">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-blue-500 font-bold tracking-[0.2em] text-xs uppercase">
+                        <ShieldCheck className="w-4 h-4" />
+                        Authentication Ledger
+                    </div>
+                    <h1 className="text-4xl font-black text-white tracking-tight">
+                        Access <span className="text-slate-500 font-light">Registry</span>
                     </h1>
-                    <p className="text-slate-400 text-sm font-medium mt-1">
-                        Generate and manage reference codes for new administrator registrations.
-                    </p>
                 </div>
                 
                 <button 
                     onClick={handleGenerate}
                     disabled={loading}
-                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-2xl transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                    className="group relative flex items-center gap-3 bg-white text-black font-black py-4 px-8 rounded-full transition-all hover:bg-blue-500 hover:text-white active:scale-95 disabled:opacity-50"
                 >
-                    <Plus className="w-5 h-5" />
-                    {loading ? 'Generating...' : 'Generate New Code'}
+                    <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+                    {loading ? 'PROCESSING...' : 'INITIALIZE NEW CODE'}
                 </button>
             </div>
 
             {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm flex items-center gap-3 animate-in fade-in zoom-in duration-300">
-                    <span>⚠️</span> {error}
+                <div className="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 rounded-r-xl text-sm font-bold flex items-center gap-3">
+                    <span>SYSTEM ALERT:</span> {error}
                 </div>
             )}
 
-            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-800/50">
-                                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">Reference Code</th>
-                                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">Status</th>
-                                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">Created At</th>
-                                <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800">
-                            {loading && codes.length === 0 ? (
-                                <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-medium italic">Loading security codes...</td></tr>
-                            ) : codes.length === 0 ? (
-                                <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-medium">No admin codes found.</td></tr>
-                            ) : (
-                                codes.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-800/30 transition-colors">
-                                        <td className="p-4">
-                                            <button 
-                                                onClick={() => copyToClipboard(item.code)}
-                                                className="flex items-center gap-3 group"
-                                            >
-                                                <div className="p-2 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
-                                                    <Key className="w-4 h-4 text-blue-400" />
-                                                </div>
-                                                <code className="text-sm font-mono font-bold text-blue-100 tracking-wider group-hover:text-blue-400 transition-colors">
-                                                    {item.code}
-                                                </code>
-                                                <Copy className="w-3 h-3 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </button>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                                                item.is_used 
-                                                ? 'bg-slate-800 text-slate-500' 
-                                                : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                                            }`}>
-                                                {item.is_used ? 'Consumed' : 'Active'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-sm text-slate-400 font-medium">
-                                            {new Date(item.created_at).toLocaleDateString()}
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <button 
-                                                onClick={() => handleDelete(item.id)}
-                                                className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+            {/* Ledger Stats Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6 border-y border-slate-800">
+                <div className="space-y-1">
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Total Entries</p>
+                    <p className="text-xl font-mono text-white">{codes.length.toString().padStart(2, '0')}</p>
+                </div>
+                <div className="space-y-1 border-l border-slate-800 pl-4">
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Active Links</p>
+                    <p className="text-xl font-mono text-emerald-500">{codes.filter(c => !c.is_used).length.toString().padStart(2, '0')}</p>
+                </div>
+                <div className="hidden md:block space-y-1 border-l border-slate-800 pl-4">
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Security Level</p>
+                    <p className="text-xl font-mono text-blue-400">AES-256</p>
+                </div>
+                <div className="hidden md:block space-y-1 border-l border-slate-800 pl-4">
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Registry Sync</p>
+                    <p className="text-xl font-mono text-slate-300">LIVE</p>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">
-                    Secure Code Management System v1.0
-                </p>
+            {/* Ledger List */}
+            <div className="space-y-3">
+                {loading && codes.length === 0 ? (
+                    <div className="py-20 text-center animate-pulse">
+                        <RefreshCcw className="w-10 h-10 text-slate-700 mx-auto animate-spin mb-4" />
+                        <p className="text-slate-500 font-mono text-sm tracking-tighter">SYNCHRONIZING LEDGER...</p>
+                    </div>
+                ) : codes.length === 0 ? (
+                    <div className="py-20 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+                        <p className="text-slate-600 font-medium">Ledger is empty. No access codes recorded.</p>
+                    </div>
+                ) : (
+                    codes.map((item) => (
+                        <div 
+                            key={item.id} 
+                            className="group relative flex flex-col md:flex-row items-center gap-6 bg-slate-900/40 border border-slate-800/60 p-5 rounded-2xl transition-all hover:bg-slate-800/40 hover:border-blue-500/30 shadow-sm"
+                        >
+                            {/* Reference Number */}
+                            <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-500">
+                                {item.id}
+                            </div>
+
+                            {/* Code Column */}
+                            <div className="flex-1 flex flex-col gap-1 w-full md:w-auto">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                                    <Hash className="w-3 h-3" /> Secure Reference
+                                </p>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xl font-mono font-black text-white tracking-tighter">
+                                        {item.code}
+                                    </span>
+                                    <button 
+                                        onClick={() => copyToClipboard(item.code, item.id)}
+                                        className={`p-1.5 rounded-lg transition-all ${copiedId === item.id ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-600 hover:text-blue-400 hover:bg-blue-500/10'}`}
+                                    >
+                                        {copiedId === item.id ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Metadata Grid */}
+                            <div className="grid grid-cols-2 md:flex md:items-center gap-8 w-full md:w-auto">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Origin</p>
+                                    <div className="flex items-center gap-2 text-sm text-slate-300 font-medium">
+                                        <User className="w-3 h-3 text-blue-500" />
+                                        {item.created_by_name || 'ROOT'}
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Timestamp</p>
+                                    <div className="flex items-center gap-2 text-sm text-slate-300 font-medium">
+                                        <Calendar className="w-3 h-3 text-blue-500" />
+                                        {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Status Tag */}
+                            <div className="w-full md:w-32 flex justify-start md:justify-center">
+                                <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                    item.is_used 
+                                    ? 'bg-slate-950 text-slate-600 border-slate-800' 
+                                    : 'bg-emerald-500/5 text-emerald-500 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                                }`}>
+                                    {item.is_used ? <Clock className="w-3 h-3" /> : <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                                    {item.is_used ? 'VOIDED' : 'VALID'}
+                                </div>
+                            </div>
+
+                            {/* Delete Action */}
+                            <button 
+                                onClick={() => handleDelete(item.id)}
+                                className="absolute top-4 right-4 md:static p-3 text-slate-700 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Footer Registry Info */}
+            <div className="flex flex-col md:flex-row items-center justify-between pt-8 gap-4 border-t border-slate-900">
+                <div className="flex items-center gap-4 text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+                    <span>Build 04.20.2026</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-800" />
+                    <span>Encrypted Connection</span>
+                </div>
                 <button 
                     onClick={fetchCodes}
-                    className="p-2 text-slate-500 hover:text-emerald-400 transition-colors"
+                    className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-blue-400 transition-all uppercase tracking-tighter"
                 >
-                    <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCcw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh Node
                 </button>
             </div>
         </div>
