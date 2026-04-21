@@ -69,7 +69,7 @@ const StudentAnnouncements = () => {
                         <div 
                             key={news.id} 
                             onClick={() => setSelectedAnnouncement(news)}
-                            className="group cursor-pointer bg-slate-900/30 border border-slate-800/60 rounded-[2rem] overflow-hidden hover:border-blue-500/40 transition-all duration-500 flex flex-col md:flex-row h-auto md:h-72 shadow-lg hover:shadow-2xl hover:shadow-blue-500/5"
+                            className="group cursor-pointer bg-slate-900/30 border border-slate-800/60 rounded-4xl overflow-hidden hover:border-blue-500/40 transition-all duration-500 flex flex-col md:flex-row h-auto md:h-72 shadow-lg hover:shadow-2xl hover:shadow-blue-500/5"
                         >
                             {/* Terminal Image Container */}
                             <div className="h-56 md:h-full md:w-80 overflow-hidden relative border-b md:border-b-0 md:border-r border-slate-800">
@@ -84,7 +84,7 @@ const StudentAnnouncements = () => {
                                         <Newspaper className="w-16 h-16" />
                                     </div>
                                 )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
 
                             {/* Info Section */}
@@ -151,7 +151,7 @@ const StudentAnnouncements = () => {
                             {/* Featured Media */}
                             {selectedAnnouncement.image_url && (
                                 <div className="w-full lg:w-1/2 p-6">
-                                    <div className="aspect-[4/5] rounded-[2rem] overflow-hidden border border-slate-800 shadow-2xl">
+                                    <div className="aspect-4/5 rounded-4xl overflow-hidden border border-slate-800 shadow-2xl">
                                         <img 
                                             src={`http://localhost:5000${selectedAnnouncement.image_url}`} 
                                             className="w-full h-full object-cover" 
