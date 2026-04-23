@@ -18,20 +18,40 @@ const Login = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
+        
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+            
             if (response.data.success) {
                 const { token, user } = response.data;
+
+                // --- CRITICAL DATA PERSISTENCE FOR THE LEDGER ---
                 localStorage.setItem('token', token);
                 localStorage.setItem('role', user.role);
-                localStorage.setItem('userName', user.name);
-                localStorage.setItem('userId', String(user.id));
-                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                user.role === 'admin' ? navigate('/admin-dashboard') : navigate('/student-dashboard');
+                
+                // Dynamically source the name to avoid hardcoded "Eric Dominic Momo" issues
+                localStorage.setItem('userName', user.full_name || user.name); 
+                
+                // Storing ID as string to ensure compatibility with backend requests
+                localStorage.setItem('userId', String(user.id)); 
+                // -----------------------------------------------
+
+                // Route based on clearance level
+                if (user.role === 'admin') {
+                    navigate('/admin-dashboard');
+                } else {
+                    navigate('/student-dashboard');
+                }
             }
         } catch (err: unknown) {
-            setError(axios.isAxiosError(err) ? err.response?.data?.message || 'Invalid credentials' : 'Error occurred');
-        } finally { setLoading(false); }
+            setError(
+                axios.isAxiosError(err) 
+                    ? err.response?.data?.message || 'Invalid credentials' 
+                    : 'Connection to authentication server failed'
+            );
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     return (
@@ -54,7 +74,7 @@ const Login = () => {
                         Streamline your internship journey with MentorLog. Real-time tracking and simplified management.
                     </p>
 
-                    {/* The new Photo - locked with max-height to prevent scrolling */}
+                    {/* The Preview Photo */}
                     <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
                         <img 
                             src={ojtPicture} 
@@ -92,7 +112,6 @@ const Login = () => {
                         <div className="space-y-1.5">
                             <div className="flex justify-between items-center px-1">
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Password</label>
-                                {/* UPDATED: Changed from button to Link and updated text */}
                                 <Link 
                                     to="/forgot-password" 
                                     className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest"

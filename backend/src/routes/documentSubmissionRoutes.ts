@@ -4,7 +4,9 @@ import path from 'path';
 import { 
     submitDocument, 
     getAllSubmissions, 
-    updateSubmissionStatus 
+    updateSubmissionStatus,
+    editDocument,     // Added
+    deleteDocument    // Added
 } from '../controllers/documentSubmissionController';
 
 const router = express.Router();
@@ -23,10 +25,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 } // Optional: limit size to 5MB
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB Limit
 });
 
 // 2. Routes
+
 // Endpoint: POST /api/documents/submit
 router.post('/submit', upload.single('document'), submitDocument);
 
@@ -34,6 +37,15 @@ router.post('/submit', upload.single('document'), submitDocument);
 router.get('/all', getAllSubmissions);
 
 // Endpoint: PUT /api/documents/update/:id
+// Primarily used for Admin Approval/Rejection and Feedback
 router.put('/update/:id', updateSubmissionStatus);
+
+// Endpoint: PUT /api/documents/edit/:id
+// NEW: Used to modify document metadata (like the type)
+router.put('/edit/:id', editDocument);
+
+// Endpoint: DELETE /api/documents/delete/:id
+// NEW: Removes the database record and the physical file from /uploads
+router.delete('/delete/:id', deleteDocument);
 
 export default router;

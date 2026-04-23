@@ -13,6 +13,9 @@ interface Submission {
 const ManageSubmission = () => {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    // State for simple Edit Modal
+    const [editingSub, setEditingSub] = useState<Submission | null>(null);
 
     useEffect(() => {
         fetchSubmissions();
@@ -32,20 +35,31 @@ const ManageSubmission = () => {
     const updateStatus = async (id: number, status: string) => {
         try {
             await axios.put(`http://localhost:5000/api/documents/update/${id}`, { status, feedback: "" });
-            fetchSubmissions(); // Refresh list without reloading whole page
+            fetchSubmissions();
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             alert("Failed to update status");
         }
     };
 
+    // NEW: Delete Function
+    const deleteSubmission = async (id: number) => {
+        if (!window.confirm("Are you sure you want to delete this submission? This action cannot be undone.")) return;
+        try {
+            await axios.delete(`http://localhost:5000/api/documents/delete/${id}`);
+            setSubmissions(submissions.filter(sub => sub.id !== id));
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (err) {
+            alert("Failed to delete submission");
+        }
+    };
+
     const handleViewFile = (path: string) => {
-        // This opens the file in a new tab using your backend static path
         window.open(`http://localhost:5000/${path}`, '_blank');
     };
 
     return (
-        <div className="animate-in fade-in duration-500">
+        <div className="animate-in fade-in duration-500 relative">
             <div className="mb-8">
                 <h1 className="text-3xl font-black text-white tracking-tight">Manage Submissions</h1>
                 <p className="text-slate-400 text-sm font-medium">Review and approve student requirement documents.</p>
@@ -77,38 +91,100 @@ const ManageSubmission = () => {
                                         }`}>
                                             {sub.status}
                                         </span>
+                                        <span className="text-[9px] text-slate-500 font-bold uppercase py-0.5">
+                                            ID: {sub.id}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div className="flex gap-3 mt-6 md:mt-0 w-full md:w-auto">
+                            <div className="flex flex-wrap gap-2 mt-6 md:mt-0 w-full md:w-auto">
                                 <button 
                                     onClick={() => handleViewFile(sub.file_path)}
-                                    className="flex-1 md:flex-none text-[10px] font-black bg-slate-800 text-slate-200 px-6 py-3 rounded-xl hover:bg-slate-700 transition-all border border-slate-700"
+                                    className="text-[10px] font-black bg-slate-800 text-slate-200 px-4 py-3 rounded-xl hover:bg-slate-700 transition-all border border-slate-700"
                                 >
-                                    VIEW FILE
+                                    VIEW
                                 </button>
+
+                                {/* Action Buttons based on Status */}
                                 {sub.status === 'pending' && (
                                     <>
                                         <button 
                                             onClick={() => updateStatus(sub.id, 'approved')}
-                                            className="flex-1 md:flex-none text-[10px] font-black bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+                                            className="text-[10px] font-black bg-emerald-600 text-white px-4 py-3 rounded-xl hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
                                         >
                                             APPROVE
                                         </button>
                                         <button 
                                             onClick={() => updateStatus(sub.id, 'rejected')}
-                                            className="flex-1 md:flex-none text-[10px] font-black bg-red-600/10 text-red-500 px-6 py-3 rounded-xl hover:bg-red-600 hover:text-white transition-all border border-red-500/20"
+                                            className="text-[10px] font-black bg-red-600/10 text-red-500 px-4 py-3 rounded-xl hover:bg-red-600 hover:text-white transition-all border border-red-500/20"
                                         >
                                             REJECT
                                         </button>
                                     </>
                                 )}
+
+                                {/* NEW: EDIT BUTTON */}
+                                <button 
+                                    onClick={() => setEditingSub(sub)}
+                                    className="text-[10px] font-black bg-blue-600/10 text-blue-400 px-4 py-3 rounded-xl hover:bg-blue-600 hover:text-white transition-all border border-blue-500/20"
+                                >
+                                    EDIT
+                                </button>
+
+                                {/* NEW: DELETE BUTTON (Trash Icon Style) */}
+                                <button 
+                                    onClick={() => deleteSubmission(sub.id)}
+                                    className="text-[10px] font-black bg-slate-800 text-slate-400 px-4 py-3 rounded-xl hover:bg-red-600 hover:text-white transition-all border border-slate-700"
+                                    title="Delete Submission"
+                                >
+                                    🗑️
+                                </button>
                             </div>
                         </div>
                     ))
                 )}
             </div>
+
+            {/* SIMPLE EDIT MODAL OVERLAY */}
+            {editingSub && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in zoom-in duration-200">
+                    <div className="bg-[#0f172a] border border-slate-800 w-full max-w-md rounded-3xl p-8 shadow-2xl">
+                        <h2 className="text-xl font-black text-white mb-2 uppercase tracking-tight">Edit Submission</h2>
+                        <p className="text-slate-400 text-sm mb-6">Updating record for {editingSub.student_name}</p>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Document Type</label>
+                                <input 
+                                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"
+                                    defaultValue={editingSub.document_type}
+                                    id="edit_doc_type"
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button 
+                                    onClick={() => setEditingSub(null)}
+                                    className="flex-1 text-[10px] font-black bg-slate-800 text-slate-300 py-4 rounded-xl hover:bg-slate-700 transition-all"
+                                >
+                                    CANCEL
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        const newVal = (document.getElementById('edit_doc_type') as HTMLInputElement).value;
+                                        // You can create a specific API route for this if needed
+                                        alert(`System would update ID ${editingSub.id} to ${newVal}`);
+                                        setEditingSub(null);
+                                    }}
+                                    className="flex-1 text-[10px] font-black bg-blue-600 text-white py-4 rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+                                >
+                                    SAVE CHANGES
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
