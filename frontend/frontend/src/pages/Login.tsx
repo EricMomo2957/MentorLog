@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { FiArrowLeft } from 'react-icons/fi'; // Import the arrow icon
 import mentorLogLogo from '../assets/mentorlogOption.png'; 
 import ojtPicture from '../assets/ojt-picture.jpg';
 
@@ -24,19 +25,11 @@ const Login = () => {
             
             if (response.data.success) {
                 const { token, user } = response.data;
-
-                // --- CRITICAL DATA PERSISTENCE FOR THE LEDGER ---
                 localStorage.setItem('token', token);
                 localStorage.setItem('role', user.role);
-                
-                // Dynamically source the name to avoid hardcoded "Eric Dominic Momo" issues
                 localStorage.setItem('userName', user.full_name || user.name); 
-                
-                // Storing ID as string to ensure compatibility with backend requests
                 localStorage.setItem('userId', String(user.id)); 
-                // -----------------------------------------------
 
-                // Route based on clearance level
                 if (user.role === 'admin') {
                     navigate('/admin-dashboard');
                 } else {
@@ -55,12 +48,10 @@ const Login = () => {
     };
 
     return (
-        /* Added h-screen and overflow-hidden to lock the page height */
         <div className="h-screen w-full flex bg-[#020617] text-slate-200 font-sans overflow-hidden">
             
             {/* --- LEFT SIDE: VISUAL BRANDING --- */}
             <div className="hidden lg:flex lg:w-1/2 h-full relative overflow-hidden flex-col items-center justify-center p-12 bg-linear-to-br from-[#0f172a] to-[#020617] border-r border-slate-800/50">
-                {/* Decorative Background Circles */}
                 <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full -ml-48 -mt-48" />
                 <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-600/10 blur-[120px] rounded-full -mr-48 -mb-48" />
 
@@ -74,7 +65,6 @@ const Login = () => {
                         Streamline your internship journey with MentorLog. Real-time tracking and simplified management.
                     </p>
 
-                    {/* The Preview Photo */}
                     <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
                         <img 
                             src={ojtPicture} 
@@ -89,6 +79,15 @@ const Login = () => {
             {/* --- RIGHT SIDE: LOGIN FORM --- */}
             <div className="w-full lg:w-1/2 h-full flex items-center justify-center p-6 sm:p-12 overflow-hidden">
                 <div className="w-full max-w-md space-y-6">
+                    
+                    {/* BACK TO LANDING ARROW */}
+                    <button 
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest mb-4 group"
+                    >
+                        <FiArrowLeft className="text-lg group-hover:-translate-x-1 transition-transform" /> Back to Home
+                    </button>
+
                     <div className="text-center lg:text-left">
                         <h2 className="text-3xl font-black text-white tracking-tight mb-2">Welcome Back</h2>
                         <p className="text-slate-500 font-medium text-sm">Please enter your details to sign in.</p>
@@ -110,15 +109,7 @@ const Login = () => {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <div className="flex justify-between items-center px-1">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Password</label>
-                                <Link 
-                                    to="/forgot-password" 
-                                    className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest"
-                                >
-                                    Forgot Password?
-                                </Link>
-                            </div>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Password</label>
                             <input 
                                 type="password" name="password" placeholder="••••••••" 
                                 onChange={handleChange} required 
@@ -139,12 +130,22 @@ const Login = () => {
                         <div className="relative flex justify-center text-[10px] uppercase"><span className="bg-[#020617] px-4 text-slate-600 font-bold tracking-widest">or</span></div>
                     </div>
 
-                    <Link 
-                        to="/register" 
-                        className="block w-full text-center py-4 bg-transparent border border-slate-800 hover:bg-slate-900 text-slate-300 font-bold rounded-2xl transition-all"
-                    >
-                        Create new account
-                    </Link>
+                    <div className="space-y-3">
+                        <Link 
+                            to="/register" 
+                            className="block w-full text-center py-4 bg-transparent border border-slate-800 hover:bg-slate-900 text-slate-300 font-bold rounded-2xl transition-all"
+                        >
+                            Create new account
+                        </Link>
+
+                        {/* FORGOT PASSWORD BELOW CREATE ACCOUNT */}
+                        <Link 
+                            to="/forgot-password" 
+                            className="block w-full text-center text-[10px] font-bold text-slate-500 hover:text-blue-400 transition-colors uppercase tracking-[0.2em]"
+                        >
+                            Forgot your password?
+                        </Link>
+                    </div>
 
                     <p className="text-center text-slate-700 text-[10px] font-bold uppercase tracking-[0.3em] pt-4">
                         © 2026 MentorLog • Cebu City
