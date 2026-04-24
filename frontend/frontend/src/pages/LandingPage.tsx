@@ -2,20 +2,18 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     FiShield, FiArrowRight, FiCheckCircle, 
-    FiDatabase, FiLayers, FiActivity, FiUsers, FiLock 
-} from 'react-icons/fi';
+    FiDatabase, FiLayers, FiActivity, FiUsers, 
+    FiLock, FiCpu, FiMessageSquare, FiFileText} from 'react-icons/fi';
 
 const LandingPage = () => {
     const navigate = useNavigate();
     const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
 
-    // --- AUTH REDIRECT LOGIC ---
     useEffect(() => {
         const token = localStorage.getItem('token');
-        const role = localStorage.getItem('userRole');
+        const role = localStorage.getItem('role'); // Fixed: changed 'userRole' to 'role' to match your Login.tsx
 
         if (token && role) {
-            // If already authenticated, bypass landing page
             navigate(role === 'admin' ? '/admin-dashboard' : '/student-dashboard');
         }
     }, [navigate]);
@@ -24,18 +22,25 @@ const LandingPage = () => {
         {
             icon: <FiDatabase />,
             title: "Data Integrity",
-            desc: "Secure logging of student inquiries and feedback with encrypted repository storage."
+            desc: "Secure logging of student inquiries and feedback with AES-256 encrypted repository storage and MySQL relational mapping."
         },
         {
             icon: <FiLayers />,
             title: "Modular Suite",
-            desc: "Clean separation of submission tracking, recovery requests, and sentiment analysis."
+            desc: "Clean separation of submission tracking, recovery requests, and automated sentiment analysis for departmental efficiency."
         },
         {
             icon: <FiActivity />,
             title: "Real-time Pulse",
-            desc: "Instant synchronization across administrative terminals for seamless student support."
+            desc: "Instant synchronization across administrative terminals via high-speed Node.js backplane for seamless student support."
         }
+    ];
+
+    const techHighlights = [
+        { title: "OCR Integration", detail: "Automated schedule digitization using high-accuracy character recognition engines.", icon: <FiFileText /> },
+        { title: "Sentiment Analysis", detail: "AI-driven feedback processing to categorize student concerns and satisfaction levels.", icon: <FiMessageSquare /> },
+        { title: "Role-Based Access", detail: "Hierarchical clearance levels ensuring data isolation between Admin and Student nodes.", icon: <FiLock /> },
+        { title: "Centralized API", detail: "Unified RESTful architecture built on Express.js for low-latency communication.", icon: <FiCpu /> }
     ];
 
     return (
@@ -93,17 +98,17 @@ const LandingPage = () => {
                             Launch Terminal <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
                         </button>
                         <button 
-                            onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}
+                            onClick={() => document.getElementById('details')?.scrollIntoView({ behavior: 'smooth' })}
                             className="px-10 py-5 bg-transparent hover:bg-slate-800/30 text-white font-black uppercase text-xs tracking-widest rounded-3xl border border-slate-800 transition-all"
                         >
-                            Core Modules
+                            System Specs
                         </button>
                     </div>
                 </div>
             </section>
 
             {/* Feature Grid */}
-            <section className="relative z-10 px-6 pb-40">
+            <section id="details" className="relative z-10 px-6 pb-20">
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
                     {features.map((feature, idx) => (
                         <div 
@@ -122,10 +127,33 @@ const LandingPage = () => {
                                 {feature.desc}
                             </p>
                             
-                            {/* Accent Line Decor */}
                             <div className={`absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-700 ${hoveredFeature === idx ? 'w-full' : 'w-0'}`} />
                         </div>
                     ))}
+                </div>
+            </section>
+
+            {/* NEW: TECHNICAL SPECIFICATIONS SECTION */}
+            <section className="relative z-10 px-6 py-20 bg-slate-950/20">
+                <div className="max-w-7xl mx-auto">
+                    <div className="mb-16 text-center lg:text-left">
+                        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter mb-2">Technical Specifications</h2>
+                        <p className="text-slate-500 text-sm font-medium">Inside the MentorLog Intelligence Suite Architecture</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {techHighlights.map((tech, i) => (
+                            <div key={i} className="p-6 border-l border-slate-800 hover:border-emerald-500 transition-colors group">
+                                <div className="text-emerald-500 text-2xl mb-4 group-hover:animate-pulse">
+                                    {tech.icon}
+                                </div>
+                                <h4 className="text-white font-bold uppercase tracking-widest text-xs mb-2">{tech.title}</h4>
+                                <p className="text-slate-500 text-xs leading-relaxed font-medium group-hover:text-slate-400 transition-colors">
+                                    {tech.detail}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </section>
 
@@ -160,10 +188,10 @@ const LandingPage = () => {
             <footer className="py-12 border-t border-slate-900 px-8 text-center relative z-10">
                 <div className="flex items-center justify-center gap-2 mb-4">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-slate-500 text-[9px] font-black uppercase tracking-[0.3em]">System encrypted and secured</span>
+                    <span className="text-slate-500 text-[9px] font-black uppercase tracking-[0.3em]">System encrypted and secured via Node.js Backbone</span>
                 </div>
                 <p className="text-slate-700 text-[10px] font-black uppercase tracking-[0.5em]">
-                    © 2026 UNIVERSITY INFRASTRUCTURE • CCS MENTOR LOG TERMINAL
+                    © 2026 UNIVERSITY INFRASTRUCTURE • CEBU CITY • CCS MENTOR LOG TERMINAL
                 </p>
             </footer>
 
