@@ -13,7 +13,6 @@ const StudentSettings = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-    // Fetch current user data on load
     useEffect(() => {
         const fetchUserData = async () => {
             const userId = localStorage.getItem('userId');
@@ -42,7 +41,6 @@ const StudentSettings = () => {
         setLoading(true);
         setMessage(null);
 
-        // Get the user ID from storage
         const userId = localStorage.getItem('userId');
 
         try {
@@ -62,13 +60,14 @@ const StudentSettings = () => {
             
             if (data.success) {
                 setMessage({ text: "Profile updated successfully!", type: 'success' });
-                // Clear password fields after success for security
                 setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '' }));
             } else {
                 setMessage({ text: data.message || "Update failed.", type: 'error' });
             }
-        } catch (err: any) {
-            console.error("Connection error:", err.message);
+        // FIX: Using 'unknown' and checking instance of Error to satisfy TypeScript
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Connection error";
+            console.error("Update Error:", errorMessage);
             setMessage({ text: "Connection error to PHP Bridge.", type: 'error' });
         } finally {
             setLoading(false);
@@ -112,15 +111,16 @@ const StudentSettings = () => {
                                 className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-slate-500 cursor-not-allowed"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase">Phone Number</label>
-                            <input 
-                                type="text" 
-                                value={formData.phone}
-                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none"
-                            />
-                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Phone Number</label>
+                        <input 
+                            type="text" 
+                            value={formData.phone}
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none"
+                        />
                     </div>
 
                     <hr className="border-slate-800" />
@@ -137,7 +137,7 @@ const StudentSettings = () => {
                             />
                             <input 
                                 type="password" 
-                                placeholder="New Password (optional)"
+                                placeholder="New Password"
                                 value={formData.newPassword}
                                 onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
                                 className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none"
