@@ -13,18 +13,19 @@ const StudentSettings = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-    // Fetch current user data on load
     useEffect(() => {
         const fetchUserData = async () => {
             const userId = localStorage.getItem('userId');
+            if (!userId) return;
+
             try {
                 const res = await fetch(`${PHP_BRIDGE_URL}/get-profile.php?user_id=${userId}`);
                 const data = await res.json();
                 if (data.success) {
                     setFormData(prev => ({
                         ...prev,
-                        full_name: data.user.full_name,
-                        email: data.user.email,
+                        full_name: data.user.full_name || '',
+                        email: data.user.email || '',
                         phone: data.user.phone || ''
                     }));
                 }
@@ -33,22 +34,28 @@ const StudentSettings = () => {
             }
         };
         fetchUserData();
-    }, []);
+    }, [PHP_BRIDGE_URL]);
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setMessage(null);
 
+        const userId = localStorage.getItem('userId');
+
         try {
             const response = await fetch(`${PHP_BRIDGE_URL}/update-profile.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_id: localStorage.getItem('userId'),
-                    ...formData
+                    user_id: userId,
+                    full_name: formData.full_name,
+                    phone: formData.phone,
+                    currentPassword: formData.currentPassword,
+                    newPassword: formData.newPassword,
                 })
             });
+
             const data = await response.json();
             
             if (data.success) {
@@ -57,9 +64,11 @@ const StudentSettings = () => {
             } else {
                 setMessage({ text: data.message || "Update failed.", type: 'error' });
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (err) {
-            setMessage({ text: "Connection error.", type: 'error' });
+        // FIX: Using 'unknown' and checking instance of Error to satisfy TypeScript
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Connection error";
+            console.error("Update Error:", errorMessage);
+            setMessage({ text: "Connection error to PHP Bridge.", type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -67,11 +76,17 @@ const StudentSettings = () => {
 
     return (
         <div className="max-w-4xl mx-auto p-6">
-            <h1 className="text-3xl font-black text-white mb-8">Account <span className="text-blue-500">Settings</span></h1>
+            <h1 className="text-3xl font-black text-white mb-8">
+                Account <span className="text-blue-500">Settings</span>
+            </h1>
 
             <div className="bg-[#1e293b] rounded-3xl border border-slate-800 p-8 shadow-2xl">
                 {message && (
-                    <div className={`mb-6 p-4 rounded-xl border ${message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}>
+                    <div className={`mb-6 p-4 rounded-xl border ${
+                        message.type === 'success' 
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' 
+                        : 'bg-red-500/10 border-red-500 text-red-500'
+                    }`}>
                         {message.text}
                     </div>
                 )}
@@ -98,6 +113,16 @@ const StudentSettings = () => {
                         </div>
                     </div>
 
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Phone Number</label>
+                        <input 
+                            type="text" 
+                            value={formData.phone}
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none"
+                        />
+                    </div>
+
                     <hr className="border-slate-800" />
 
                     <div className="space-y-4">
@@ -112,7 +137,7 @@ const StudentSettings = () => {
                             />
                             <input 
                                 type="password" 
-                                placeholder="New Password (optional)"
+                                placeholder="New Password"
                                 value={formData.newPassword}
                                 onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
                                 className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none"
