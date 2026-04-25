@@ -60,7 +60,7 @@ const LandingPage = () => {
 
             <nav className="relative z-50 flex justify-between items-center px-8 py-8 max-w-7xl mx-auto">
                 <div className="flex items-center gap-3 group cursor-default">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:rotate-12 transition-transform duration-500">
+                    <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:rotate-12 transition-transform duration-500">
                         <FiShield className="text-white text-xl" />
                     </div>
                     <span className="text-xl font-black tracking-tighter text-white uppercase italic">
@@ -78,7 +78,7 @@ const LandingPage = () => {
             <section className="relative z-10 pt-20 pb-32 px-6 text-center">
                 <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter mb-8 leading-[0.9]">
                     Unified Student <br />
-                    <span className="bg-gradient-to-r from-emerald-400 via-blue-500 to-emerald-400 bg-size-[200%_auto] animate-gradient bg-clip-text text-transparent">Management.</span>
+                    <span className="bg-linear-to-r from-emerald-400 via-blue-500 to-emerald-400 bg-size-[200%_auto] animate-gradient bg-clip-text text-transparent">Management.</span>
                 </h1>
                 <p className="max-w-2xl mx-auto text-slate-400 text-lg mb-12">
                     A high-performance intelligence terminal for monitoring campus-wide sentiment and submission tracking in real-time.
