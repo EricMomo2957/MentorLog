@@ -4,6 +4,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid 
 } from 'recharts';
 import TaskFeed from './TaskFeed';
+import api from '../../services/api';
 
 // --- TYPES ---
 interface User { 
@@ -33,13 +34,11 @@ interface TaskLog {
     due_date: string; 
 }
 
-// Fixed type for the reduce accumulator to avoid 'any' error
 interface ChartData {
     name: string;
     tasks: number;
 }
 
-const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge';
 const LEDGER_THEME = ['#0ea5e9', '#334155', '#475569', '#1e293b']; 
 
 const AdminDashboard = () => {
@@ -55,25 +54,19 @@ const AdminDashboard = () => {
 
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
-        const token = localStorage.getItem('token');
-        const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
         try {
             const [userRes, attRes, taskRes] = await Promise.all([
-                fetch('http://localhost:5000/api/admin/users/all', { headers }), 
-                fetch('http://localhost:5000/api/attendance/all', { headers }),
-                fetch('http://localhost:5000/api/tasks/all', { headers })
+                api.get('/admin/users/all'), 
+                api.get('/attendance/all'),
+                api.get('/tasks/all')
             ]);
-            const userData = await userRes.json();
-            const attData = await attRes.json();
-            const taskData = await taskRes.json();
             
-            if (userData.success) setUsers(userData.data || []);
-            if (attData.success) setLogs(attData.data || []);
-            if (taskData.success) setTasks(taskData.data || []);
+            if (userRes.data?.success) setUsers(userRes.data.data || []);
+            if (attRes.data?.success) setLogs(attRes.data.data || []);
+            if (taskRes.data?.success) setTasks(taskRes.data.data || []);
         } catch (err) {
             console.error("Fetch Error:", err);
         } finally {
-            // Prevent state updates if component unmounts (optional but cleaner)
             setIsLoading(false);
         }
     }, []);
@@ -87,18 +80,14 @@ const AdminDashboard = () => {
         if (!selectedStudent) return;
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${PHP_BRIDGE_URL}/post-task-admin.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: selectedStudent.id,
-                    title: formData.title,
-                    task_description: formData.description,
-                    due_date: formData.due_date
-                })
+            const response = await api.post('/tasks/assign', {
+                student_id: selectedStudent.id,
+                title: formData.title,
+                task_description: formData.description,
+                due_date: formData.due_date
             });
-            const resData = await response.json();
-            if (resData.status === "success") {
+
+            if (response.data?.success) {
                 setShowModal(false);
                 setFormData({ title: '', description: '', due_date: '' });
                 fetchAllData(); 
@@ -109,6 +98,7 @@ const AdminDashboard = () => {
             setIsSubmitting(false); 
         }
     };
+
 
     // Stats Logic
     const activeSessions = logs.filter(l => l.is_active === true || l.is_active === 1).length;
