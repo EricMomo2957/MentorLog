@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../../services/api';
 
 interface UserProfile {
     full_name: string;
@@ -10,7 +11,6 @@ interface UserProfile {
 }
 
 const AdminProfile = () => {
-    const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge';
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     
@@ -30,24 +30,19 @@ const AdminProfile = () => {
     }, []);
 
     const fetchProfile = async () => {
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-            setLoading(false);
-            return;
-        }
-
         try {
-            const res = await fetch(`${PHP_BRIDGE_URL}/get-profile.php?user_id=${userId}`);
-            const data = await res.json();
-            
-            if (data.success && data.user) {
+            const res = await api.get('/auth/profile');
+            const data = res.data;
+            const userData = data.user || data;
+
+            if (userData) {
                 const mappedUser: UserProfile = {
-                    full_name: data.user.full_name || 'Admin User',
-                    email: data.user.email || '',
-                    phone: data.user.phone || '',
-                    employee_id: data.user.student_id || 'ADM-001',
-                    department: data.user.course || 'IT Department',
-                    role_title: data.user.year_level || 'System Administrator'
+                    full_name: userData.full_name || 'Admin User',
+                    email: userData.email || '',
+                    phone: userData.phone || '',
+                    employee_id: userData.student_id || 'ADM-001',
+                    department: userData.course || 'IT Department',
+                    role_title: userData.year_level || 'System Administrator'
                 };
 
                 setProfile(mappedUser);
@@ -70,27 +65,25 @@ const AdminProfile = () => {
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
-        const userId = localStorage.getItem('userId');
 
         try {
-            const res = await fetch(`${PHP_BRIDGE_URL}/update-profile.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, ...formData })
+            const res = await api.put('/auth/profile', {
+                full_name: formData.full_name,
+                email: formData.email,
+                student_id: formData.employee_id,
+                course: formData.department
             });
             
-            const data = await res.json();
-            
-            if (data.success) {
+            if (res.data?.success) {
                 alert("Admin profile updated successfully!");
                 setIsEditModalOpen(false);
                 await fetchProfile(); 
             } else {
-                alert(data.message || "Update failed.");
+                alert(res.data?.message || "Update failed.");
             }
         } catch (err) {
-            console.error("Update error:", err);
-            alert("Connection error.");
+            console.error("Update Error:", err);
+            alert("Failed to update profile.");
         } finally {
             setIsSaving(false);
         }
