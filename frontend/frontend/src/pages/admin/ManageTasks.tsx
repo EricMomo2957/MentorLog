@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 
 interface User {
     id: number;
@@ -32,27 +33,26 @@ const ManageTasks = () => {
         status: 'Pending' as Task['status']
     });
 
-    useEffect(() => {
-        const fetchDatabaseData = async () => {
-            setLoading(true);
-            try {
-                const [studentRes, taskRes] = await Promise.all([
-                    fetch('http://localhost/mentorlog/php-bridge/get-students.php'),
-                    fetch('http://localhost/mentorlog/php-bridge/get-tasks.php')
-                ]);
+    const fetchDatabaseData = async () => {
+        setLoading(true);
+        try {
+            const [studentRes, taskRes] = await Promise.all([
+                api.get('/admin/students'),
+                api.get('/tasks/all')
+            ]);
 
-                if (studentRes.ok && taskRes.ok) {
-                    const studentData = await studentRes.json();
-                    const taskData = await taskRes.json();
-                    setStudents(studentData);
-                    setTasks(taskData);
-                }
-            } catch (err) {
-                console.error("Database connection failed:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+            const studentList = studentRes.data?.data || studentRes.data || [];
+            const taskList = taskRes.data?.data || taskRes.data || [];
+            setStudents(studentList);
+            setTasks(taskList);
+        } catch (err) {
+            console.error("Database connection failed:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchDatabaseData();
     }, []);
 
@@ -61,57 +61,45 @@ const ManageTasks = () => {
         const nextStatus = statusOrder[(statusOrder.indexOf(task.status) + 1) % statusOrder.length];
 
         try {
-            const response = await fetch('http://localhost/mentorlog/php-bridge/update-task.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...task, status: nextStatus })
-            });
-
-            if (response.ok) {
-                setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
-            }
+            await api.put(`/tasks/${task.id}/status`, { status: nextStatus });
+            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
         } catch (err) { console.error(err); }
     };
 
     const handleSaveTask = async (e: React.FormEvent) => {
         e.preventDefault();
         const isEditing = !!editingTask;
-        const url = isEditing 
-            ? `http://localhost/mentorlog/php-bridge/update-task.php` 
-            : 'http://localhost/mentorlog/php-bridge/assign-task.php';
 
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: editingTask?.id,
+            if (isEditing && editingTask) {
+                await api.put(`/tasks/${editingTask.id}`, {
                     user_id: parseInt(formData.user_id), 
                     title: formData.title,
                     task_description: formData.task_description,
                     due_date: formData.due_date,
                     status: formData.status
-                })
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                const refresh = await fetch('http://localhost/mentorlog/php-bridge/get-tasks.php');
-                setTasks(await refresh.json());
-                closeModal();
+                });
+            } else {
+                await api.post('/tasks/assign', {
+                    student_id: parseInt(formData.user_id), 
+                    title: formData.title,
+                    task_description: formData.task_description,
+                    due_date: formData.due_date
+                });
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (err) { alert("Connection failed."); }
+            await fetchDatabaseData();
+            closeModal();
+        } catch (err) { alert("Action failed."); }
     };
 
     const handleDelete = async (id: number) => {
         if (!window.confirm("Delete this task record?")) return;
         try {
-            const response = await fetch(`http://localhost/mentorlog/php-bridge/delete-task.php?id=${id}`, { method: 'DELETE' });
-            const result = await response.json();
-            if (result.success) setTasks(prev => prev.filter(t => t.id !== id));
+            await api.delete(`/tasks/${id}`);
+            setTasks(prev => prev.filter(t => t.id !== id));
         } catch (err) { console.error(err); }
     };
+
 
     const openModal = (task?: Task) => {
         if (task) {
