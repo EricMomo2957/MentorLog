@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import api from '../../services/api';
 
 interface Student {
     id: number;
@@ -15,14 +16,10 @@ const ManageStudents = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
-    // Optimized fetch to avoid cascading render warnings
     const fetchStudents = useCallback(async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/admin/students', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            const result = await response.json();
-            if (result.success) setStudents(result.data);
+            const response = await api.get('/admin/students');
+            if (response.data?.success) setStudents(response.data.data);
         } catch (error) {
             console.error("Error:", error);
         } finally {
@@ -37,20 +34,13 @@ const ManageStudents = () => {
     const handleUpdate = async () => {
         if (!editingStudent) return;
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/students/${editingStudent.id}`, {
-                method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}` 
-                },
-                body: JSON.stringify({
-                    full_name: editingStudent.full_name,
-                    student_id: editingStudent.student_id,
-                    ojt_hours_required: editingStudent.ojt_hours_required
-                })
+            const response = await api.put(`/admin/students/${editingStudent.id}`, {
+                full_name: editingStudent.full_name,
+                student_id: editingStudent.student_id,
+                ojt_hours_required: editingStudent.ojt_hours_required
             });
 
-            if (response.ok) {
+            if (response.data?.success) {
                 setStudents(prev => prev.map(s => s.id === editingStudent.id ? editingStudent : s));
                 setEditingStudent(null);
             }
@@ -60,11 +50,8 @@ const ManageStudents = () => {
     const handleDelete = async (id: number) => {
         if (!window.confirm("Permanently delete this student account?")) return;
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/students/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            if (response.ok) setStudents(prev => prev.filter(s => s.id !== id));
+            const response = await api.delete(`/admin/students/${id}`);
+            if (response.data?.success) setStudents(prev => prev.filter(s => s.id !== id));
         } catch (error) { console.error(error); }
     };
 
