@@ -137,3 +137,75 @@ export const forgotPassword = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+interface AuthRequest extends Request {
+    user?: {
+        id: number;
+        role: string;
+        full_name?: string;
+    };
+}
+
+export const getProfile = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id || req.query.user_id;
+
+    if (!userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    try {
+        const [rows]: any = await pool.query(
+            'SELECT id, full_name, email, role, student_id, course, ojt_hours_required, created_at FROM users WHERE id = ?',
+            [userId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const user = rows[0];
+        res.status(200).json({
+            success: true,
+            user,
+            ...user
+        });
+    } catch (error) {
+        console.error("Get Profile Error:", error);
+        res.status(500).json({ success: false, message: 'Error fetching profile' });
+    }
+};
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id || req.body.user_id || req.body.id;
+    const { full_name, email, student_id, course, current_password, new_password } = req.body;
+
+    if (!userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    try {
+        if (new_password) {
+            if (current_password) {
+                const [rows]: any = await pool.query('SELECT password FROM users WHERE id = ?', [userId]);
+                if (rows.length > 0) {
+                    const isMatch = await bcrypt.compare(current_password, rows[0].password);
+                    if (!isMatch) {
+                        return res.status(400).json({ success: false, message: 'Incorrect current password.' });
+                    }
+                }
+            }
+            const hashedPassword = await bcrypt.hash(new_password, 10);
+            await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+        }
+
+        await pool.query(
+            'UPDATE users SET full_name = COALESCE(?, full_name), email = COALESCE(?, email), student_id = COALESCE(?, student_id), course = COALESCE(?, course) WHERE id = ?',
+            [full_name || null, email || null, student_id || null, course || null, userId]
+        );
+
+        res.status(200).json({ success: true, message: 'Profile updated successfully' });
+    } catch (error) {
+        console.error("Update Profile Error:", error);
+        res.status(500).json({ success: false, message: 'Error updating profile' });
+    }
+};
