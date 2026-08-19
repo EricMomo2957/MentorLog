@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
 import mentorLogLogo from '../assets/mentorlogOption.png';
 import ojtPicture from '../assets/ojt-picture.jpg';
+import api from '../services/api';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
@@ -16,19 +16,15 @@ const ForgotPassword = () => {
         setError('');
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
-            setMessage(response.data.message || 'Check your email for reset instructions.');
-        } catch (err: unknown) {
-            // FIX: Changed 'any' to 'unknown' and added Axios check
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.message || 'Failed to send reset email.');
-            } else {
-                setError('An unexpected error occurred.');
-            }
+            const response = await api.post('/auth/forgot-password', { email });
+            setMessage(response.data?.message || 'Check your email for reset instructions.');
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to send reset request.');
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="h-screen w-full flex bg-[#020617] text-slate-200 font-sans overflow-hidden">
