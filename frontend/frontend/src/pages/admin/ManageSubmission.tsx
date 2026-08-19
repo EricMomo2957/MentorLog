@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     FiFileText, FiCheck, FiX, FiEdit3, FiTrash2, FiExternalLink, 
     FiClock, FiCheckCircle 
@@ -25,9 +25,8 @@ const ManageSubmission = () => {
 
     const fetchSubmissions = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/documents/all');
-            setSubmissions(res.data);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const res = await api.get('/documents/all');
+            setSubmissions(Array.isArray(res.data) ? res.data : (res.data?.data || []));
         } catch (_err) { 
             console.error("Fetch Error");
         } finally {
@@ -37,9 +36,8 @@ const ManageSubmission = () => {
 
     const updateStatus = async (id: number, status: string) => {
         try {
-            await axios.put(`http://localhost:5000/api/documents/update/${id}`, { status, feedback: "" });
+            await api.put(`/documents/update/${id}`, { status, feedback: "" });
             fetchSubmissions();
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_err) {
             alert("Failed to update status");
         }
@@ -49,21 +47,27 @@ const ManageSubmission = () => {
         if (!editingSub) return;
         try {
             const docType = (document.getElementById('edit_doc_type') as HTMLInputElement).value;
-            await axios.put(`http://localhost:5000/api/documents/edit/${editingSub.id}`, { document_type: docType });
+            await api.put(`/documents/edit/${editingSub.id}`, { document_type: docType });
             setEditingSub(null);
             fetchSubmissions();
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_err) {
             alert("Failed to update document");
         }
     };
 
+    const getFileUrl = (filePath: string) => {
+        if (!filePath) return '#';
+        if (filePath.startsWith('http')) return filePath;
+        const cleanPath = filePath.replace(/\\/g, '/');
+        return cleanPath.startsWith('/') ? `http://localhost:5000${cleanPath}` : `http://localhost:5000/${cleanPath}`;
+    };
+
+
     const deleteSubmission = async (id: number) => {
         if (!window.confirm("Permanent delete? This will also remove the physical file.")) return;
         try {
-            await axios.delete(`http://localhost:5000/api/documents/delete/${id}`);
+            await api.delete(`/documents/delete/${id}`);
             setSubmissions(submissions.filter(sub => sub.id !== id));
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_err) {
             alert("Delete failed");
         }
@@ -152,7 +156,7 @@ const ManageSubmission = () => {
                             
                             <div className="flex items-center gap-2 w-full md:w-auto border-t md:border-t-0 border-slate-800/50 pt-4 md:pt-0">
                                 <button 
-                                    onClick={() => window.open(`http://localhost:5000/${sub.file_path}`, '_blank')}
+                                    onClick={() => window.open(getFileUrl(sub.file_path), '_blank')}
                                     className="p-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all"
                                     title="View Original File"
                                 >
