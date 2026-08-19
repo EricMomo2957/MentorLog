@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
+import api from '../../services/api';
 
 const StudentSettings = () => {
-    const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge';
-    
     const [formData, setFormData] = useState({
         full_name: '',
         email: '',
@@ -15,18 +14,16 @@ const StudentSettings = () => {
 
     useEffect(() => {
         const fetchUserData = async () => {
-            const userId = localStorage.getItem('userId');
-            if (!userId) return;
-
             try {
-                const res = await fetch(`${PHP_BRIDGE_URL}/get-profile.php?user_id=${userId}`);
-                const data = await res.json();
-                if (data.success) {
+                const res = await api.get('/auth/profile');
+                const data = res.data;
+                const userData = data.user || data;
+                if (userData) {
                     setFormData(prev => ({
                         ...prev,
-                        full_name: data.user.full_name || '',
-                        email: data.user.email || '',
-                        phone: data.user.phone || ''
+                        full_name: userData.full_name || '',
+                        email: userData.email || '',
+                        phone: userData.phone || ''
                     }));
                 }
             } catch (err) {
@@ -34,41 +31,29 @@ const StudentSettings = () => {
             }
         };
         fetchUserData();
-    }, [PHP_BRIDGE_URL]);
+    }, []);
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setMessage(null);
 
-        const userId = localStorage.getItem('userId');
-
         try {
-            const response = await fetch(`${PHP_BRIDGE_URL}/update-profile.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userId,
-                    full_name: formData.full_name,
-                    phone: formData.phone,
-                    currentPassword: formData.currentPassword,
-                    newPassword: formData.newPassword,
-                })
+            const response = await api.put('/auth/profile', {
+                full_name: formData.full_name,
+                phone: formData.phone,
+                current_password: formData.currentPassword,
+                new_password: formData.newPassword,
             });
 
-            const data = await response.json();
-            
+            const data = response.data;
             if (data.success) {
-                setMessage({ text: "Profile updated successfully!", type: 'success' });
-                setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '' }));
+                setMessage({ text: data.message || "Profile updated successfully!", type: 'success' });
             } else {
-                setMessage({ text: data.message || "Update failed.", type: 'error' });
+                setMessage({ text: data.message || "Failed to update profile.", type: 'error' });
             }
-        // FIX: Using 'unknown' and checking instance of Error to satisfy TypeScript
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : "Connection error";
-            console.error("Update Error:", errorMessage);
-            setMessage({ text: "Connection error to PHP Bridge.", type: 'error' });
+        } catch (err: any) {
+            setMessage({ text: err.response?.data?.message || "Failed to update profile.", type: 'error' });
         } finally {
             setLoading(false);
         }
