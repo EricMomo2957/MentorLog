@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import { Pie, Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -56,12 +57,9 @@ const ReportAnalytics = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await fetch('http://localhost:5000/api/analytics/stats', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    setStats(data.data);
+                const res = await api.get('/analytics/stats');
+                if (res.data?.success) {
+                    setStats(res.data.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch analytics:", error);
@@ -71,6 +69,7 @@ const ReportAnalytics = () => {
         };
         fetchStats();
     }, []);
+
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-screen bg-[#0f172a]">
