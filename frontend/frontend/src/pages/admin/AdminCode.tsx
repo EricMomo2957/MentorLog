@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     Plus, Trash2, RefreshCcw, 
     ShieldCheck, Copy, User, Calendar, 
@@ -20,23 +20,15 @@ const AdminCode = () => {
     const [error, setError] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
 
-    const getErrorMessage = (err: unknown): string => {
-        if (axios.isAxiosError(err)) {
-            return err.response?.data?.message || err.message || 'Server error occurred.';
-        }
-        return 'An unexpected error occurred.';
-    };
-
     const fetchCodes = useCallback(async () => {
         setLoading(true);
         setError(''); 
         try {
-            const response = await axios.get('http://localhost:5000/api/admin/admin-codes', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            setCodes(response.data);
-        } catch (err: unknown) {
-            setError(getErrorMessage(err));
+            const response = await api.get('/admin/admin-codes');
+            const codeData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+            setCodes(codeData);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to fetch reference codes.');
         } finally {
             setLoading(false);
         }
@@ -45,25 +37,21 @@ const AdminCode = () => {
     const handleGenerate = async () => {
         setLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/admin/admin-codes', {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            fetchCodes(); 
-        } catch (err: unknown) {
-            setError(getErrorMessage(err));
+            await api.post('/admin/admin-codes', {});
+            fetchCodes();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to generate code.');
             setLoading(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm('Permanent removal of this entry from the ledger?')) return;
+        if (!window.confirm("Permanently revoke and delete this reference code?")) return;
         try {
-            await axios.delete(`http://localhost:5000/api/admin/admin-codes/${id}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            setCodes(prev => prev.filter(c => c.id !== id));
-        } catch (err: unknown) {
-            setError(getErrorMessage(err));
+            await api.delete(`/admin/admin-codes/${id}`);
+            fetchCodes();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to delete code.');
         }
     };
 
