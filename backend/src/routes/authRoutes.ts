@@ -1,9 +1,10 @@
 import express from 'express';
-import { login, register, forgotPassword } from '../controllers/authController';    
+import { login, register, forgotPassword, getProfile, updateProfile } from '../controllers/authController';    
 import { 
     getForgotPasswordRequests, 
     resolvePasswordRequest 
 } from '../controllers/forgotPasswordController';
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -21,6 +22,10 @@ router.post('/register', register);
 // This is the one that inserts the request into the database
 router.post('/forgot-password', forgotPassword);
 
+// GET & PUT profile
+router.get('/profile', protect, getProfile);
+router.put('/profile', protect, updateProfile);
+
 
 // ==========================================
 // ADMIN MANAGEMENT ROUTES
@@ -34,4 +39,4 @@ router.get('/forgot-password-requests', getForgotPasswordRequests);
 // This updates the status from 'pending' to 'resolved'
 router.put('/resolve-password/:id', resolvePasswordRequest);
 
-export default router;
+export default router;
