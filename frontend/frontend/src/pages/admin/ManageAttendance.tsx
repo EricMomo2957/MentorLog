@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import api from '../../services/api';
 
 interface AttendanceRecord {
     id: number;
@@ -17,12 +18,9 @@ const ManageAttendance = () => {
     const fetchAllAttendance = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:5000/api/attendance/all', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            const result = await response.json();
-            if (result.success) {
-                setRecords(result.data);
+            const response = await api.get('/attendance/all');
+            if (response.data?.success) {
+                setRecords(response.data.data);
             }
         } catch (error) {
             console.error("Error fetching attendance:", error);
@@ -34,6 +32,29 @@ const ManageAttendance = () => {
     useEffect(() => {
         fetchAllAttendance();
     }, []);
+
+    const exportToCSV = () => {
+        if (!records || records.length === 0) return;
+        const headers = ['ID', 'Student Name', 'Date', 'Clock In', 'Clock Out', 'Total Hours', 'Status'];
+        const rows = records.map(r => [
+            r.id,
+            `"${r.student_name || 'N/A'}"`,
+            `"${r.date}"`,
+            `"${r.clock_in}"`,
+            `"${r.clock_out || 'Active'}"`,
+            r.total_hours ? Number(r.total_hours).toFixed(2) : '0',
+            `"${r.status}"`
+        ]);
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `dtr_attendance_report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const getStatusStyle = (status: string) => {
         switch (status) {
@@ -56,12 +77,21 @@ const ManageAttendance = () => {
                     <p className="text-[10px] font-mono text-slate-600 mt-2 uppercase">Real-time verification of student time logs and duration.</p>
                 </div>
 
-                <button 
-                    onClick={fetchAllAttendance}
-                    className="px-8 py-4 bg-slate-900 text-blue-400 border border-slate-700 rounded-sm font-black uppercase tracking-widest text-[11px] hover:bg-slate-800 active:scale-95 transition-all flex items-center gap-3"
-                >
-                    <span className="animate-spin-slow">↻</span> Synchronize Data
-                </button>
+                <div className="flex flex-wrap gap-3">
+                    <button 
+                        onClick={exportToCSV}
+                        disabled={records.length === 0}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-widest px-5 py-3 rounded transition-all shadow-lg shadow-emerald-600/20"
+                    >
+                        📥 Export DTR (CSV)
+                    </button>
+                    <button 
+                        onClick={fetchAllAttendance}
+                        className="border border-slate-700 hover:border-slate-500 text-slate-300 font-bold text-[10px] uppercase tracking-widest px-5 py-3 rounded transition-all"
+                    >
+                        🔄 Refresh Logs
+                    </button>
+                </div>
             </div>
 
             {/* TRANSACTION LOG TABLE */}
