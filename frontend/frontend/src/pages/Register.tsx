@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserCircle, Mail, Lock, Key } from 'lucide-react'; 
 import mentorLogLogo from '../assets/mentorlogOption.png'; 
+import api from '../services/api';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -19,7 +19,6 @@ const Register = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         let value = e.target.value;
         
-        // Auto-capitalize admin codes for consistency
         if (e.target.name === 'adminCode') {
             value = value.toUpperCase();
         }
@@ -39,12 +38,12 @@ const Register = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/register', formData);
-            if (response.status === 201) {
+            const response = await api.post('/auth/register', formData);
+            if (response.status === 201 || response.data?.success) {
                 navigate('/login');
             }
-        } catch (err: unknown) {
-            setError(axios.isAxiosError(err) ? err.response?.data?.message || 'Registration failed.' : 'An error occurred.');
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Registration failed.');
         } finally {
             setLoading(false);
         }
