@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import api from '../../services/api';
 
 // --- INTERFACES ---
 interface AttendanceLog {
@@ -25,20 +26,36 @@ interface ManualEntryState {
     status: 'Present' | 'Late' | 'Absent';
 }
 
-const StudentDashboard = () => {
-    const NODE_API_URL = 'http://localhost:5000/api';
+interface TaskItem {
+    id: number;
+    title: string;
+    task_description: string;
+    due_date: string;
+    status: string;
+}
 
+interface AnnouncementItem {
+    id: number;
+    title: string;
+    content: string;
+    created_at: string;
+}
+
+const StudentDashboard = () => {
     // --- STATES ---
     const [isClockedIn, setIsClockedIn] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [logs, setLogs] = useState<AttendanceLog[]>([]);
     const [report, setReport] = useState<WeeklyReport>({ accumulated_hours: 0, days_present: 0, days_late: 0 });
+    const [totalTargetHours, setTotalTargetHours] = useState<number>(600);
     const [hasCompletedShift, setHasCompletedShift] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const [pendingTasks, setPendingTasks] = useState<TaskItem[]>([]);
+    const [latestAnnouncement, setLatestAnnouncement] = useState<AnnouncementItem | null>(null);
+
     // --- HELPERS ---
-    // Wrapped in useCallback to keep identity stable for refreshDashboardData
     const getTodayDate = useCallback(() => new Date().toISOString().split('T')[0], []);
 
     const [manualEntry, setManualEntry] = useState<ManualEntryState>({
@@ -47,8 +64,6 @@ const StudentDashboard = () => {
         clock_out: '',
         status: 'Present'
     });
-
-    const totalTargetHours = 600;
 
     // --- TOAST AUTO-HIDE ---
     useEffect(() => {
@@ -62,29 +77,42 @@ const StudentDashboard = () => {
     // --- DATA FETCHING ---
     const refreshDashboardData = useCallback(async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-
-            const headers = { 'Authorization': `Bearer ${token}` };
-
-            const [historyRes, reportRes] = await Promise.all([
-                fetch(`${NODE_API_URL}/attendance/history`, { headers }),
-                fetch(`${NODE_API_URL}/attendance/weekly-report`, { headers })
+            const [historyRes, reportRes, profileRes, taskRes, annRes] = await Promise.all([
+                api.get('/attendance/history'),
+                api.get('/attendance/weekly-report'),
+                api.get('/auth/profile'),
+                api.get('/tasks/my-tasks').catch(() => ({ data: [] })),
+                api.get('/announcements').catch(() => ({ data: [] }))
             ]);
 
-            const historyData: AttendanceLog[] = await historyRes.json();
-            const reportData = await reportRes.json();
+            const historyData = historyRes.data;
+            const reportData = reportRes.data;
+            const profileData = profileRes.data?.user || profileRes.data;
+            const taskData = Array.isArray(taskRes.data) ? taskRes.data : (taskRes.data?.data || []);
+            const annData = Array.isArray(annRes.data) ? annRes.data : (annRes.data?.data || []);
+
+            if (profileData && profileData.ojt_hours_required) {
+                setTotalTargetHours(Number(profileData.ojt_hours_required) || 600);
+            }
+
+            if (Array.isArray(taskData)) {
+                setPendingTasks(taskData.filter((t: TaskItem) => t.status !== 'Completed'));
+            }
+
+            if (Array.isArray(annData) && annData.length > 0) {
+                setLatestAnnouncement(annData[0]);
+            }
 
             if (Array.isArray(historyData)) {
                 setLogs(historyData);
                 
                 // Check for an active session (clock_out is null)
-                const activeSession = historyData.find(log => log.clock_out === null);
+                const activeSession = historyData.find((log: AttendanceLog) => log.clock_out === null);
                 setIsClockedIn(!!activeSession);
 
                 // Check if shift is finished for today
                 const todayStr = getTodayDate();
-                const finishedToday = historyData.some(log =>
+                const finishedToday = historyData.some((log: AttendanceLog) =>
                     log.date.includes(todayStr) && log.clock_out !== null
                 );
                 setHasCompletedShift(finishedToday);
@@ -100,18 +128,15 @@ const StudentDashboard = () => {
         } catch (error) {
             console.error("Failed to refresh data", error);
         }
-    }, [NODE_API_URL, getTodayDate]); 
+    }, [getTodayDate]);
+ 
 
     useEffect(() => {
-    const fetchData = async () => {
-        // Your logic here
-    };
-    
-    fetchData();
+        refreshDashboardData();
 
-    const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(clockInterval);
-    }, []); // Empty array means this only runs once on mount
+        const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(clockInterval);
+    }, [refreshDashboardData]);
 
     // --- HANDLERS ---
     const handleManualSubmit = async (e: React.FormEvent) => {
@@ -129,55 +154,67 @@ const StudentDashboard = () => {
         }
 
         try {
-            const response = await fetch(`${NODE_API_URL}/attendance/manual-log`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(manualEntry)
-            });
+            const response = await api.post('/attendance/manual-log', manualEntry);
 
-            const data = await response.json();
-
-            if (response.ok) {
+            if (response.data?.success) {
                 setToast({ message: "Entry saved successfully!", type: 'success' });
                 setIsModalOpen(false);
                 setManualEntry({ date: getTodayDate(), clock_in: '', clock_out: '', status: 'Present' });
                 refreshDashboardData();
             } else {
-                setToast({ message: data.message || "Failed to save entry.", type: 'error' });
+                setToast({ message: response.data?.message || "Failed to save entry.", type: 'error' });
             }
-        } catch {
-            setToast({ message: "Connection error.", type: 'error' });
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || "Connection error.", type: 'error' });
         }
     };
 
     const handleClockToggle = async (actionOverride?: 'resume') => {
         const action = actionOverride || (isClockedIn ? 'clock-out' : 'clock-in');
         try {
-            const response = await fetch(`${NODE_API_URL}/attendance/toggle`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ action })
-            });
+            const response = await api.post('/attendance/toggle', { action });
 
-            if (response.ok) {
+            if (response.data?.success) {
                 setToast({
                     message: action === 'clock-out' ? "Clocked out!" : "Shift started!",
                     type: 'success'
                 });
                 refreshDashboardData();
             } else {
-                const errorData = await response.json();
-                setToast({ message: errorData.message || "Action failed", type: 'error' });
+                setToast({ message: response.data?.message || "Action failed", type: 'error' });
             }
-        } catch {
-            setToast({ message: "Network error.", type: 'error' });
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || "Network error.", type: 'error' });
         }
+    };
+
+    const getElapsedTime = () => {
+        if (!isClockedIn) return { formatted: '00:00:00' };
+        const activeLog = logs.find(l => l.clock_out === null);
+        if (!activeLog) return { formatted: '00:00:00' };
+
+        let startTime: Date;
+        if (activeLog.clock_in.includes('-') || activeLog.clock_in.includes('T')) {
+            startTime = new Date(activeLog.clock_in);
+        } else {
+            const datePart = activeLog.date.split('T')[0];
+            startTime = new Date(`${datePart} ${activeLog.clock_in}`);
+        }
+
+        if (isNaN(startTime.getTime())) {
+            startTime = new Date();
+        }
+
+        const diffInMs = Math.max(0, currentTime.getTime() - startTime.getTime());
+        const totalSecs = Math.floor(diffInMs / 1000);
+        const hours = Math.floor(totalSecs / 3600);
+        const minutes = Math.floor((totalSecs % 3600) / 60);
+        const seconds = totalSecs % 60;
+
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return {
+            formatted: `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+        };
     };
 
     const progressPercentage = Math.min((report.accumulated_hours / totalTargetHours) * 100, 100);
@@ -270,6 +307,42 @@ const StudentDashboard = () => {
                 </div>
             </div>
 
+            {/* Live Active Shift Banner Widget */}
+            {isClockedIn && (
+                <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-blue-950/60 border border-emerald-500/40 rounded-3xl p-6 shadow-2xl shadow-emerald-950/40 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="relative flex items-center justify-center">
+                                <span className="animate-ping absolute inline-flex h-10 w-10 rounded-full bg-emerald-400 opacity-40"></span>
+                                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-xl">
+                                    ⏱️
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">Shift In Progress</span>
+                                </div>
+                                <h2 className="text-xl font-bold text-white tracking-tight mt-0.5">Active OJT Session</h2>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-6 bg-slate-900/80 px-8 py-4 rounded-2xl border border-emerald-500/30 backdrop-blur-md shadow-inner">
+                            <div className="text-center">
+                                <span className="text-3xl font-black text-emerald-400 font-mono tracking-wider tabular-nums">
+                                    {getElapsedTime().formatted}
+                                </span>
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block mt-0.5">
+                                    Elapsed (HH : MM : SS)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 shadow-xl">
@@ -290,6 +363,65 @@ const StudentDashboard = () => {
                             <p className="text-amber-400 text-sm font-black italic">{report.days_late} LATE ARRIVALS</p>
                             <p className="text-slate-600 text-[10px] uppercase font-bold">System Verified</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Overview Widgets: Pending Tasks & Office Bulletin */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Pending Tasks Widget */}
+                <div className="bg-[#1e293b] p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                            <h4 className="text-base font-bold text-white flex items-center gap-2">
+                                📌 My Pending Tasks 
+                                {pendingTasks.length > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                        {pendingTasks.length}
+                                    </span>
+                                )}
+                            </h4>
+                        </div>
+                        {pendingTasks.length > 0 ? (
+                            <div className="space-y-3">
+                                {pendingTasks.slice(0, 3).map((task) => (
+                                    <div key={task.id} className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex items-center justify-between">
+                                        <div className="space-y-0.5 max-w-[70%]">
+                                            <p className="text-xs font-bold text-white truncate">{task.title}</p>
+                                            <p className="text-[10px] text-slate-400 truncate">{task.task_description || 'No description'}</p>
+                                        </div>
+                                        <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
+                                            Due {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-slate-500 text-xs italic py-6 text-center font-mono">No pending tasks assigned.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Latest Office Bulletin Widget */}
+                <div className="bg-[#1e293b] p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                            <h4 className="text-base font-bold text-white flex items-center gap-2">
+                                📢 Office Bulletin
+                            </h4>
+                            <span className="text-[9px] font-black uppercase text-blue-400 tracking-wider">Latest News</span>
+                        </div>
+                        {latestAnnouncement ? (
+                            <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 space-y-2">
+                                <h5 className="text-sm font-bold text-white">{latestAnnouncement.title}</h5>
+                                <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">{latestAnnouncement.content}</p>
+                                <p className="text-[9px] font-mono text-slate-500 text-right">
+                                    Posted {new Date(latestAnnouncement.created_at).toLocaleDateString()}
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-slate-500 text-xs italic py-6 text-center font-mono">No announcements posted yet.</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -342,4 +474,4 @@ const StudentDashboard = () => {
     );
 };
 
-export default StudentDashboard;
+export default StudentDashboard;
