@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import api from '../../services/api';
 
 // --- TYPES & CONSTANTS ---
 interface Task {
@@ -12,52 +13,30 @@ interface Task {
 
 type FilterType = 'All' | 'Pending' | 'In-Progress' | 'Completed';
 
-const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge';
-
 const MyTasks = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<FilterType>('All');
 
-    const userId = localStorage.getItem('userId');
-
     // --- FETCH LOGIC ---
     const fetchTasks = useCallback(async () => {
-        if (!userId) {
-            console.error("No User ID found in storage.");
-            setLoading(false);
-            return;
-        }
-        
         setLoading(true);
         try {
-            const response = await fetch(`${PHP_BRIDGE_URL}/get-my-tasks.php?user_id=${userId}`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-            const resData = await response.json();
-            if (resData.status === "success") {
-                setTasks(resData.data || []);
-            }
+            const response = await api.get('/tasks/my-tasks');
+            const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+            setTasks(data);
         } catch (error) {
             console.error("Fetch error:", error);
         } finally {
             setLoading(false);
         }
-    }, [userId]);
+    }, []);
 
     // --- UPDATE LOGIC ---
     const updateStatus = async (taskId: number, newStatus: Task['status']) => {
         try {
-            const response = await fetch(`${PHP_BRIDGE_URL}/update-task-status.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskId, status: newStatus })
-            });
-            
-            const resData = await response.json();
-            if (resData.status === "success") {
-                fetchTasks(); // Refresh list
-            }
+            await api.put(`/tasks/${taskId}/status`, { status: newStatus });
+            fetchTasks(); // Refresh list
         } catch (error) {
             console.error("Update failed:", error);
         }
@@ -66,6 +45,7 @@ const MyTasks = () => {
     useEffect(() => {
         fetchTasks();
     }, [fetchTasks]);
+
 
     const filteredTasks = tasks.filter(t => 
         filter === 'All' ? true : t.status === filter
