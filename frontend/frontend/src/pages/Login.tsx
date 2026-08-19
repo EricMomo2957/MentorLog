@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiArrowLeft } from 'react-icons/fi'; // Import the arrow icon
+import { FiArrowLeft } from 'react-icons/fi';
 import mentorLogLogo from '../assets/mentorlogOption.png'; 
 import ojtPicture from '../assets/ojt-picture.jpg';
+import api from '../services/api';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
@@ -21,9 +21,9 @@ const Login = () => {
         setLoading(true);
         
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+            const response = await api.post('/auth/login', formData);
             
-            if (response.data.success) {
+            if (response.data?.success) {
                 const { token, user } = response.data;
                 localStorage.setItem('token', token);
                 localStorage.setItem('role', user.role);
@@ -36,16 +36,13 @@ const Login = () => {
                     navigate('/student-dashboard');
                 }
             }
-        } catch (err: unknown) {
-            setError(
-                axios.isAxiosError(err) 
-                    ? err.response?.data?.message || 'Invalid credentials' 
-                    : 'Connection to authentication server failed'
-            );
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Invalid credentials or connection error');
         } finally { 
             setLoading(false); 
         }
     };
+
 
     return (
         <div className="h-screen w-full flex bg-[#020617] text-slate-200 font-sans overflow-hidden">
