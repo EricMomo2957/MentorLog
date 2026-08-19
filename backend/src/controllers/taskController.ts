@@ -113,18 +113,19 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
  * 5. Admin Assigns a Task to a Specific Student
  */
 export const assignTask = async (req: Request, res: Response) => {
-    // We get 'student_id' from the Admin's form/modal
-    const { student_id, title, task_description, due_date } = req.body;
+    // We get 'student_id' or 'user_id' from the Admin's form/modal
+    const { student_id, user_id, title, task_description, due_date } = req.body;
+    const targetUserId = student_id || user_id;
 
-    // Validation: Ensure we have a student ID and a description
-    if (!student_id || !task_description) {
-        return res.status(400).json({ message: 'Student ID and Task Description are required.' });
+    // Validation: Ensure we have a student ID and a title/description
+    if (!targetUserId || (!title && !task_description)) {
+        return res.status(400).json({ success: false, message: 'Student ID and Task details are required.' });
     }
 
     try {
         await pool.query(
             'INSERT INTO tasks (user_id, title, task_description, status, due_date) VALUES (?, ?, ?, "Pending", ?)',
-            [student_id, title || 'New Assignment', task_description, due_date || new Date()]
+            [targetUserId, title || 'New Assignment', task_description || '', due_date || new Date()]
         );
 
         res.status(201).json({ success: true, message: 'Task assigned to student successfully!' });
@@ -133,3 +134,71 @@ export const assignTask = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: 'Error assigning task.' });
     }
 };
+
+/**
+ * 6. Update Task (Admin/Mentor)
+ */
+export const updateTask = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { title, task_description, due_date, status, user_id, student_id } = req.body;
+    const targetUserId = user_id || student_id;
+
+    try {
+        if (targetUserId) {
+            await pool.query(
+                'UPDATE tasks SET title = ?, task_description = ?, due_date = ?, status = ?, user_id = ? WHERE id = ?',
+                [title, task_description, due_date, status || 'Pending', targetUserId, id]
+            );
+        } else {
+            await pool.query(
+                'UPDATE tasks SET title = ?, task_description = ?, due_date = ?, status = ? WHERE id = ?',
+                [title, task_description, due_date, status || 'Pending', id]
+            );
+        }
+
+        res.status(200).json({ success: true, message: 'Task updated successfully.' });
+    } catch (error) {
+        console.error("Error in updateTask:", error);
+        res.status(500).json({ success: false, message: 'Error updating task.' });
+    }
+};
+
+/**
+ * 7. Update Task Status (Student / Admin)
+ */
+export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { status, task_id } = req.body;
+    const targetId = id || task_id;
+
+    if (!targetId || !status) {
+        return res.status(400).json({ success: false, message: 'Task ID and status are required.' });
+    }
+
+    try {
+        await pool.query(
+            'UPDATE tasks SET status = ? WHERE id = ?',
+            [status, targetId]
+        );
+
+        res.status(200).json({ success: true, message: 'Task status updated successfully.' });
+    } catch (error) {
+        console.error("Error in updateTaskStatus:", error);
+        res.status(500).json({ success: false, message: 'Error updating task status.' });
+    }
+};
+
+/**
+ * 8. Delete Task (Admin/Mentor)
+ */
+export const deleteTask = async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        await pool.query('DELETE FROM tasks WHERE id = ?', [id]);
+        res.status(200).json({ success: true, message: 'Task deleted successfully.' });
+    } catch (error) {
+        console.error("Error in deleteTask:", error);
+        res.status(500).json({ success: false, message: 'Error deleting task.' });
+    }
+};
