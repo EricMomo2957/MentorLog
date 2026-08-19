@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../../services/api';
 
 interface UserProfile {
     full_name: string;
@@ -11,7 +12,6 @@ interface UserProfile {
 }
 
 const StudentProfile = () => {
-    const PHP_BRIDGE_URL = 'http://localhost/MentorLog/php-bridge';
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     
@@ -31,25 +31,20 @@ const StudentProfile = () => {
     }, []);
 
     const fetchProfile = async () => {
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-            setLoading(false);
-            return;
-        }
-
         try {
-            const res = await fetch(`${PHP_BRIDGE_URL}/get-profile.php?user_id=${userId}`);
-            const data = await res.json();
+            const res = await api.get('/auth/profile');
+            const data = res.data;
+            const userData = data.user || data;
             
-            if (data.success && data.user) {
+            if (userData) {
                 const mappedUser: UserProfile = {
-                    full_name: data.user.full_name || 'No Name',
-                    email: data.user.email || '',
-                    phone: data.user.phone || '',
-                    student_id: data.user.student_id || '',
-                    course: data.user.course || 'BS Information Technology',
-                    year_level: data.user.year_level || '4',
-                    ojt_hours_required: Number(data.user.ojt_hours_required) || 600
+                    full_name: userData.full_name || 'No Name',
+                    email: userData.email || '',
+                    phone: userData.phone || '',
+                    student_id: userData.student_id || '',
+                    course: userData.course || 'BS Information Technology',
+                    year_level: userData.year_level || '4',
+                    ojt_hours_required: Number(userData.ojt_hours_required) || 600
                 };
 
                 setProfile(mappedUser);
@@ -72,27 +67,25 @@ const StudentProfile = () => {
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
-        const userId = localStorage.getItem('userId');
 
         try {
-            const res = await fetch(`${PHP_BRIDGE_URL}/update-profile.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, ...formData })
+            const res = await api.put('/auth/profile', {
+                full_name: formData.full_name,
+                email: formData.email,
+                student_id: formData.student_id,
+                course: formData.course
             });
             
-            const data = await res.json();
-            
-            if (data.success) {
+            if (res.data?.success) {
                 alert("Profile updated successfully!");
                 setIsEditModalOpen(false);
                 await fetchProfile(); 
             } else {
-                alert(data.message || "Update failed.");
+                alert(res.data?.message || "Update failed.");
             }
         } catch (err) {
-            console.error("Update error:", err);
-            alert("Connection error.");
+            console.error("Update Error:", err);
+            alert("Failed to update profile.");
         } finally {
             setIsSaving(false);
         }
