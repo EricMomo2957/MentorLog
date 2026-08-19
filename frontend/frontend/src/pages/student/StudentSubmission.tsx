@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     UploadCloud, FileText, ShieldCheck, 
     X, HardDrive, CheckCircle2, AlertTriangle, 
@@ -12,17 +12,13 @@ const StudentSubmission = () => {
     const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
 
     const handleSubmit = async () => {
-        // 1. Validation check
         if (!file) return;
 
-        // 2. Set UI to 'uploading' state for the ledger animation
         setStatus('uploading');
 
-        // 3. Retrieve dynamic data from LocalStorage (Source of Truth)
         const userId = localStorage.getItem('userId') || '0'; 
         const userName = localStorage.getItem('userName') || 'Unknown Student';
 
-        // 4. Construct the Data Package
         const formData = new FormData();
         formData.append('document', file);
         formData.append('student_id', userId); 
@@ -30,29 +26,25 @@ const StudentSubmission = () => {
         formData.append('document_type', docType);
 
         try {
-            // 5. Execute Transmission
-            await axios.post('http://localhost:5000/api/documents/submit', formData);
+            await api.post('/documents/submit', formData);
 
-            // 6. Success Protocol
             setStatus('success');
             
-            // Clear staged file and reset UI after 3 seconds
             setTimeout(() => {
                 setFile(null);
                 setStatus('idle');
             }, 3000);
 
         } catch (err) {
-            // 7. Error Handling
             console.error("Submission Error:", err);
             setStatus('error');
             
-            // Revert to idle after a delay so user can try again
             setTimeout(() => {
                 setStatus('idle');
             }, 4000);
         }
     };
+
 
     return (
         <div className="min-h-screen bg-[#0a0f1c] text-slate-300 p-6 md:p-12 flex flex-col items-center justify-center antialiased">
