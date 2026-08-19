@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { Shield, Search, RefreshCw, Clock, User, HardDrive, LayoutGrid, Megaphone } from 'lucide-react';
 
 interface AuditLog {
@@ -20,19 +20,16 @@ const ManageAuditLog = () => {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get("http://localhost:5000/api/admin/audit-logs", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            console.log("ALL LOGS FROM BACKEND:", response.data);
-            setLogs(response.data);
+            const response = await api.get('/admin/audit-logs');
+            const logData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+            setLogs(logData);
         } catch (error) {
             console.error("Error fetching logs:", error);
         } finally {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         fetchLogs();
