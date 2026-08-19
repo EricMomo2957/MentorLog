@@ -193,6 +193,17 @@ Contributions are welcome! If you'd like to report bugs, request features, or su
 
 ---
 
+## 📜 License
+
+This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)** - see the [LICENSE](LICENSE) file for full details.
+
+Under this license:
+- Anyone is free to use, modify, and distribute this software.
+- Any modified or derivative versions of this project **must remain open-source under GPL-3.0**.
+- **Credit and Copyright attribution to Eric Dominic Momo must be preserved** in all copies or substantial portions of the software.
+
+---
+
 ## 👨‍💻 Author
 
 **Eric Dominic Momo**
@@ -201,3 +212,4 @@ Contributions are welcome! If you'd like to report bugs, request features, or su
 ---
 
 <p align="center">Made with ❤️ for efficient OJT & Mentorship Management.</p>
+
