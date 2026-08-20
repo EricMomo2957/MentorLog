@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import db from '../config/db'; 
-import fs from 'fs'; // Required to delete the physical file from storage
+import fs from 'fs'; 
 import path from 'path';
+import { logAction } from '../utils/logger';
 
 export const submitDocument = async (req: Request, res: Response) => {
     try {
@@ -14,6 +15,8 @@ export const submitDocument = async (req: Request, res: Response) => {
 
         const sql = "INSERT INTO document_submissions (student_id, student_name, document_type, file_path) VALUES (?, ?, ?, ?)";
         await db.query(sql, [student_id, student_name, document_type, file_path]);
+
+        await logAction(Number(student_id) || null, 'CREATE', 'Document Vault', `Uploaded ${document_type} file: ${req.file?.originalname || 'Document'}`);
         
         return res.status(201).json({ message: "Document submitted successfully!" });
     } catch (err) {
@@ -24,7 +27,12 @@ export const submitDocument = async (req: Request, res: Response) => {
 
 export const getAllSubmissions = async (req: Request, res: Response) => {
     try {
-        const sql = "SELECT * FROM document_submissions ORDER BY submitted_at DESC";
+        const sql = `
+            SELECT ds.*, u.profile_pic 
+            FROM document_submissions ds 
+            LEFT JOIN users u ON ds.student_id = u.id 
+            ORDER BY ds.submitted_at DESC
+        `;
         const [results] = await db.query(sql);
         return res.json(results);
     } catch (err) {
@@ -40,6 +48,8 @@ export const updateSubmissionStatus = async (req: Request, res: Response) => {
         
         const sql = "UPDATE document_submissions SET status = ?, feedback = ? WHERE id = ?";
         await db.query(sql, [status, feedback, id]);
+
+        await logAction((req as any).user?.id || null, 'UPDATE', 'Document Vault', `Updated submission #${id} status to ${status}`);
         
         return res.json({ message: "Submission updated" });
     } catch (err) {
@@ -48,7 +58,6 @@ export const updateSubmissionStatus = async (req: Request, res: Response) => {
     }
 };
 
-// --- NEW: EDIT DOCUMENT METADATA ---
 export const editDocument = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -57,6 +66,8 @@ export const editDocument = async (req: Request, res: Response) => {
         const sql = "UPDATE document_submissions SET document_type = ? WHERE id = ?";
         await db.query(sql, [document_type, id]);
 
+        await logAction((req as any).user?.id || null, 'UPDATE', 'Document Vault', `Modified document type for #${id} to ${document_type}`);
+
         return res.json({ message: "Document type updated successfully" });
     } catch (err) {
         console.error("Edit Error:", err);
@@ -64,12 +75,10 @@ export const editDocument = async (req: Request, res: Response) => {
     }
 };
 
-// --- NEW: DELETE DOCUMENT & PHYSICAL FILE ---
 export const deleteDocument = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
-        // 1. Get the file path first so we can delete the physical file
         const [rows]: any = await db.query("SELECT file_path FROM document_submissions WHERE id = ?", [id]);
         
         if (rows.length === 0) {
@@ -78,15 +87,15 @@ export const deleteDocument = async (req: Request, res: Response) => {
 
         const filePath = rows[0].file_path;
 
-        // 2. Delete the record from the Database
         await db.query("DELETE FROM document_submissions WHERE id = ?", [id]);
 
-        // 3. Delete the physical file from the 'uploads' folder
         if (filePath) {
             fs.unlink(path.resolve(filePath), (err) => {
                 if (err) console.error("File Deletion Error:", err);
             });
         }
+
+        await logAction((req as any).user?.id || null, 'DELETE', 'Document Vault', `Deleted submission #${id}`);
 
         return res.json({ message: "Submission and file deleted successfully" });
     } catch (err) {
