@@ -5,9 +5,10 @@ import {
     submitDocument, 
     getAllSubmissions, 
     updateSubmissionStatus,
-    editDocument,     // Added
-    deleteDocument    // Added
+    editDocument,     
+    deleteDocument    
 } from '../controllers/documentSubmissionController';
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -17,7 +18,6 @@ const storage = multer.diskStorage({
         cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
-        // Creates a unique filename: timestamp-originalName
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, uniqueSuffix + path.extname(file.originalname));
     }
@@ -25,27 +25,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB Limit
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB Limit
 });
 
-// 2. Routes
-
-// Endpoint: POST /api/documents/submit
-router.post('/submit', upload.single('document'), submitDocument);
-
-// Endpoint: GET /api/documents/all
-router.get('/all', getAllSubmissions);
-
-// Endpoint: PUT /api/documents/update/:id
-// Primarily used for Admin Approval/Rejection and Feedback
-router.put('/update/:id', updateSubmissionStatus);
-
-// Endpoint: PUT /api/documents/edit/:id
-// NEW: Used to modify document metadata (like the type)
-router.put('/edit/:id', editDocument);
-
-// Endpoint: DELETE /api/documents/delete/:id
-// NEW: Removes the database record and the physical file from /uploads
-router.delete('/delete/:id', deleteDocument);
+// 2. Routes (Protected with authentication)
+router.post('/submit', protect, upload.single('document'), submitDocument);
+router.get('/all', protect, getAllSubmissions);
+router.put('/update/:id', protect, updateSubmissionStatus);
+router.put('/edit/:id', protect, editDocument);
+router.delete('/delete/:id', protect, deleteDocument);
 
 export default router;
