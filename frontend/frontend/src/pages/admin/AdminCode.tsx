@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { 
-    Plus, Trash2, RefreshCcw, 
-    ShieldCheck, Copy, User, Calendar, 
-    CheckCircle2, Clock, Hash
+    Plus, Trash2, RefreshCcw, Copy, 
+    CheckCircle2, Clock, Hash, Search, Filter, Download, 
+    ChevronLeft, ChevronRight, User, AlertCircle
 } from 'lucide-react';
 
 interface AdminCode {
@@ -14,11 +14,32 @@ interface AdminCode {
     created_by_name?: string;
 }
 
+const pastelAvatarStyles = [
+    'bg-purple-100 text-purple-700 border-purple-200',
+    'bg-blue-100 text-blue-700 border-blue-200',
+    'bg-pink-100 text-pink-700 border-pink-200',
+    'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'bg-amber-100 text-amber-700 border-amber-200',
+    'bg-rose-100 text-rose-700 border-rose-200',
+    'bg-indigo-100 text-indigo-700 border-indigo-200',
+];
+const getAvatarStyle = (id: number) => pastelAvatarStyles[id % pastelAvatarStyles.length];
+
+const getInitials = (name?: string) => {
+    if (!name) return 'RT';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+};
+
 const AdminCode = () => {
     const [codes, setCodes] = useState<AdminCode[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState<string>('All');
+    const [selectedCodes, setSelectedCodes] = useState<number[]>([]);
 
     const fetchCodes = useCallback(async () => {
         setLoading(true);
@@ -65,153 +86,247 @@ const AdminCode = () => {
         fetchCodes();
     }, [fetchCodes]);
 
+    const getStatusBadge = (isUsed: boolean) => {
+        if (isUsed) {
+            return <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-full"><Clock className="w-3 h-3 text-slate-400" /> Voided / Used</span>;
+        }
+        return <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full"><CheckCircle2 className="w-3 h-3 text-emerald-600" /> Valid Active</span>;
+    };
+
+    const filteredCodes = codes.filter(c => {
+        const matchesSearch = c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (c.created_by_name && c.created_by_name.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesStatus = filterStatus === 'All' || 
+            (filterStatus === 'Valid' && !c.is_used) || 
+            (filterStatus === 'Voided' && c.is_used);
+        return matchesSearch && matchesStatus;
+    });
+
+    const toggleSelectAll = () => {
+        if (selectedCodes.length === filteredCodes.length) {
+            setSelectedCodes([]);
+        } else {
+            setSelectedCodes(filteredCodes.map(c => c.id));
+        }
+    };
+
+    const toggleSelectCode = (id: number) => {
+        if (selectedCodes.includes(id)) {
+            setSelectedCodes(prev => prev.filter(item => item !== id));
+        } else {
+            setSelectedCodes(prev => [...prev, id]);
+        }
+    };
+
     return (
-        <div className="p-8 max-w-5xl mx-auto space-y-10 antialiased">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-blue-500 font-bold tracking-[0.2em] text-xs uppercase">
-                        <ShieldCheck className="w-4 h-4" />
-                        Authentication Ledger
-                    </div>
-                    <h1 className="text-4xl font-black text-white tracking-tight">
-                        Access <span className="text-slate-500 font-light">Registry</span>
-                    </h1>
+        <div className="space-y-6 max-w-7xl mx-auto">
+            
+            {/* Top Title & Primary Action Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Admin Reference Codes</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Generate and manage secure single-use registration codes for admin onboardings</p>
                 </div>
-                
-                <button 
-                    onClick={handleGenerate}
-                    disabled={loading}
-                    className="group relative flex items-center gap-3 bg-white text-black font-black py-4 px-8 rounded-full transition-all hover:bg-blue-500 hover:text-white active:scale-95 disabled:opacity-50"
-                >
-                    <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                    {loading ? 'PROCESSING...' : 'INITIALIZE NEW CODE'}
-                </button>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={handleGenerate}
+                        disabled={loading}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 disabled:opacity-50 active:scale-98"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>{loading ? 'Generating...' : 'Generate New Code'}</span>
+                    </button>
+
+                    <button 
+                        onClick={() => alert("Exporting reference codes...")} 
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 p-2.5 rounded-lg shadow-xs transition-all"
+                        title="Export Codes"
+                    >
+                        <Download className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
             {error && (
-                <div className="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 rounded-r-xl text-sm font-bold flex items-center gap-3">
-                    <span>SYSTEM ALERT:</span> {error}
+                <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2.5 text-xs font-semibold">
+                    <AlertCircle className="w-4 h-4" /> {error}
                 </div>
             )}
 
-            {/* Ledger Stats Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6 border-y border-slate-800">
-                <div className="space-y-1">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Total Entries</p>
-                    <p className="text-xl font-mono text-white">{codes.length.toString().padStart(2, '0')}</p>
+            {/* Filter & Control Bar (Automoor Style) */}
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                
+                {/* Left Filter Pill Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                        <select 
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 pr-8 text-xs font-medium text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                            <option value="All">Status: All Codes</option>
+                            <option value="Valid">Valid Active</option>
+                            <option value="Voided">Voided / Used</option>
+                        </select>
+                        <Filter className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+
+                    <button className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-1.5">
+                        <span>Created Date</span>
+                        <span className="text-slate-400">▾</span>
+                    </button>
+
+                    <button 
+                        onClick={fetchCodes}
+                        disabled={loading}
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-1.5"
+                    >
+                        <RefreshCcw className={`w-3 h-3 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+                        <span>Refresh</span>
+                    </button>
                 </div>
-                <div className="space-y-1 border-l border-slate-800 pl-4">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Active Links</p>
-                    <p className="text-xl font-mono text-emerald-500">{codes.filter(c => !c.is_used).length.toString().padStart(2, '0')}</p>
-                </div>
-                <div className="hidden md:block space-y-1 border-l border-slate-800 pl-4">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Security Level</p>
-                    <p className="text-xl font-mono text-blue-400">AES-256</p>
-                </div>
-                <div className="hidden md:block space-y-1 border-l border-slate-800 pl-4">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Registry Sync</p>
-                    <p className="text-xl font-mono text-slate-300">LIVE</p>
+
+                {/* Right Search Input */}
+                <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                        type="text"
+                        placeholder="Search code or creator..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-blue-500 transition-all"
+                    />
                 </div>
             </div>
 
-            {/* Ledger List */}
-            <div className="space-y-3">
+            {/* SaaS Table Container */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
                 {loading && codes.length === 0 ? (
-                    <div className="py-20 text-center animate-pulse">
-                        <RefreshCcw className="w-10 h-10 text-slate-700 mx-auto animate-spin mb-4" />
-                        <p className="text-slate-500 font-mono text-sm tracking-tighter">SYNCHRONIZING LEDGER...</p>
+                    <div className="py-20 text-center text-slate-400 text-xs font-medium animate-pulse">
+                        Retrieving reference codes...
                     </div>
-                ) : codes.length === 0 ? (
-                    <div className="py-20 text-center border-2 border-dashed border-slate-800 rounded-3xl">
-                        <p className="text-slate-600 font-medium">Ledger is empty. No access codes recorded.</p>
+                ) : filteredCodes.length === 0 ? (
+                    <div className="py-16 text-center text-slate-500 text-xs font-medium">
+                        No reference codes found.
                     </div>
                 ) : (
-                    codes.map((item) => (
-                        <div 
-                            key={item.id} 
-                            className="group relative flex flex-col md:flex-row items-center gap-6 bg-slate-900/40 border border-slate-800/60 p-5 rounded-2xl transition-all hover:bg-slate-800/40 hover:border-blue-500/30 shadow-sm"
-                        >
-                            {/* Reference Number */}
-                            <div className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-500">
-                                {item.id}
-                            </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                    <th className="py-3 px-4 w-10 text-center">
+                                        <input 
+                                            type="checkbox"
+                                            checked={selectedCodes.length === filteredCodes.length && filteredCodes.length > 0}
+                                            onChange={toggleSelectAll}
+                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                    </th>
+                                    <th className="py-3 px-4">Secure Reference Code ↕</th>
+                                    <th className="py-3 px-4">Created By ↕</th>
+                                    <th className="py-3 px-4">Created Date ↕</th>
+                                    <th className="py-3 px-4">Code Status ↕</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                                {filteredCodes.map((item) => {
+                                    const avatarStyle = getAvatarStyle(item.id);
+                                    const initials = getInitials(item.created_by_name);
+                                    const isChecked = selectedCodes.includes(item.id);
 
-                            {/* Code Column */}
-                            <div className="flex-1 flex flex-col gap-1 w-full md:w-auto">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                                    <Hash className="w-3 h-3" /> Secure Reference
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xl font-mono font-black text-white tracking-tighter">
-                                        {item.code}
-                                    </span>
-                                    <button 
-                                        onClick={() => copyToClipboard(item.code, item.id)}
-                                        className={`p-1.5 rounded-lg transition-all ${copiedId === item.id ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-600 hover:text-blue-400 hover:bg-blue-500/10'}`}
-                                    >
-                                        {copiedId === item.id ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    </button>
-                                </div>
-                            </div>
+                                    return (
+                                        <tr key={item.id} className={`hover:bg-slate-50/80 transition-colors ${isChecked ? 'bg-blue-50/30' : ''}`}>
+                                            <td className="py-3.5 px-4 text-center">
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => toggleSelectCode(item.id)}
+                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                />
+                                            </td>
 
-                            {/* Metadata Grid */}
-                            <div className="grid grid-cols-2 md:flex md:items-center gap-8 w-full md:w-auto">
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Origin</p>
-                                    <div className="flex items-center gap-2 text-sm text-slate-300 font-medium">
-                                        <User className="w-3 h-3 text-blue-500" />
-                                        {item.created_by_name || 'ROOT'}
-                                    </div>
-                                </div>
-                                
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Timestamp</p>
-                                    <div className="flex items-center gap-2 text-sm text-slate-300 font-medium">
-                                        <Calendar className="w-3 h-3 text-blue-500" />
-                                        {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </div>
-                                </div>
-                            </div>
+                                            {/* Code & Copy Button */}
+                                            <td className="py-3.5 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Hash className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                                    <span className="font-mono font-bold text-slate-900 tracking-wider text-sm">
+                                                        {item.code}
+                                                    </span>
+                                                    <button 
+                                                        onClick={() => copyToClipboard(item.code, item.id)}
+                                                        className={`p-1 rounded transition-all ${copiedId === item.id ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'}`}
+                                                        title="Copy Code"
+                                                    >
+                                                        {copiedId === item.id ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                                                    </button>
+                                                </div>
+                                            </td>
 
-                            {/* Status Tag */}
-                            <div className="w-full md:w-32 flex justify-start md:justify-center">
-                                <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                                    item.is_used 
-                                    ? 'bg-slate-950 text-slate-600 border-slate-800' 
-                                    : 'bg-emerald-500/5 text-emerald-500 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
-                                }`}>
-                                    {item.is_used ? <Clock className="w-3 h-3" /> : <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
-                                    {item.is_used ? 'VOIDED' : 'VALID'}
-                                </div>
-                            </div>
+                                            {/* Created By Column with Pastel Initial Avatar */}
+                                            <td className="py-3.5 px-4">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-7 h-7 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
+                                                        {initials}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                                                        <User className="w-3 h-3 text-slate-400" />
+                                                        <span>{item.created_by_name || 'System Admin'}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
 
-                            {/* Delete Action */}
-                            <button 
-                                onClick={() => handleDelete(item.id)}
-                                className="absolute top-4 right-4 md:static p-3 text-slate-700 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
-                        </div>
-                    ))
+                                            {/* Created At */}
+                                            <td className="py-3.5 px-4 font-mono text-slate-600">
+                                                {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </td>
+
+                                            {/* Status */}
+                                            <td className="py-3.5 px-4">
+                                                {getStatusBadge(item.is_used)}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="py-3.5 px-4 text-right">
+                                                <button 
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
+                                                    title="Revoke Code"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
-            </div>
 
-            {/* Footer Registry Info */}
-            <div className="flex flex-col md:flex-row items-center justify-between pt-8 gap-4 border-t border-slate-900">
-                <div className="flex items-center gap-4 text-[10px] text-slate-600 font-bold uppercase tracking-widest">
-                    <span>Build 04.20.2026</span>
-                    <span className="w-1 h-1 rounded-full bg-slate-800" />
-                    <span>Encrypted Connection</span>
+                {/* Table Footer Pagination */}
+                <div className="bg-slate-50/50 border-t border-slate-200 px-4 py-3 flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center gap-2">
+                        <span>Displaying</span>
+                        <select className="bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 outline-none">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                        <span>out of {filteredCodes.length} reference codes</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                        <button className="p-1 rounded border border-slate-200 hover:bg-white disabled:opacity-50" disabled>
+                            <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+                        </button>
+                        <button className="px-2.5 py-1 rounded bg-blue-600 text-white font-semibold text-xs">1</button>
+                        <button className="p-1 rounded border border-slate-200 hover:bg-white disabled:opacity-50" disabled>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                        </button>
+                    </div>
                 </div>
-                <button 
-                    onClick={fetchCodes}
-                    className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-blue-400 transition-all uppercase tracking-tighter"
-                >
-                    <RefreshCcw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh Node
-                </button>
             </div>
         </div>
     );

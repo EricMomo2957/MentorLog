@@ -97,34 +97,38 @@ const AdminProfile = () => {
 
     return (
         <>
-            <div className="max-w-5xl mx-auto space-y-8 pb-12">
+            <div className="max-w-6xl mx-auto space-y-8 text-slate-200">
                 {/* --- HEADER CARD --- */}
-                <div className="relative overflow-hidden bg-[#0f172a] rounded-[2.5rem] border border-slate-800 shadow-2xl">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-[100px] -mr-32 -mt-32"></div>
+                <div className="relative overflow-hidden bg-[#0f172a]/70 backdrop-blur-xl rounded-3xl border border-slate-800/80 shadow-2xl p-8 md:p-12">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 blur-[100px] -mr-40 -mt-40 pointer-events-none"></div>
                     
-                    <div className="relative p-8 md:p-12 flex flex-col md:flex-row items-center gap-8">
+                    <div className="relative flex flex-col md:flex-row items-center gap-8">
                         <div className="relative group">
-                            <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-linear-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-5xl font-black text-white shadow-2xl border-4 border-slate-900 transition-transform group-hover:scale-105 duration-300">
+                            <div className="w-32 h-32 md:w-36 md:h-36 rounded-3xl bg-linear-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-5xl font-black text-white shadow-2xl border-4 border-slate-900 transition-transform group-hover:scale-105 duration-300">
                                 {profile?.full_name?.charAt(0) || 'A'}
                             </div>
-                            <div className="absolute -bottom-2 -right-2 bg-blue-500 w-8 h-8 rounded-full border-4 border-[#0f172a] flex items-center justify-center text-[10px] text-white shadow-lg">
+                            <div className="absolute -bottom-2 -right-2 bg-blue-500 w-9 h-9 rounded-2xl border-4 border-[#0f172a] flex items-center justify-center text-xs text-white shadow-lg">
                                 🛡️
                             </div>
                         </div>
 
                         <div className="text-center md:text-left space-y-2">
-                            <h1 className="text-4xl font-black text-white tracking-tight italic">
+                            <div className="flex items-center justify-center md:justify-start gap-2">
+                                <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">Verified Admin Account</span>
+                            </div>
+                            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
                                 {profile?.full_name}
                             </h1>
-                            <p className="text-blue-400 font-bold tracking-widest uppercase text-xs">
+                            <p className="text-blue-400 font-bold text-xs uppercase tracking-wider">
                                 {profile?.role_title} — {profile?.department}
                             </p>
-                            <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-                                <span className="px-4 py-1.5 bg-slate-900/50 border border-slate-700 rounded-full text-xs font-bold text-slate-400">
-                                    ID: {profile?.employee_id}
+                            <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-2">
+                                <span className="px-3.5 py-1 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-slate-400">
+                                    ID: #{profile?.employee_id}
                                 </span>
-                                <span className="px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-xs font-bold text-blue-500">
-                                    System Verified
+                                <span className="px-3.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs font-bold text-blue-400">
+                                    Full Authorization
                                 </span>
                             </div>
                         </div>
@@ -132,9 +136,9 @@ const AdminProfile = () => {
                         <div className="md:ml-auto">
                             <button 
                                 onClick={() => setIsEditModalOpen(true)}
-                                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                                className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-xs transition-all shadow-lg shadow-blue-600/20 active:scale-95"
                             >
-                                Edit Admin Profile
+                                Edit Profile Details
                             </button>
                         </div>
                     </div>
@@ -142,35 +146,37 @@ const AdminProfile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-1">
-                        <div className="bg-[#0f172a] p-8 rounded-3xl border border-slate-800 shadow-xl h-full">
-                            <h4 className="text-white font-bold mb-6 flex items-center gap-2">
-                                <span className="text-blue-500">📧</span> Contact Details
+                        <div className="bg-[#0f172a]/70 backdrop-blur-xl p-8 rounded-3xl border border-slate-800/80 shadow-xl h-full space-y-6">
+                            <h4 className="text-white font-bold text-sm flex items-center gap-2">
+                                <span className="text-blue-400">📧</span> Contact Details
                             </h4>
-                            <div className="space-y-6">
-                                <div>
-                                    <p className="text-[10px] text-slate-500 font-black uppercase mb-1 tracking-tighter">Official Email</p>
-                                    <p className="text-slate-200 font-medium text-sm break-all">{profile?.email}</p>
+                            <div className="space-y-4">
+                                <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/60">
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Official Email</p>
+                                    <p className="text-slate-200 font-medium text-xs break-all">{profile?.email}</p>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] text-slate-500 font-black uppercase mb-1 tracking-tighter">Phone Extension</p>
-                                    <p className="text-slate-200 font-medium text-sm">{profile?.phone || 'Not Configured'}</p>
+                                <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/60">
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Phone Extension</p>
+                                    <p className="text-slate-200 font-medium text-xs">{profile?.phone || 'Not Configured'}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="md:col-span-2 bg-[#0f172a] p-8 rounded-3xl border border-slate-800 shadow-xl">
-                        <h4 className="text-white font-bold mb-6 flex items-center gap-2">
-                            <span className="text-blue-500">⚙️</span> Administrative Scope
+                    <div className="md:col-span-2 bg-[#0f172a]/70 backdrop-blur-xl p-8 rounded-3xl border border-slate-800/80 shadow-xl space-y-6">
+                        <h4 className="text-white font-bold text-sm flex items-center gap-2">
+                            <span className="text-blue-400">⚙️</span> System Administrative Scope
                         </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                            <div className="p-5 bg-slate-900/40 rounded-2xl border border-slate-700/50 hover:border-blue-500/30 transition-colors">
-                                <p className="text-[10px] text-blue-400 font-black uppercase mb-1">Access Level</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-6 bg-slate-900/60 rounded-2xl border border-slate-800/60 hover:border-slate-700 transition-colors space-y-1">
+                                <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Access Privilege</p>
                                 <p className="text-2xl font-black text-white">Super Admin</p>
+                                <p className="text-xs text-slate-500">Unrestricted system control</p>
                             </div>
-                            <div className="p-5 bg-slate-900/40 rounded-2xl border border-slate-700/50 hover:border-blue-500/30 transition-colors">
-                                <p className="text-[10px] text-blue-400 font-black uppercase mb-1">Managed Dept.</p>
-                                <p className="text-2xl font-black text-white">IT/Engineering</p>
+                            <div className="p-6 bg-slate-900/60 rounded-2xl border border-slate-800/60 hover:border-slate-700 transition-colors space-y-1">
+                                <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Department</p>
+                                <p className="text-2xl font-black text-white">{profile?.department || 'IT Department'}</p>
+                                <p className="text-xs text-slate-500">Active administration scope</p>
                             </div>
                         </div>
                     </div>
@@ -179,69 +185,67 @@ const AdminProfile = () => {
 
             {/* --- EDIT MODAL --- */}
             {isEditModalOpen && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-[#020617]/90 backdrop-blur-md">
-                    <div className="bg-[#0f172a] w-full max-w-lg rounded-[2.5rem] border border-slate-800 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-                        <div className="p-8 md:p-10">
-                            <div className="flex justify-between items-center mb-8">
-                                <h3 className="text-2xl font-black text-white italic">Update Admin Identity</h3>
-                                <button onClick={() => setIsEditModalOpen(false)} className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">✕</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#020617]/80 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-[#0f172a] w-full max-w-lg rounded-3xl border border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-8 space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xl font-bold text-white">Update Profile Details</h3>
+                                <button onClick={() => setIsEditModalOpen(false)} className="w-8 h-8 flex items-center justify-center bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors">✕</button>
                             </div>
 
-                            <form onSubmit={handleUpdate} className="space-y-5">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Full Name</label>
-                                        <input 
-                                            type="text" required
-                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:border-blue-500/50 outline-none"
-                                            value={formData.full_name}
-                                            onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Employee ID</label>
-                                            <input 
-                                                type="text"
-                                                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:border-blue-500/50 outline-none"
-                                                value={formData.employee_id}
-                                                onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Department</label>
-                                            <input 
-                                                type="text"
-                                                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:border-blue-500/50 outline-none"
-                                                value={formData.department}
-                                                onChange={(e) => setFormData({...formData, department: e.target.value})}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Official Email</label>
-                                        <input 
-                                            type="email" required
-                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:border-blue-500/50 outline-none"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-500 uppercase block mb-2 ml-1">Phone / Extension</label>
+                            <form onSubmit={handleUpdate} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-400">Full Name</label>
+                                    <input 
+                                        type="text" required
+                                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none"
+                                        value={formData.full_name}
+                                        onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-400">Employee ID</label>
                                         <input 
                                             type="text"
-                                            className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:border-blue-500/50 outline-none"
-                                            value={formData.phone}
-                                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none"
+                                            value={formData.employee_id}
+                                            onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-400">Department</label>
+                                        <input 
+                                            type="text"
+                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none"
+                                            value={formData.department}
+                                            onChange={(e) => setFormData({...formData, department: e.target.value})}
                                         />
                                     </div>
                                 </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-400">Official Email</label>
+                                    <input 
+                                        type="email" required
+                                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-400">Phone Number</label>
+                                    <input 
+                                        type="text"
+                                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                    />
+                                </div>
 
-                                <div className="pt-6 flex gap-3">
-                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 px-4 py-4 bg-slate-800 text-slate-400 rounded-2xl font-bold text-sm hover:bg-slate-700 hover:text-white transition-all">Discard</button>
-                                    <button type="submit" disabled={isSaving} className="flex-1 px-4 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm hover:bg-blue-500 disabled:opacity-50 transition-all">
-                                        {isSaving ? 'UPDATING...' : 'SAVE PROFILE'}
+                                <div className="pt-4 flex gap-3 border-t border-slate-800">
+                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="w-1/2 py-3 rounded-xl bg-slate-900 text-slate-400 font-bold text-xs hover:bg-slate-800 transition-all">Cancel</button>
+                                    <button type="submit" disabled={isSaving} className="w-1/2 bg-blue-600 py-3 rounded-xl text-white font-bold text-xs hover:bg-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-blue-600/20 active:scale-95">
+                                        {isSaving ? 'Updating...' : 'Save Profile'}
                                     </button>
                                 </div>
                             </form>

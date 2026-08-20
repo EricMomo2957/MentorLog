@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { 
-    format, addMonths, subMonths, startOfMonth, endOfMonth, 
-    startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay 
+    ChevronLeft, ChevronRight, Plus, 
+    MapPin, Clock, Download, X 
+} from 'lucide-react';
+import { 
+  format, addMonths, subMonths, startOfMonth, endOfMonth, 
+  startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay 
 } from 'date-fns';
 
 interface CalendarEvent {
@@ -126,49 +130,82 @@ const StudentCalendar = () => {
     });
 
     return (
-        <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-700">
+        <div className="space-y-6 max-w-7xl mx-auto">
             
-            {/* MODERN HEADER */}
-            <div className="relative overflow-hidden bg-linear-to-r from-slate-900 to-slate-800 p-8 rounded-4xl border border-slate-700/50 shadow-2xl">
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></span>
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em]">Academic Planner</span>
-                        </div>
-                        <h1 className="text-4xl font-black text-white tracking-tight">
-                            {format(currentMonth, 'MMMM')} <span className="text-slate-500 font-light">{format(currentMonth, 'yyyy')}</span>
-                        </h1>
-                    </div>
-                    
-                    <div className="flex items-center bg-slate-950/50 p-1.5 rounded-2xl border border-slate-800">
-                        <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all">←</button>
-                        <button onClick={() => setCurrentMonth(new Date())} className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white">Today</button>
-                        <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all">→</button>
-                    </div>
+            {/* Top Title & Primary Action Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Personal Schedule & Calendar</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Manage your personal OJT schedule, deadlines, and academic events</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={openAddModal}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Create Event</span>
+                    </button>
 
                     <button 
-                        onClick={openAddModal} 
-                        className="group flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all hover:-translate-y-1"
+                        onClick={() => alert("Exporting schedule...")} 
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 p-2.5 rounded-lg shadow-xs transition-all"
+                        title="Export Calendar"
                     >
-                        <span className="text-xl transition-transform group-hover:rotate-90">+</span>
-                        Create Event
+                        <Download className="w-4 h-4" />
                     </button>
                 </div>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full"></div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Control Bar (Automoor Style) */}
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
                 
-                {/* CALENDAR MAIN GRID */}
-                <div className="lg:col-span-8 xl:col-span-9 bg-slate-900/40 backdrop-blur-md rounded-[2.5rem] border border-slate-800 p-6 shadow-inner">
-                    <div className="grid grid-cols-7 mb-6">
+                {/* Month Navigator Pills */}
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                        className="p-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition-all"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    <span className="px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 font-mono">
+                        {format(currentMonth, 'MMMM yyyy')}
+                    </span>
+
+                    <button 
+                        onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                        className="p-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition-all"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+
+                    <button 
+                        onClick={() => setCurrentMonth(new Date())}
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all"
+                    >
+                        Today
+                    </button>
+                </div>
+
+                <span className="text-xs font-mono text-slate-500">
+                    {events.length} Scheduled Events
+                </span>
+            </div>
+
+            {/* Calendar Main Split View */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Calendar Main Grid */}
+                <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                    <div className="grid grid-cols-7 bg-slate-50/80 border-b border-slate-200 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                            <div key={d} className="text-center text-[11px] font-bold text-slate-600 uppercase tracking-widest">{d}</div>
+                            <div key={d} className="py-2.5 border-r border-slate-200/60 last:border-r-0">{d}</div>
                         ))}
                     </div>
-                    
-                    <div className="grid grid-cols-7 gap-3">
+
+                    <div className="grid grid-cols-7">
                         {days.map((day, i) => {
                             const dayEvents = events.filter(e => isSameDay(new Date(e.start_time), day));
                             const isToday = isSameDay(day, new Date());
@@ -177,35 +214,28 @@ const StudentCalendar = () => {
                             return (
                                 <div 
                                     key={i} 
-                                    className={`group min-h-30 p-3 rounded-3xl border transition-all duration-300 relative ${
-                                        !isCurrentMonth 
-                                        ? 'opacity-10 border-transparent' 
-                                        : isToday 
-                                          ? 'bg-blue-600/5 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
-                                          : 'bg-slate-800/20 border-slate-800/50 hover:border-slate-600 hover:bg-slate-800/40'
-                                    }`}
+                                    className={`min-h-24 p-2 border-r border-b border-slate-200/60 transition-all ${!isCurrentMonth ? 'bg-slate-50/50 opacity-40' : 'hover:bg-slate-50/60'}`}
                                 >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className={`text-sm font-black ${isToday ? 'text-blue-500' : 'text-slate-500'}`}>
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className={`text-xs font-mono font-bold w-5 h-5 rounded-md flex items-center justify-center ${
+                                            isToday ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-500'
+                                        }`}>
                                             {format(day, 'd')}
                                         </span>
-                                        {dayEvents.length > 0 && (
-                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]"></span>
-                                        )}
                                     </div>
                                     
-                                    <div className="space-y-1 overflow-y-auto max-h-20 custom-scrollbar">
+                                    <div className="space-y-1">
                                         {dayEvents.slice(0, 3).map(e => (
                                             <div 
                                                 key={e.id} 
                                                 onClick={() => setSelectedEvent(e)}
-                                                className="text-[9px] font-bold p-2 bg-slate-800/80 border border-slate-700/50 text-slate-300 rounded-xl truncate cursor-pointer hover:bg-blue-600 hover:text-white hover:border-blue-400 transition-all active:scale-95"
+                                                className="text-[10px] bg-blue-50 text-blue-700 p-1 px-1.5 rounded-md border border-blue-200 font-semibold cursor-pointer hover:bg-blue-100 transition-colors truncate shadow-2xs"
                                             >
                                                 {e.title}
                                             </div>
                                         ))}
                                         {dayEvents.length > 3 && (
-                                            <p className="text-[9px] text-slate-600 font-bold px-1">+{dayEvents.length - 3} more</p>
+                                            <p className="text-[9px] text-slate-400 font-semibold px-1">+{dayEvents.length - 3} more</p>
                                         )}
                                     </div>
                                 </div>
@@ -214,115 +244,130 @@ const StudentCalendar = () => {
                     </div>
                 </div>
 
-                {/* MODERN SIDEBAR */}
-                <div className="lg:col-span-4 xl:col-span-3 space-y-6">
-                    <div className="bg-linear-to-b from-slate-800/50 to-slate-900/50 rounded-[2.5rem] border border-slate-800 p-8 shadow-2xl sticky top-8">
-                        <div className="flex items-center justify-between mb-8">
-                            <h4 className="text-xl font-black text-white">Focus <span className="text-blue-500">View</span></h4>
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                {/* Focus View Sidebar */}
+                <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 h-fit sticky top-20">
+                    <div className="border-b border-slate-100 pb-3">
+                        <h3 className="text-sm font-bold text-slate-900">Event Details & Focus</h3>
+                        <p className="text-[11px] text-slate-500">Select any event on the calendar to inspect</p>
+                    </div>
+
+                    {selectedEvent ? (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <span className="inline-block px-2.5 py-0.5 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full">
+                                    Selected Event
+                                </span>
+                                <h4 className="text-base font-bold text-slate-900">{selectedEvent.title}</h4>
+                                <p className="text-xs text-slate-600 leading-relaxed">{selectedEvent.description || "No description provided."}</p>
+                            </div>
+
+                            <div className="space-y-2 text-xs text-slate-600 pt-2 border-t border-slate-100">
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>{selectedEvent.location || "Online / Internal"}</span>
+                                </div>
+                                <div className="flex items-center gap-2 font-mono">
+                                    <Clock className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>{format(new Date(selectedEvent.start_time), 'MMM dd, yyyy - hh:mm a')}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 pt-3 border-t border-slate-100">
+                                <button 
+                                    onClick={() => openEditModal(selectedEvent)}
+                                    className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition-all"
+                                >
+                                    Edit Event
+                                </button>
+                                <button 
+                                    onClick={() => selectedEvent.id && handleDelete(selectedEvent.id)}
+                                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs rounded-lg transition-all"
+                                >
+                                    Delete
+                                </button>
                             </div>
                         </div>
-
-                        {selectedEvent ? (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                                <div className="space-y-4">
-                                    <div className="inline-block px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-500 text-[10px] font-black uppercase rounded-lg">
-                                        Active Selection
-                                    </div>
-                                    <h3 className="text-3xl font-black text-white leading-tight">{selectedEvent.title}</h3>
-                                    <p className="text-slate-400 text-sm leading-relaxed">{selectedEvent.description || "No description provided."}</p>
-                                    
-                                    <div className="pt-4 space-y-3">
-                                        <div className="flex items-center gap-3 text-xs font-bold text-slate-500 bg-slate-950/30 p-3 rounded-2xl">
-                                            <span className="text-blue-500">📍</span> {selectedEvent.location || "Online / TBD"}
-                                        </div>
-                                        <div className="flex items-center gap-3 text-xs font-bold text-slate-500 bg-slate-950/30 p-3 rounded-2xl">
-                                            <span className="text-blue-500">🕒</span> {format(new Date(selectedEvent.start_time), 'hh:mm a')}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-3 pt-4">
-                                    <button 
-                                        onClick={() => openEditModal(selectedEvent)}
-                                        className="py-4 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-2xl transition-all"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button 
-                                        onClick={() => selectedEvent.id && handleDelete(selectedEvent.id)}
-                                        className="py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold rounded-2xl border border-red-500/20 transition-all"
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 border-2 border-dashed border-slate-800 rounded-3xl">
-                                <div className="w-12 h-12 bg-slate-800/50 rounded-full flex items-center justify-center text-slate-600 text-xl">✨</div>
-                                <div>
-                                    <p className="text-white font-bold text-sm">Nothing Selected</p>
-                                    <p className="text-slate-600 text-[11px] mt-1 px-4">Click an event in the calendar to view full details.</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    ) : (
+                        <div className="py-12 text-center text-slate-400 text-xs italic">
+                            Click an event in the calendar grid to view full details.
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* MODAL IMPLEMENTATION */}
+            {/* Event Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-slate-900 w-full max-w-md rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 animate-in zoom-in-95 duration-300">
-                        <h2 className="text-2xl font-black text-white mb-6">
-                            {isEditing ? 'Edit Event' : 'New Event'}
-                        </h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                            <h2 className="text-base font-bold text-slate-900">
+                                {isEditing ? 'Edit Personal Event' : 'Create New Event'}
+                            </h2>
+                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
                         <form onSubmit={handleSave} className="space-y-4">
-                            <input 
-                                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-blue-500 outline-none transition-colors"
-                                placeholder="Event Title" 
-                                value={formData.title}
-                                onChange={e => setFormData({...formData, title: e.target.value})}
-                                required 
-                            />
-                            <textarea 
-                                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-blue-500 outline-none h-28 resize-none"
-                                placeholder="Description"
-                                value={formData.description}
-                                onChange={e => setFormData({...formData, description: e.target.value})}
-                            />
-                            <input 
-                                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white focus:border-blue-500 outline-none"
-                                placeholder="Location"
-                                value={formData.location}
-                                onChange={e => setFormData({...formData, location: e.target.value})}
-                            />
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600">Event Title</label>
+                                <input 
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                    placeholder="Event Title" 
+                                    value={formData.title}
+                                    onChange={e => setFormData({...formData, title: e.target.value})}
+                                    required 
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600">Description</label>
+                                <textarea 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 h-20 outline-none focus:border-blue-500 focus:bg-white resize-none"
+                                    placeholder="Description"
+                                    value={formData.description}
+                                    onChange={e => setFormData({...formData, description: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600">Location</label>
+                                <input 
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                    placeholder="Location"
+                                    value={formData.location}
+                                    onChange={e => setFormData({...formData, location: e.target.value})}
+                                />
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">Start Time</label>
+                                    <label className="text-xs font-semibold text-slate-600">Start Time</label>
                                     <input 
                                         type="datetime-local" 
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-white text-xs"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
                                         value={formData.start_time}
                                         onChange={e => setFormData({...formData, start_time: e.target.value})}
                                         required 
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase px-1">End Time</label>
+                                    <label className="text-xs font-semibold text-slate-600">End Time</label>
                                     <input 
                                         type="datetime-local" 
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-white text-xs"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
                                         value={formData.end_time}
                                         onChange={e => setFormData({...formData, end_time: e.target.value})}
                                         required 
                                     />
                                 </div>
                             </div>
-                            <div className="flex gap-3 pt-6">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-slate-800 text-white font-bold rounded-2xl hover:bg-slate-700 transition-all">Cancel</button>
-                                <button type="submit" className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all">Save Event</button>
+
+                            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 font-semibold text-xs hover:bg-slate-200 transition-all">Cancel</button>
+                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700 transition-all shadow-xs">Save Event</button>
                             </div>
                         </form>
                     </div>

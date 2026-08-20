@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import axios, { AxiosError } from 'axios';
+import api from '../../services/api';
+import { 
+    MessageSquare, Send, Trash2, Edit3, Search, Filter, Download
+} from 'lucide-react';
 
 interface Question {
     id: number;
@@ -19,37 +22,55 @@ interface Reply {
     created_at: string;
 }
 
+const pastelAvatarStyles = [
+    'bg-purple-100 text-purple-700 border-purple-200',
+    'bg-blue-100 text-blue-700 border-blue-200',
+    'bg-pink-100 text-pink-700 border-pink-200',
+    'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'bg-amber-100 text-amber-700 border-amber-200',
+    'bg-rose-100 text-rose-700 border-rose-200',
+    'bg-indigo-100 text-indigo-700 border-indigo-200',
+];
+const getAvatarStyle = (id: number) => pastelAvatarStyles[id % pastelAvatarStyles.length];
+
+const getInitials = (name?: string) => {
+    if (!name) return 'UN';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+};
+
 const ManageAskQuestion = () => {
     const [questions, setQuestions] = useState<Question[]>([]);
     const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
     const [thread, setThread] = useState<Reply[]>([]);
     const [replyText, setReplyText] = useState("");
-    
-    // NEW STATES FOR EDITING
     const [editingReplyId, setEditingReplyId] = useState<number | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState<string>('All');
     
     const isInitialMount = useRef(true);
 
     const fetchQuestions = useCallback(async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/questions/all');
-            setQuestions(res.data);
-        } catch (err: unknown) {
-            const error = err as AxiosError;
-            console.error("Error fetching questions:", error);
+            const res = await api.get('/questions/all');
+            const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+            setQuestions(data);
+        } catch (err) {
+            console.error("Error fetching questions:", err);
         }
     }, []);
 
     const loadThread = useCallback(async (q: Question) => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/questions/thread/${q.id}`);
-            setThread(res.data);
+            const res = await api.get(`/questions/thread/${q.id}`);
+            const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+            setThread(data);
             setSelectedQuestion(q);
             setEditingReplyId(null); 
             setReplyText("");
-        } catch (err: unknown) {
-            const error = err as AxiosError;
-            console.error("Error loading thread:", error);
+        } catch (err) {
+            console.error("Error loading thread:", err);
         }
     }, []);
 
@@ -77,29 +98,24 @@ const ManageAskQuestion = () => {
 
         try {
             if (editingReplyId) {
-                // UPDATE LOGIC
-                await axios.put(`http://localhost:5000/api/questions/reply/${editingReplyId}`, {
+                await api.put(`/questions/reply/${editingReplyId}`, {
                     reply_text: replyText
                 });
-                alert("Response Updated!");
             } else {
-                // CREATE LOGIC
-                await axios.post('http://localhost:5000/api/questions/reply', {
+                await api.post('/questions/reply', {
                     question_id: selectedQuestion.id,
                     sender_id: parseInt(adminId),
                     sender_role: 'admin',
                     reply_text: replyText
                 });
-                alert("Response Transmitted Successfully!");
             }
             
             setReplyText(""); 
             setEditingReplyId(null);
             await loadThread(selectedQuestion); 
             await fetchQuestions(); 
-        } catch (err: unknown) {
+        } catch (err) {
             console.error("Error processing reply:", err);
-            alert("Action failed.");
         }
     };
 
@@ -108,157 +124,229 @@ const ManageAskQuestion = () => {
         if (!window.confirm("Are you sure you want to permanently delete this inquiry?")) return;
 
         try {
-            await axios.delete(`http://localhost:5000/api/questions/delete/${id}`);
+            await api.delete(`/questions/delete/${id}`);
             if (selectedQuestion?.id === id) {
                 setSelectedQuestion(null);
                 setThread([]);
             }
             await fetchQuestions(); 
-            alert("Inquiry purged successfully.");
-        } catch (err: unknown) {
+        } catch (err) {
             console.error("Purge Error:", err);
-            alert("Failed to delete the record.");
         }
     };
 
-    return (
-        <div className="min-h-screen bg-[#0a0f1c] text-slate-300 p-8 flex gap-6 font-sans">
-            {/* Sidebar View */}
-            <div className="w-1/3 bg-[#0d1424] border border-slate-800 rounded-sm overflow-hidden flex flex-col h-[85vh] shadow-2xl">
-                <div className="p-5 border-b border-slate-800 bg-[#111a2e] flex justify-between items-center">
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Question Inbox</h2>
-                    <span className="bg-blue-600/20 text-blue-500 text-[9px] px-2 py-0.5 rounded-full font-bold">
-                        {questions.length} ACTIVE
-                    </span>
-                </div>
-                <div className="overflow-y-auto flex-1 custom-scrollbar">
-                    {questions.map((q) => (
-                        <button 
-                            key={q.id} 
-                            onClick={() => loadThread(q)}
-                            className={`w-full text-left p-5 border-b border-slate-800 transition-all border-l-2 relative group ${
-                                selectedQuestion?.id === q.id 
-                                ? 'bg-[#1a253d] border-l-[#00df9a]' 
-                                : 'hover:bg-[#141d33] border-l-transparent'
-                            }`}
-                        >
-                            <div 
-                                onClick={(e) => handleDelete(e, q.id)}
-                                className="absolute top-4 right-4 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1"
-                                title="Delete Inquiry"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                            </div>
+    const filteredQuestions = questions.filter(q => {
+        const matchesSearch = q.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            q.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            q.message.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = filterStatus === 'All' || q.status === filterStatus;
+        return matchesSearch && matchesStatus;
+    });
 
-                            <p className="text-[10px] font-bold text-[#00df9a] uppercase tracking-wider mb-1">{q.student_name}</p>
-                            <p className="text-sm text-white font-medium truncate pr-6">{q.subject}</p>
-                            <div className="flex justify-between items-center mt-3">
-                                <span className={`text-[8px] px-2 py-0.5 rounded-sm font-black uppercase ${
-                                    q.status === 'pending' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
-                                }`}>
-                                    {q.status}
-                                </span>
-                                <p className="text-[9px] text-slate-600 font-mono">
-                                    {new Date(q.created_at).toLocaleDateString()}
-                                </p>
-                            </div>
-                        </button>
-                    ))}
+    return (
+        <div className="space-y-6 max-w-7xl mx-auto">
+            
+            {/* Top Title & Primary Action Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Question & Answer Desk</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Direct messaging channel for answering student questions and technical inquiries</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => alert("Exporting Q&A thread logs...")} 
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span>Export Inbox</span>
+                    </button>
                 </div>
             </div>
 
-            {/* Main Conversation View */}
-            <div className="flex-1 bg-[#0d1424] border border-slate-800 rounded-sm flex flex-col h-[85vh] shadow-2xl overflow-hidden">
-                {selectedQuestion ? (
-                    <>
-                        <div className="p-6 border-b border-slate-800 bg-[#111a2e]">
-                            <p className="text-[9px] font-bold text-blue-500 uppercase tracking-[0.3em] mb-1">Subject Header</p>
-                            <h2 className="text-2xl font-light text-white uppercase tracking-tight">{selectedQuestion.subject}</h2>
+            {/* Split Screen Container */}
+            <div className="flex flex-col lg:flex-row gap-6 h-[72vh]">
+                
+                {/* Left Sidebar View */}
+                <div className="w-full lg:w-80 bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col shadow-xs shrink-0">
+                    
+                    {/* Header Controls */}
+                    <div className="p-3.5 border-b border-slate-200 bg-slate-50/80 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Active Inquiries</h2>
+                            <span className="bg-blue-50 border border-blue-200 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                                {filteredQuestions.length} Threads
+                            </span>
                         </div>
                         
-                        <div className="flex-1 p-8 overflow-y-auto space-y-6 bg-[#0a0f1c]/30 custom-scrollbar">
-                            <div className="bg-[#1a253d] p-5 rounded-sm border-l-2 border-[#00df9a] relative shadow-lg">
-                                <div className="absolute -top-2.5 left-4 bg-[#00df9a] text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter">
-                                    Student Inquiry
+                        {/* Search Input */}
+                        <div className="relative">
+                            <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <input 
+                                type="text"
+                                placeholder="Search inquiry..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-2.5 py-1 text-[11px] text-slate-800 outline-none focus:border-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Inquiry List */}
+                    <div className="overflow-y-auto flex-1 p-2 space-y-1.5">
+                        {filteredQuestions.length > 0 ? (
+                            filteredQuestions.map((q) => {
+                                const avatarStyle = getAvatarStyle(q.student_id || q.id);
+                                const initials = getInitials(q.student_name);
+                                const isSelected = selectedQuestion?.id === q.id;
+
+                                return (
+                                    <button 
+                                        key={q.id} 
+                                        onClick={() => loadThread(q)}
+                                        className={`w-full text-left p-3 rounded-lg border transition-all relative group ${
+                                            isSelected 
+                                            ? 'bg-blue-50/80 border-blue-200 shadow-2xs' 
+                                            : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
+                                        }`}
+                                    >
+                                        <div 
+                                            onClick={(e) => handleDelete(e, q.id)}
+                                            className="absolute top-2.5 right-2.5 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                            title="Delete Inquiry"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </div>
+
+                                        <div className="flex items-center gap-2.5 mb-1">
+                                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center font-bold text-[10px] shrink-0 ${avatarStyle}`}>
+                                                {initials}
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-900 truncate">{q.student_name}</span>
+                                        </div>
+
+                                        <p className="text-xs font-semibold text-slate-800 truncate pr-5 mb-1.5">{q.subject}</p>
+                                        
+                                        <div className="flex justify-between items-center text-[10px]">
+                                            <span className={`px-2 py-0.5 rounded-full font-semibold border ${
+                                                q.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            }`}>
+                                                {q.status}
+                                            </span>
+                                            <span className="text-slate-400 font-mono">
+                                                {new Date(q.created_at).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    </button>
+                                );
+                            })
+                        ) : (
+                            <div className="p-8 text-center text-slate-400 text-xs italic">No inquiry threads found.</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Main Conversation View */}
+                <div className="flex-1 bg-white border border-slate-200 rounded-xl flex flex-col shadow-xs overflow-hidden">
+                    {selectedQuestion ? (
+                        <>
+                            {/* Thread Header */}
+                            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Inquiry Thread</span>
+                                    <h2 className="text-base font-bold text-slate-900">{selectedQuestion.subject}</h2>
                                 </div>
-                                <p className="text-sm text-slate-300 leading-relaxed italic">"{selectedQuestion.message}"</p>
+                                <span className="text-xs text-slate-400 font-mono">ID: #{selectedQuestion.id}</span>
+                            </div>
+                            
+                            {/* Messages Container */}
+                            <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/30">
+                                {/* Student Initial Question Card */}
+                                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-7 h-7 rounded-full border flex items-center justify-center font-bold text-xs ${getAvatarStyle(selectedQuestion.student_id || selectedQuestion.id)}`}>
+                                                {getInitials(selectedQuestion.student_name)}
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-900">{selectedQuestion.student_name}</span>
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 font-mono">{new Date(selectedQuestion.created_at).toLocaleString()}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-700 leading-relaxed italic bg-slate-50 p-3 rounded-lg border border-slate-100 font-medium">
+                                        "{selectedQuestion.message}"
+                                    </p>
+                                </div>
+
+                                {/* Replies */}
+                                {thread.map((r) => (
+                                    <div key={r.id} className={`flex ${r.sender_role === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[80%] p-3.5 rounded-xl border space-y-1.5 shadow-2xs ${
+                                            r.sender_role === 'admin' 
+                                            ? 'bg-blue-600 text-white border-blue-700' 
+                                            : 'bg-white border-slate-200 text-slate-800'
+                                        }`}>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-[10px] font-bold uppercase ${r.sender_role === 'admin' ? 'text-blue-100' : 'text-blue-600'}`}>{r.sender_role}</span>
+                                                    <span className={`text-[10px] font-mono ${r.sender_role === 'admin' ? 'text-blue-200' : 'text-slate-400'}`}>
+                                                        {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                
+                                                {r.sender_role === 'admin' && (
+                                                    <button 
+                                                        onClick={() => startEdit(r)}
+                                                        className="text-[10px] font-semibold text-white/80 hover:text-white flex items-center gap-1 bg-blue-700/60 px-2 py-0.5 rounded transition-colors"
+                                                    >
+                                                        <Edit3 className="w-3 h-3" /> Edit
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <p className="text-xs leading-relaxed font-medium">{r.reply_text}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
 
-                            {thread.map((r) => (
-                                <div key={r.id} className={`flex ${r.sender_role === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[80%] p-4 rounded-sm border relative group/reply ${
-                                        r.sender_role === 'admin' 
-                                        ? 'bg-[#111a2e] border-blue-900/50 border-r-4 border-r-blue-600' 
-                                        : 'bg-slate-800/40 border-slate-700 border-l-4 border-l-slate-500'
-                                    }`}>
-                                        <div className="flex items-center justify-between gap-6 mb-2">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{r.sender_role}</span>
-                                                <span className="text-[8px] font-mono text-slate-600">
-                                                    {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </div>
-                                            
-                                            {r.sender_role === 'admin' && (
-                                                <button 
-                                                    onClick={() => startEdit(r)}
-                                                    className="flex items-center gap-1.5 text-[9px] font-black text-blue-400 hover:text-[#00df9a] uppercase tracking-tighter bg-blue-500/10 px-2 py-1 rounded-xs transition-colors group"
-                                                >
-                                                    {/* EDIT LOGO ADDED HERE */}
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                    EDIT RESPONSE
-                                                </button>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-slate-200 leading-snug">{r.reply_text}</p>
+                            {/* Reply Input Box */}
+                            <div className="p-3.5 border-t border-slate-200 bg-white space-y-2">
+                                {editingReplyId && (
+                                    <div className="flex justify-between items-center text-xs px-2">
+                                        <span className="text-amber-600 font-semibold">Editing selected response...</span>
+                                        <button 
+                                            onClick={() => { setEditingReplyId(null); setReplyText(""); }}
+                                            className="text-slate-400 hover:text-slate-700 font-semibold"
+                                        >
+                                            Cancel
+                                        </button>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="p-6 border-t border-slate-800 bg-[#111a2e]">
-                            {editingReplyId && (
-                                <div className="flex justify-between items-center mb-2 px-1">
-                                    <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest animate-pulse">
-                                        Editing Mode Active
-                                    </span>
+                                )}
+                                <div className="flex gap-2">
+                                    <input 
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleReply()}
+                                        placeholder={editingReplyId ? "Modify your response..." : "Type response to student..."}
+                                        className="flex-1 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white transition-all"
+                                    />
                                     <button 
-                                        onClick={() => { setEditingReplyId(null); setReplyText(""); }}
-                                        className="text-[8px] text-slate-500 hover:text-white uppercase font-bold"
+                                        onClick={handleReply} 
+                                        className={`${editingReplyId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-semibold text-xs px-4 py-2 rounded-lg transition-all shadow-xs flex items-center gap-1.5`}
                                     >
-                                        Cancel Edit
+                                        <span>{editingReplyId ? 'Update' : 'Send'}</span>
+                                        <Send className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
-                            )}
-                            <div className={`flex gap-3 bg-[#0a0f1c] border p-2 focus-within:border-blue-500 transition-all shadow-inner ${editingReplyId ? 'border-amber-500/50' : 'border-slate-800'}`}>
-                                <input 
-                                    value={replyText}
-                                    onChange={(e) => setReplyText(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleReply()}
-                                    placeholder={editingReplyId ? "MODIFY YOUR RESPONSE..." : "TYPE YOUR OFFICIAL RESPONSE..."}
-                                    className="flex-1 bg-transparent px-3 py-2 text-xs text-white outline-none placeholder:text-slate-700 uppercase tracking-wider"
-                                />
-                                <button 
-                                    onClick={handleReply} 
-                                    className={`${editingReplyId ? 'bg-amber-600' : 'bg-blue-600'} hover:bg-[#00df9a] text-white hover:text-black font-black text-[10px] px-8 uppercase transition-all flex items-center gap-2`}
-                                >
-                                    {editingReplyId ? 'Update' : 'Transmit'} <span>→</span>
-                                </button>
                             </div>
+                        </>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center space-y-2">
+                            <MessageSquare className="w-10 h-10 text-slate-300 animate-pulse" />
+                            <h3 className="text-sm font-bold text-slate-800">Select an Inquiry Thread</h3>
+                            <p className="text-xs text-slate-500 max-w-xs">Choose a student inquiry from the sidebar list to view conversation and reply.</p>
                         </div>
-                    </>
-                ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-slate-700 bg-[#0a0f1c]/20">
-                        <div className="w-16 h-16 border-2 border-slate-900 rounded-full flex items-center justify-center mb-6 opacity-40">
-                            <span className="text-2xl animate-pulse">✉</span>
-                        </div>
-                        <h3 className="uppercase tracking-[0.4em] text-[11px] font-black mb-2">System Ready</h3>
-                        <p className="text-[10px] uppercase tracking-widest text-slate-800">Select a communication thread to initiate response</p>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { 
+    MessageSquare, Send, ArrowLeft, Download, Plus, 
+    CheckCircle2, AlertCircle, Clock 
+} from 'lucide-react';
 
 interface Question {
     id: number;
@@ -23,33 +27,26 @@ const StudentAskQuestion = () => {
     const [selectedQ, setSelectedQ] = useState<Question | null>(null);
     const [thread, setThread] = useState<Reply[]>([]);
     const [replyText, setReplyText] = useState("");
+    const [submitting, setSubmitting] = useState(false);
 
-    // Get the dynamic ID from localStorage
     const studentId = localStorage.getItem('userId');
 
-    // 1. Memoized fetcher using dynamic studentId
     const fetchMyQuestions = useCallback(async () => {
         if (!studentId) return;
         try {
             const response = await axios.get(`http://localhost:5000/api/questions/student/${studentId}`);
-            // Note: Changed to setMyQuestions to match your state variable
             setMyQuestions(response.data);
         } catch (err) {
-            console.error("Error fetching your specific questions:", err);
+            console.error("Error fetching questions:", err);
         }
     }, [studentId]);
 
-    // 2. Initial load effect
     useEffect(() => {
-        const loadData = async () => {
-            if (studentId) {
-                await fetchMyQuestions();
-            }
-        };
-        loadData();
+        if (studentId) {
+            fetchMyQuestions();
+        }
     }, [fetchMyQuestions, studentId]);
 
-    // 3. Thread loader
     const loadThread = useCallback(async (q: Question) => {
         try {
             setSelectedQ(q);
@@ -60,7 +57,6 @@ const StudentAskQuestion = () => {
         }
     }, []);
 
-    // 4. Submission Handler
     const handleNewInquiry = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!subject.trim() || !message.trim() || !studentId) {
@@ -68,6 +64,7 @@ const StudentAskQuestion = () => {
             return;
         }
 
+        setSubmitting(true);
         try {
             await axios.post('http://localhost:5000/api/questions/ask', {
                 student_id: studentId,
@@ -82,10 +79,11 @@ const StudentAskQuestion = () => {
         } catch (err) {
             console.error("Post error:", err);
             alert("Failed to submit inquiry.");
+        } finally {
+            setSubmitting(false);
         }
     };
 
-    // 5. Reply Handler
     const handleReply = async () => {
         if (!replyText.trim() || !selectedQ || !studentId) return;
         try {
@@ -102,114 +100,171 @@ const StudentAskQuestion = () => {
         }
     };
 
+    const getStatusBadge = (status: string) => {
+        if (status === 'replied') {
+            return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full"><CheckCircle2 className="w-3 h-3" /> Replied</span>;
+        }
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full"><Clock className="w-3 h-3" /> Pending</span>;
+    };
+
     return (
-        <div className="min-h-screen bg-[#0a0f1c] text-slate-300 p-8 font-sans">
-            <div className="max-w-350 mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="space-y-6 max-w-7xl mx-auto">
+            
+            {/* Top Title & Primary Action Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Ask a Question & Inquiry Desk</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Send direct inquiries and questions to your OJT coordinator or admin team</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => alert("Exporting inquiry thread...")} 
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span>Export Inquiries</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Split Screen Container */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                {/* --- LEFT: NEW FORM --- */}
-                <div className="lg:col-span-4 space-y-6">
-                    <div className="mb-8">
-                        <p className="text-[10px] font-black text-[#00df9a] uppercase tracking-[0.4em] mb-2">Service Desk</p>
-                        <h1 className="text-4xl font-light text-white uppercase tracking-tighter">New <span className="font-black text-blue-500">Inquiry</span></h1>
+                {/* Left: New Inquiry Form Card */}
+                <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4 h-fit sticky top-20">
+                    <div className="border-b border-slate-100 pb-3">
+                        <h2 className="text-base font-bold text-slate-900">Submit New Inquiry</h2>
+                        <p className="text-[11px] text-slate-500">Fill in subject and detailed message to contact your advisor</p>
                     </div>
 
-                    <form onSubmit={handleNewInquiry} className="bg-[#0d1424] border border-slate-800 p-6 space-y-4 shadow-xl">
-                        <div>
-                            <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Topic Subject</label>
+                    <form onSubmit={handleNewInquiry} className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-600">Inquiry Subject</label>
                             <input 
+                                type="text"
                                 value={subject}
                                 onChange={(e) => setSubject(e.target.value)}
-                                className="w-full bg-[#0a0f1c] border border-slate-800 p-3 text-xs mt-1 text-white focus:border-[#00df9a] outline-none transition-all"
-                                placeholder="E.G. ATTENDANCE DISCREPANCY"
+                                placeholder="e.g. Attendance Hours Discrepancy"
+                                required
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
                             />
                         </div>
-                        <div>
-                            <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Message</label>
+
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-600">Detailed Message</label>
                             <textarea 
                                 rows={5}
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
-                                className="w-full bg-[#0a0f1c] border border-slate-800 p-3 text-xs mt-1 text-white focus:border-[#00df9a] outline-none resize-none"
-                                placeholder="DESCRIBE YOUR CONCERN..."
+                                placeholder="Describe your concern or inquiry..."
+                                required
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white resize-none"
                             />
                         </div>
+
                         <button 
                             type="submit" 
-                            className="w-full py-3 bg-[#00df9a] text-black font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all cursor-pointer"
+                            disabled={submitting}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 rounded-lg transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                            Submit Inquiry
+                            <Plus className="w-4 h-4" />
+                            <span>{submitting ? 'Submitting...' : 'Submit Inquiry'}</span>
                         </button>
                     </form>
                 </div>
 
-                {/* --- RIGHT: HISTORY & CHAT --- */}
-                <div className="lg:col-span-8 bg-[#0d1424] border border-slate-800 flex flex-col h-[75vh] shadow-2xl relative">
+                {/* Right: History & Chat Container */}
+                <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl flex flex-col h-[72vh] shadow-xs overflow-hidden">
                     {!selectedQ ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
-                            <h2 className="text-[10px] font-black text-slate-600 uppercase tracking-[0.5em] mb-4">Select a Thread to view Replies</h2>
-                            <div className="grid grid-cols-1 gap-3 w-full max-w-md overflow-y-auto pr-2 custom-scrollbar">
-                                {myQuestions.map(q => (
-                                    <button 
-                                        key={q.id} 
-                                        onClick={() => loadThread(q)}
-                                        className="p-4 bg-[#0a0f1c] border border-slate-800 text-left hover:border-[#00df9a] transition-all group"
-                                    >
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] font-bold text-blue-500 uppercase">{q.status}</span>
-                                            <span className="text-[9px] text-slate-600 uppercase font-mono">{new Date(q.created_at).toLocaleDateString()}</span>
-                                        </div>
-                                        <p className="text-sm font-bold text-white uppercase truncate">{q.subject}</p>
-                                    </button>
-                                ))}
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                            <MessageSquare className="w-10 h-10 text-slate-300 mb-3" />
+                            <h3 className="text-sm font-bold text-slate-900">Your Inquiry Threads</h3>
+                            <p className="text-xs text-slate-500 max-w-xs mb-6">Select a thread below to view administrator responses</p>
+                            
+                            <div className="w-full max-w-md space-y-2 overflow-y-auto max-h-72 pr-1">
+                                {myQuestions.length > 0 ? (
+                                    myQuestions.map(q => (
+                                        <button 
+                                            key={q.id} 
+                                            onClick={() => loadThread(q)}
+                                            className="w-full text-left p-3.5 bg-slate-50 border border-slate-200/80 rounded-lg hover:border-blue-300 hover:bg-blue-50/30 transition-all group"
+                                        >
+                                            <div className="flex justify-between items-center mb-1">
+                                                {getStatusBadge(q.status)}
+                                                <span className="text-[10px] font-mono text-slate-400">
+                                                    {new Date(q.created_at).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{q.subject}</p>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <p className="text-xs italic text-slate-400">No inquiry threads submitted yet.</p>
+                                )}
                             </div>
                         </div>
                     ) : (
                         <>
-                            <div className="p-5 border-b border-slate-800 bg-[#111a2e] flex justify-between items-center">
+                            {/* Thread Header */}
+                            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                                 <div>
-                                    <button onClick={() => setSelectedQ(null)} className="text-[9px] font-black text-slate-500 hover:text-white uppercase mb-1">← Back to list</button>
-                                    <h2 className="text-lg font-bold text-white uppercase">{selectedQ.subject}</h2>
+                                    <button 
+                                        onClick={() => setSelectedQ(null)} 
+                                        className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 mb-0.5"
+                                    >
+                                        <ArrowLeft className="w-3.5 h-3.5" /> Back to Threads
+                                    </button>
+                                    <h2 className="text-base font-bold text-slate-900">{selectedQ.subject}</h2>
                                 </div>
-                                <span className="text-[9px] font-black px-3 py-1 bg-[#00df9a]/10 text-[#00df9a] border border-[#00df9a]/20 uppercase">
-                                    {selectedQ.status}
-                                </span>
+                                <div>
+                                    {getStatusBadge(selectedQ.status)}
+                                </div>
                             </div>
 
-                            <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-[#0a0f1c]/50 custom-scrollbar">
+                            {/* Conversation Messages */}
+                            <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/30">
+                                {/* Student Initial Question */}
                                 <div className="flex justify-end">
-                                    <div className="max-w-[80%] bg-[#1a253d] p-4 border-r-4 border-blue-600 shadow-lg">
-                                        <p className="text-[8px] font-black text-blue-400 uppercase mb-1">You (Initial Inquiry)</p>
-                                        <p className="text-sm">{selectedQ.message}</p>
+                                    <div className="max-w-[80%] bg-blue-600 text-white p-3.5 rounded-xl shadow-2xs space-y-1">
+                                        <p className="text-[10px] font-bold uppercase text-blue-100">You (Initial Inquiry)</p>
+                                        <p className="text-xs leading-relaxed font-medium">{selectedQ.message}</p>
                                     </div>
                                 </div>
 
+                                {/* Thread Replies */}
                                 {thread.map(r => (
                                     <div key={r.id} className={`flex ${r.sender_role === 'intern' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[80%] p-4 border ${
+                                        <div className={`max-w-[80%] p-3.5 rounded-xl border space-y-1 shadow-2xs ${
                                             r.sender_role === 'intern' 
-                                            ? 'bg-[#1a253d] border-blue-900/40 border-r-4 border-r-blue-500' 
-                                            : 'bg-slate-800 border-slate-700 border-l-4 border-l-[#00df9a]'
+                                            ? 'bg-blue-600 text-white border-blue-700' 
+                                            : 'bg-white border-slate-200 text-slate-800'
                                         }`}>
-                                            <p className={`text-[8px] font-black uppercase mb-1 ${r.sender_role === 'intern' ? 'text-blue-500' : 'text-[#00df9a]'}`}>
-                                                {r.sender_role === 'intern' ? 'You' : 'Administrator'}
+                                            <p className={`text-[10px] font-bold uppercase ${r.sender_role === 'intern' ? 'text-blue-100' : 'text-blue-600'}`}>
+                                                {r.sender_role === 'intern' ? 'You' : 'Administrator Coordinator'}
                                             </p>
-                                            <p className="text-sm leading-relaxed">{r.reply_text}</p>
+                                            <p className="text-xs leading-relaxed font-medium">{r.reply_text}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="p-4 bg-[#111a2e] border-t border-slate-800">
+                            {/* Reply Input Box */}
+                            <div className="p-3.5 bg-white border-t border-slate-100">
                                 <div className="flex gap-2">
                                     <input 
                                         value={replyText}
                                         onChange={(e) => setReplyText(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleReply()}
-                                        placeholder="TYPE YOUR RESPONSE..."
-                                        className="flex-1 bg-[#0a0f1c] border border-slate-800 p-3 text-xs text-white outline-none focus:border-[#00df9a]"
+                                        placeholder="Type follow-up response..."
+                                        className="flex-1 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-lg text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white transition-all"
                                     />
-                                    <button onClick={handleReply} className="bg-blue-600 px-6 font-black text-[10px] uppercase text-white hover:bg-[#00df9a] hover:text-black transition-all">
-                                        Send
+                                    <button 
+                                        onClick={handleReply} 
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-lg transition-all shadow-xs flex items-center gap-1.5"
+                                    >
+                                        <span>Send</span>
+                                        <Send className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             </div>

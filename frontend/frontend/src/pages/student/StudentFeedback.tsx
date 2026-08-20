@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    MessageSquare, Star, ArrowLeft, Send, 
+    Star, ArrowLeft, Send, 
     ShieldCheck, Building2, GraduationCap, Laptop, HelpCircle,
     CheckCircle2, AlertCircle
 } from 'lucide-react';
@@ -52,174 +52,150 @@ const StudentFeedback = () => {
             const data = await response.json();
 
             if (data.success) {
-                setToast({ message: "Entry Logged Successfully", type: 'success' });
+                setToast({ message: "Feedback submitted successfully!", type: 'success' });
                 setContent('');
                 setRating(5);
             } else {
                 setToast({ message: data.message || "Registry Error", type: 'error' });
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            setToast({ message: "Network Link Severed", type: 'error' });
+            setToast({ message: "Network connection error", type: 'error' });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="max-w-5xl mx-auto p-6 md:p-12 space-y-10 antialiased min-h-screen">
-            {/* Minimalist Toast Notification */}
+        <div className="space-y-6 max-w-7xl mx-auto">
+            {/* Toast System */}
             {toast && (
-                <div className={`fixed top-10 right-10 z-100 px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border backdrop-blur-xl animate-in slide-in-from-right-10 duration-300 ${
-                    toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-400' : 'bg-red-950/90 border-red-500/50 text-red-400'
+                <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 ${
+                    toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
                 }`}>
-                    <div className="flex items-center gap-3">
-                        {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em]">{toast.message}</p>
-                    </div>
+                    {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-rose-600" />}
+                    <span>{toast.message}</span>
                 </div>
             )}
 
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-800 pb-10">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-emerald-500 font-bold tracking-[0.3em] text-[10px] uppercase">
-                        <MessageSquare className="w-4 h-4" />
-                        Anonymous Quality Control
-                    </div>
-                    <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic">
-                        Student <span className="text-slate-500 font-light">Voice</span>
-                    </h1>
+            {/* Top Title & Primary Action Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Student Program Feedback</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Submit confidential evaluation and program feedback to university coordinators</p>
                 </div>
-                <button 
-                    onClick={() => navigate('/student-dashboard')}
-                    className="flex items-center gap-2 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-all group"
-                >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
-                </button>
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => navigate('/student-dashboard')} 
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back to Dashboard</span>
+                    </button>
+                </div>
             </div>
 
-            <div className="bg-[#0f172a]/40 border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                <div className="grid grid-cols-1 lg:grid-cols-12">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Left Security Info */}
+                <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4 h-fit">
+                    <div className="w-12 h-12 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                        <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                        <h2 className="text-base font-bold text-slate-900">Protected Feedback</h2>
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                            Your feedback helps improve the OJT program. Data submitted is encrypted and reviewed directly by university coordinators.
+                        </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 space-y-2 text-xs font-semibold text-slate-600">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Direct Coordinator Review</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Confidential Evaluation System</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Form Card */}
+                <form onSubmit={handleSubmit} className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
                     
-                    {/* Left Sidebar Info */}
-                    <div className="lg:col-span-4 bg-slate-950/50 p-10 space-y-8 border-b lg:border-b-0 lg:border-r border-slate-800">
-                        <div className="w-16 h-16 bg-emerald-500/10 rounded-3xl flex items-center justify-center border border-emerald-500/20 shadow-inner">
-                            <ShieldCheck className="w-8 h-8 text-emerald-500" />
-                        </div>
-                        <div className="space-y-4">
-                            <h2 className="text-2xl font-black text-white leading-none uppercase italic">Secure <br/> Submission</h2>
-                            <p className="text-slate-500 text-xs leading-relaxed font-medium">
-                                Your identity remains protected. Data entered here is encrypted and routed directly to campus administration to facilitate service improvements.
-                            </p>
-                        </div>
-                        
-                        <div className="pt-6 space-y-4">
-                            <div className="flex items-center gap-3 text-[9px] font-bold text-slate-600 uppercase tracking-widest">
-                                <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
-                                Direct Admin Access
-                            </div>
-                            <div className="flex items-center gap-3 text-[9px] font-bold text-slate-600 uppercase tracking-widest">
-                                <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
-                                256-bit Identity Masking
-                            </div>
+                    {/* Category Selector */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-slate-600">Select Category</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {categories.map(({ id, icon: Icon }) => (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    onClick={() => setCategory(id)}
+                                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border text-xs font-semibold transition-all ${
+                                        category === id 
+                                        ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-2xs' 
+                                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    <Icon className="w-4 h-4 text-blue-600" />
+                                    <span>{id}</span>
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Right Entry Form */}
-                    <form onSubmit={handleSubmit} className="lg:col-span-8 p-10 space-y-10 bg-slate-900/10">
-                        
-                        {/* Category Grid */}
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Select Entry Domain</label>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {categories.map(({ id, icon: Icon }) => (
+                    {/* Rating Stars */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-slate-600">Overall Rating (1 to 5 Stars)</label>
+                        <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
                                     <button
-                                        key={id}
+                                        key={star}
                                         type="button"
-                                        onClick={() => setCategory(id)}
-                                        className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-300 ${
-                                            category === id 
-                                            ? 'bg-emerald-600/10 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]' 
-                                            : 'bg-slate-950/50 border-slate-800 text-slate-600 hover:border-slate-600'
-                                        }`}
+                                        onClick={() => setRating(star)}
+                                        onMouseEnter={() => setHover(star)}
+                                        onMouseLeave={() => setHover(0)}
+                                        className="transition-transform hover:scale-110 focus:outline-none"
                                     >
-                                        <Icon className="w-5 h-5" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest">{id}</span>
+                                        <Star 
+                                            className={`w-7 h-7 ${
+                                                (hover || rating) >= star 
+                                                ? 'fill-amber-400 text-amber-400' 
+                                                : 'text-slate-300'
+                                            }`} 
+                                        />
                                     </button>
                                 ))}
                             </div>
+                            <span className="text-xs font-bold font-mono text-slate-700 ml-auto">{rating} / 5 Stars</span>
                         </div>
+                    </div>
 
-                        {/* Professional Rating */}
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Priority Score</label>
-                            <div className="flex items-center gap-4 bg-slate-950/50 p-6 rounded-3xl border border-slate-800">
-                                <div className="flex gap-2">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <button
-                                            key={star}
-                                            type="button"
-                                            onClick={() => setRating(star)}
-                                            onMouseEnter={() => setHover(star)}
-                                            onMouseLeave={() => setHover(0)}
-                                            className="transition-all hover:scale-125 focus:outline-none"
-                                        >
-                                            <Star 
-                                                className={`w-8 h-8 transition-colors ${
-                                                    (hover || rating) >= star 
-                                                    ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]' 
-                                                    : 'text-slate-800'
-                                                }`} 
-                                            />
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="ml-auto text-right">
-                                    <p className="text-white text-xs font-black uppercase tracking-tighter leading-none">{rating}/5</p>
-                                    <p className="text-slate-600 text-[8px] font-bold uppercase tracking-widest">Efficiency Rating</p>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Detailed Content */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-semibold text-slate-600">Feedback Details</label>
+                        <textarea 
+                            rows={5}
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            placeholder="Enter detailed feedback or suggestions for improvement..."
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white resize-none"
+                        />
+                    </div>
 
-                        {/* Content Area */}
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Detailed Observations</label>
-                            <div className="relative group">
-                                <textarea 
-                                    rows={6}
-                                    value={content}
-                                    onChange={(e) => setContent(e.target.value)}
-                                    className="w-full bg-slate-950/50 border border-slate-800 rounded-3xl px-6 py-6 text-white placeholder:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all resize-none text-sm font-medium tracking-tight"
-                                    placeholder="Begin typing your entry here..."
-                                />
-                                <div className="absolute bottom-4 right-6 text-[10px] font-bold text-slate-700 uppercase tracking-widest group-focus-within:text-emerald-500/50">
-                                    Audit Mode
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Submit Button */}
-                        <button 
-                            type="submit" 
-                            disabled={loading}
-                            className="group relative w-full overflow-hidden py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] rounded-2xl transition-all uppercase tracking-[0.3em] shadow-2xl shadow-emerald-900/40 disabled:opacity-50 active:scale-[0.98]"
-                        >
-                            <span className="relative z-10 flex items-center justify-center gap-3">
-                                {loading ? 'TRANSMITTING DATA...' : (
-                                    <>
-                                        LOG FEEDBACK ENTRY <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                    </>
-                                )}
-                            </span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-            
-            {/* Footer Tag */}
-            <div className="text-center">
-                <p className="text-[9px] text-slate-700 font-black tracking-[0.5em] uppercase">MentorLog_V2_Voice_Registry_System</p>
+                    {/* Submit Button */}
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 rounded-lg transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        <span>{loading ? 'Submitting...' : 'Submit Program Feedback'}</span>
+                        <Send className="w-3.5 h-3.5" />
+                    </button>
+                </form>
             </div>
         </div>
     );

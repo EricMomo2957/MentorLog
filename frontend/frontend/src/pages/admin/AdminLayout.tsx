@@ -1,154 +1,229 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import logoPhoto from '../../assets/mentorlogOption.png'; 
+import { 
+    LayoutDashboard, CheckSquare, Users, FileText, CalendarCheck, 
+    Megaphone, Inbox, HelpCircle, MessageSquare, Key, BarChart3, 
+    Calendar, ShieldAlert, Code2, User, Settings, LogOut, Search, Bell
+} from 'lucide-react';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
+}
+
+interface NavItem {
+    path: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+}
+
+interface NavGroup {
+    title: string;
+    items: NavItem[];
 }
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [showLogoutModal, setShowLogoutModal] = useState(false); 
-    const userName = localStorage.getItem('userName') || 'Admin';
+    const userName = localStorage.getItem('userName') || 'Vitalji';
 
     const confirmLogout = () => {
         localStorage.clear();
         navigate('/login');
     };
 
-    const navLinks = [
-        { path: '/admin-dashboard', label: 'Control Center', icon: '📊' },
-        { path: '/manage-tasks', label: 'Manage OJT Tasks', icon: '📝' },
-        { path: '/manage-students', label: 'Manage Interns', icon: '👥' },
-        /* --- ADDED AUDIT LOG LINK HERE --- */
-        { path: '/manage-audit-logs', label: 'System Audit Logs', icon: '🛡️' }, 
-        { path: '/manage-announcements', label: 'Manage Announcements', icon: '📢' },
-        { path: '/manage-requests', label: 'Manage Requests', icon: '📩' },
-        { path: '/manage-attendance', label: 'Manage Attendance Logs', icon: '📅' },
-        { path: '/manage-feedback', label: 'Manage Feedback', icon: '💬' },
-        { path: '/admin-profile', label: 'My Profile', icon: '👤' },
-        { path: '/admin/reports', label: 'Report Analytics', icon: '📈' },
-        { path: '/manage-forgot-password', label: 'Forgot Password Requests', icon: '🔑' },
-        { path: '/admin-calendar', label: 'Admin Calendar', icon: '🗓️' },
-        { path: '/admin-settings', label: 'Settings', icon: '⚙️' },
-        { path: '/admin/ask-question', label: 'Question Inbox', icon: '❓' },
-        { path: '/admin/manage-submissions', label: 'Manage Submissions', icon: '📂' },
-        { path: '/admin/manage-codes', label: 'Manage Reference Codes', icon: '🔑' }
+    const navGroups: NavGroup[] = [
+        {
+            title: "CORE",
+            items: [
+                { path: '/admin-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                { path: '/manage-tasks', label: 'OJT Tasks', icon: CheckSquare },
+                { path: '/manage-students', label: 'Manage Interns', icon: Users },
+            ]
+        },
+        {
+            title: "MANAGEMENT",
+            items: [
+                { path: '/admin/manage-submissions', label: 'Submissions', icon: FileText },
+                { path: '/manage-attendance', label: 'Attendance Logs', icon: CalendarCheck },
+                { path: '/manage-announcements', label: 'Announcements', icon: Megaphone },
+                { path: '/manage-requests', label: 'Service Requests', icon: Inbox },
+            ]
+        },
+        {
+            title: "COMMUNICATION",
+            items: [
+                { path: '/admin/ask-question', label: 'Question Inbox', icon: HelpCircle },
+                { path: '/manage-feedback', label: 'Student Feedback', icon: MessageSquare },
+                { path: '/manage-forgot-password', label: 'Password Resets', icon: Key },
+            ]
+        },
+        {
+            title: "ANALYTICS & AUDIT",
+            items: [
+                { path: '/admin/reports', label: 'Report Analytics', icon: BarChart3 },
+                { path: '/admin-calendar', label: 'Admin Calendar', icon: Calendar },
+                { path: '/manage-audit-logs', label: 'System Audit Logs', icon: ShieldAlert },
+                { path: '/admin/manage-codes', label: 'Reference Codes', icon: Code2 },
+            ]
+        }
     ];
 
-    return (
-        <div className="flex min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30 overflow-hidden">
-            {/* --- SIDEBAR --- */}
-            <aside className="w-80 bg-[#0f172a]/80 backdrop-blur-2xl border-r border-slate-800/60 p-6 flex flex-col sticky top-0 h-screen z-50">
-                <div className="mb-8 px-2 shrink-0">
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="relative group">
-                            <div className="absolute -inset-1 bg-blue-500/20 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
-                            <img 
-                                src={logoPhoto} 
-                                alt="Logo" 
-                                className="relative w-12 h-12 object-contain rounded-xl"
-                            />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-black tracking-tight text-white leading-none">MentorLog</h2>
-                            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-[0.2em]">Admin Suite</span>
-                        </div>
-                    </div>
+    // Find current page title for breadcrumbs
+    const currentPath = location.pathname;
+    let currentPageLabel = 'Dashboard';
+    navGroups.forEach(g => {
+        g.items.forEach(item => {
+            if (item.path === currentPath) currentPageLabel = item.label;
+        });
+    });
+    if (currentPath === '/admin-profile') currentPageLabel = 'My Profile';
+    if (currentPath === '/admin-settings') currentPageLabel = 'Settings';
 
-                    <Link 
-                        to="/admin-profile" 
-                        className={`block p-4 rounded-2xl border transition-all shadow-inner group/profile ${
-                            location.pathname === '/admin-profile' 
-                            ? 'bg-blue-600/10 border-blue-500/40' 
-                            : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/60 hover:border-slate-600'
-                        }`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xs group-hover/profile:scale-110 transition-transform">
-                                👤
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold group-hover/profile:text-blue-400 transition-colors">System Admin</p>
-                                <p className="text-sm font-bold text-slate-200 truncate">{userName}</p>
-                            </div>
-                            <div className="text-slate-600 group-hover/profile:text-blue-400 transition-colors text-xs">
-                                ➔
-                            </div>
-                        </div>
-                    </Link>
+    return (
+        <div className="flex min-h-screen bg-[#f8fafc] text-slate-800 font-sans selection:bg-blue-500/20">
+            
+            {/* --- SIDEBAR (Dark Navy Automoor Theme) --- */}
+            <aside className="w-64 bg-[#0b1329] text-slate-300 flex flex-col sticky top-0 h-screen z-50 shrink-0 border-r border-slate-800 shadow-xl">
+                
+                {/* Brand Header */}
+                <div className="p-6 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/30 shrink-0">
+                        <img src={logoPhoto} alt="Logo" className="w-6 h-6 object-contain rounded" />
+                    </div>
+                    <div>
+                        <h2 className="text-base font-black tracking-tight text-white leading-none">MentorLog</h2>
+                        <span className="text-[10px] text-slate-400 font-medium">Enterprise Suite</span>
+                    </div>
                 </div>
 
-                {/* --- MAIN NAV --- */}
-                <nav className="flex-1 overflow-y-auto space-y-1.5 mb-6 pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    {navLinks.map((link) => {
-                        const isActive = location.pathname === link.path;
-                        return (
-                            <Link 
-                                key={link.path}
-                                to={link.path} 
-                                className={`relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group ${
-                                    isActive ? 'text-white bg-blue-600/10 border border-blue-500/20' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 border border-transparent'
-                                }`}
-                            >
-                                {isActive && <div className="absolute left-0 top-2 bottom-2 w-1 bg-blue-500 rounded-r-full shadow-[0_0_10px_#3b82f6]" />}
-                                <span className="text-lg">{link.icon}</span>
-                                {link.label}
-                            </Link>
-                        );
-                    })}
+                {/* Navigation Menu */}
+                <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {navGroups.map((group) => (
+                        <div key={group.title} className="space-y-1">
+                            <h3 className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                                {group.title}
+                            </h3>
+                            {group.items.map((link) => {
+                                const isActive = location.pathname === link.path;
+                                const IconComponent = link.icon;
+                                return (
+                                    <Link 
+                                        key={link.path}
+                                        to={link.path} 
+                                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group ${
+                                            isActive 
+                                            ? 'text-white bg-[#1e293b] font-semibold shadow-inner' 
+                                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                                        }`}
+                                    >
+                                        <IconComponent className={`w-4 h-4 transition-colors ${isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
+                                        <span>{link.label}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ))}
                 </nav>
 
-                {/* --- LOGOUT SECTION --- */}
-                <div className="pt-4 border-t border-slate-800/60 shrink-0">
+                {/* Bottom Options (Settings & Logout) */}
+                <div className="p-4 border-t border-slate-800/80 space-y-1 shrink-0">
+                    <Link
+                        to="/admin-settings"
+                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                            location.pathname === '/admin-settings'
+                            ? 'text-white bg-[#1e293b]'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        }`}
+                    >
+                        <Settings className="w-4 h-4 text-slate-400" />
+                        <span>Settings</span>
+                    </Link>
+                    
                     <button 
                         onClick={() => setShowLogoutModal(true)} 
-                        className="w-full flex items-center justify-between px-5 py-3.5 rounded-xl text-sm font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group border border-transparent hover:border-red-500/20"
+                        className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group"
                     >
-                        <div className="flex items-center gap-3">
-                            <svg className="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            Logout Session
-                        </div>
+                        <LogOut className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
+                        <span>Logout</span>
                     </button>
                 </div>
             </aside>
 
-            {/* --- CONTENT AREA --- */}
-            <main className="flex-1 min-w-0 bg-linear-to-br from-[#020617] via-[#0f172a] to-[#020617] relative overflow-y-auto">
-                <div className="absolute top-0 right-0 w-125 h-125 bg-blue-600/5 blur-[120px] rounded-full -mr-64 -mt-64 pointer-events-none" />
-                <div className="relative max-w-7xl mx-auto p-8 lg:p-12 min-h-screen">
+            {/* --- MAIN CONTENT WRAPPER --- */}
+            <div className="flex-1 flex flex-col min-w-0">
+                
+                {/* TOP NAVIGATION BAR */}
+                <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-8 py-3.5 flex items-center justify-between shadow-xs">
+                    {/* Breadcrumbs */}
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Link to="/admin-dashboard" className="hover:text-blue-600 transition-colors">
+                            <LayoutDashboard className="w-3.5 h-3.5" />
+                        </Link>
+                        <span>/</span>
+                        <span className="font-semibold text-slate-800">{currentPageLabel}</span>
+                    </div>
+
+                    {/* Right Toolbar */}
+                    <div className="flex items-center gap-5">
+                        {/* Quick Search Input */}
+                        <div className="relative hidden sm:block">
+                            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input 
+                                type="text"
+                                placeholder="Search..."
+                                className="bg-slate-100/80 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-blue-500 transition-all w-48"
+                            />
+                        </div>
+
+                        {/* Notification Bell */}
+                        <button className="relative text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
+                            <Bell className="w-4 h-4" />
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+                        </button>
+
+                        {/* User Profile Pill */}
+                        <Link to="/admin-profile" className="flex items-center gap-2.5 pl-2 border-l border-slate-200 hover:opacity-80 transition-opacity">
+                            <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 font-bold text-xs shadow-xs">
+                                {userName.charAt(0)}
+                            </div>
+                            <span className="text-xs font-semibold text-slate-700 hidden md:inline">{userName}</span>
+                        </Link>
+                    </div>
+                </header>
+
+                {/* PAGE CONTENT */}
+                <main className="flex-1 bg-[#f8fafc] p-6 lg:p-8">
                     {children}
-                </div>
-            </main>
+                </main>
+            </div>
 
             {/* --- LOGOUT MODAL --- */}
             {showLogoutModal && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-[#020617]/80 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-[#0f172a] w-full max-w-sm rounded-[2.5rem] border border-slate-800 shadow-2xl p-8 text-center animate-in zoom-in-95 duration-200">
-                        <div className="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
-                            <img src={logoPhoto} className="w-10 h-10 object-contain opacity-80" alt="MentorLog" />
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-2xl border border-slate-200 shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                            <img src={logoPhoto} className="w-8 h-8 object-contain" alt="MentorLog" />
                         </div>
                         
-                        <h3 className="text-2xl font-black text-white mb-2 italic tracking-tight">End Session?</h3>
-                        <p className="text-slate-400 text-sm font-medium mb-8">
-                            Are you sure you want to log out of the <span className="text-blue-400 font-bold">Admin Suite</span>?
+                        <h3 className="text-xl font-bold text-slate-800 mb-1">End Session?</h3>
+                        <p className="text-slate-500 text-xs mb-6">
+                            Are you sure you want to log out of <span className="font-semibold text-slate-700">MentorLog Admin</span>?
                         </p>
 
-                        <div className="flex flex-col gap-3">
-                            <button 
-                                onClick={confirmLogout}
-                                className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-sm transition-all shadow-lg shadow-blue-600/20"
-                            >
-                                YES, LOGOUT
-                            </button>
+                        <div className="flex gap-3">
                             <button 
                                 onClick={() => setShowLogoutModal(false)}
-                                className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl font-bold text-sm transition-all"
+                                className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold text-xs transition-all"
                             >
-                                STAY LOGGED IN
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={confirmLogout}
+                                className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-xs transition-all shadow-md shadow-blue-600/20"
+                            >
+                                Yes, Logout
                             </button>
                         </div>
                     </div>
