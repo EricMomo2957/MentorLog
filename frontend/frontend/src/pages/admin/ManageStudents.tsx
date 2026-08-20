@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { 
     Search, Filter, Download, Edit2, Trash2, CheckCircle2, 
-    XCircle, ChevronLeft, ChevronRight, X, UserPlus
+    XCircle, ChevronLeft, ChevronRight, X, UserPlus, Phone
 } from 'lucide-react';
 
 interface Student {
@@ -10,6 +10,10 @@ interface Student {
     full_name: string;
     student_id: string;
     email: string;
+    phone?: string;
+    course?: string;
+    year_level?: string;
+    profile_pic?: string;
     ojt_hours_required: number;
     is_active: boolean;
 }
@@ -34,6 +38,12 @@ const getInitials = (name?: string) => {
     return name.slice(0, 2).toUpperCase();
 };
 
+const getFullPicUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `http://localhost:5000${path}`;
+};
+
 const ManageStudents = () => {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
@@ -49,7 +59,7 @@ const ManageStudents = () => {
             if (response.data?.success) setStudents(response.data.data || []);
         } catch (error) {
             console.error("Error fetching students:", error);
-        } fontally: {
+        } finally {
             setLoading(false);
         }
     }, []);
@@ -65,6 +75,8 @@ const ManageStudents = () => {
             const response = await api.put(`/admin/students/${editingStudent.id}`, {
                 full_name: editingStudent.full_name,
                 student_id: editingStudent.student_id,
+                phone: editingStudent.phone,
+                course: editingStudent.course,
                 ojt_hours_required: editingStudent.ojt_hours_required
             });
 
@@ -92,6 +104,7 @@ const ManageStudents = () => {
     const filteredStudents = students.filter(s => {
         const matchesSearch = s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
             (s.email && s.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (s.phone && s.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (s.student_id && s.student_id.toLowerCase().includes(searchTerm.toLowerCase()));
         
         const matchesStatus = filterStatus === 'All' || 
@@ -124,7 +137,7 @@ const ManageStudents = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Manage Interns & Students</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Directory of registered student interns and required OJT hours</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Directory of registered student interns, contact numbers, and profile photos</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -163,11 +176,6 @@ const ManageStudents = () => {
                         </select>
                         <Filter className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
-
-                    <button className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-1.5">
-                        <span>Course / Year</span>
-                        <span className="text-slate-400">▾</span>
-                    </button>
                 </div>
 
                 {/* Right Search Input */}
@@ -175,7 +183,7 @@ const ManageStudents = () => {
                     <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
                         type="text"
-                        placeholder="Search student or ID..."
+                        placeholder="Search student, ID, or phone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-blue-500 transition-all"
@@ -206,8 +214,9 @@ const ManageStudents = () => {
                                             className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                         />
                                     </th>
-                                    <th className="py-3 px-4">Student Contact ↕</th>
+                                    <th className="py-3 px-4">Student Info & Photo ↕</th>
                                     <th className="py-3 px-4">Student ID ↕</th>
+                                    <th className="py-3 px-4">Phone Number ↕</th>
                                     <th className="py-3 px-4">OJT Required Hours ↕</th>
                                     <th className="py-3 px-4">Account Status ↕</th>
                                     <th className="py-3 px-4 text-right">Actions</th>
@@ -218,6 +227,7 @@ const ManageStudents = () => {
                                     const avatarStyle = getAvatarStyle(student.id);
                                     const initials = getInitials(student.full_name);
                                     const isChecked = selectedStudents.includes(student.id);
+                                    const picUrl = student.profile_pic ? getFullPicUrl(student.profile_pic) : null;
 
                                     return (
                                         <tr key={student.id} className={`hover:bg-slate-50/80 transition-colors ${isChecked ? 'bg-blue-50/30' : ''}`}>
@@ -230,12 +240,20 @@ const ManageStudents = () => {
                                                 />
                                             </td>
                                             
-                                            {/* Contact Column with Pastel Initial Avatar */}
+                                            {/* Contact Column with Photo or Avatar */}
                                             <td className="py-3.5 px-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
-                                                        {initials}
-                                                    </div>
+                                                    {picUrl ? (
+                                                        <img 
+                                                            src={picUrl} 
+                                                            alt={student.full_name} 
+                                                            className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs" 
+                                                        />
+                                                    ) : (
+                                                        <div className={`w-9 h-9 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
+                                                            {initials}
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <p className="font-bold text-slate-900 leading-tight">{student.full_name}</p>
                                                         <p className="text-[11px] text-slate-400 font-mono">{student.email}</p>
@@ -246,6 +264,18 @@ const ManageStudents = () => {
                                             {/* Student ID */}
                                             <td className="py-3.5 px-4 font-mono text-slate-700">
                                                 {student.student_id || 'NOT_SET'}
+                                            </td>
+
+                                            {/* Phone Number */}
+                                            <td className="py-3.5 px-4 text-slate-700 font-medium">
+                                                {student.phone ? (
+                                                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-700">
+                                                        <Phone className="w-3 h-3 text-slate-400" />
+                                                        {student.phone}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400 italic text-[11px]">Unspecified</span>
+                                                )}
                                             </td>
 
                                             {/* OJT Hours */}
@@ -319,7 +349,7 @@ const ManageStudents = () => {
                 </div>
             </div>
 
-            {/* Clean Edit Modal */}
+            {/* Edit Modal */}
             {editingStudent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
                     <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
@@ -353,14 +383,24 @@ const ManageStudents = () => {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-600">Required OJT Hours</label>
+                                    <label className="text-xs font-semibold text-slate-600">Phone Number</label>
                                     <input 
-                                        type="number" 
+                                        type="text" 
                                         className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
-                                        value={editingStudent.ojt_hours_required} 
-                                        onChange={(e) => setEditingStudent({...editingStudent, ojt_hours_required: Number(e.target.value)})}
+                                        value={editingStudent.phone || ''} 
+                                        onChange={(e) => setEditingStudent({...editingStudent, phone: e.target.value})}
                                     />
                                 </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600">Required OJT Hours</label>
+                                <input 
+                                    type="number" 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                    value={editingStudent.ojt_hours_required} 
+                                    onChange={(e) => setEditingStudent({...editingStudent, ojt_hours_required: Number(e.target.value)})}
+                                />
                             </div>
 
                             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
