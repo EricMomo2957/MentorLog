@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/db';
+import { logAction } from '../utils/logger';
 
-// Define a custom interface that extends Express Request
-// This fixes the TypeScript "Property 'user' does not exist" errors
 interface AuthRequest extends Request {
     user?: {
         id: number;
@@ -23,11 +22,12 @@ export const submitTask = async (req: AuthRequest, res: Response) => {
     }
 
     try {
-        // Insert linking to user and today's date
         await pool.query(
             'INSERT INTO tasks (user_id, title, task_description, status, due_date) VALUES (?, ?, ?, "Pending", CURDATE())',
             [userId, title || 'Daily Task Report', task_description]
         );
+
+        await logAction(userId, 'CREATE', 'Task Directives', `Submitted daily task report: ${title || 'Daily Task Report'}`);
 
         res.status(201).json({ message: 'Task report submitted successfully!' });
     } catch (error) {
@@ -60,7 +60,6 @@ export const getMyTasks = async (req: AuthRequest, res: Response) => {
 
 /**
  * 3. Get All Tasks (Admin/Mentor View)
- * Joins with users table to get the student's name
  */
 export const getAllTasks = async (req: Request, res: Response) => {
     try {
@@ -72,7 +71,8 @@ export const getAllTasks = async (req: Request, res: Response) => {
                 t.task_description, 
                 t.status,
                 t.due_date, 
-                u.full_name as student_name 
+                u.full_name as student_name,
+                u.profile_pic 
             FROM tasks t
             JOIN users u ON t.user_id = u.id
             ORDER BY t.id DESC
@@ -89,7 +89,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
 };
 
 /**
- * 4. General Task Fetching (Alias/Utility)
+ * 4. General Task Fetching
  */
 export const getTasks = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -113,12 +113,10 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
 /**
  * 5. Admin Assigns a Task to a Specific Student
  */
-export const assignTask = async (req: Request, res: Response) => {
-    // We get 'student_id' or 'user_id' from the Admin's form/modal
+export const assignTask = async (req: AuthRequest, res: Response) => {
     const { student_id, user_id, title, task_description, due_date } = req.body;
     const targetUserId = student_id || user_id;
 
-    // Validation: Ensure we have a student ID and a title/description
     if (!targetUserId || (!title && !task_description)) {
         return res.status(400).json({ success: false, message: 'Student ID and Task details are required.' });
     }
@@ -128,6 +126,8 @@ export const assignTask = async (req: Request, res: Response) => {
             'INSERT INTO tasks (user_id, title, task_description, status, due_date) VALUES (?, ?, ?, "Pending", ?)',
             [targetUserId, title || 'New Assignment', task_description || '', due_date || new Date()]
         );
+
+        await logAction(req.user?.id || null, 'CREATE', 'Task Directives', `Assigned task "${title || 'New Assignment'}" to student ID #${targetUserId}`);
 
         res.status(201).json({ success: true, message: 'Task assigned to student successfully!' });
     } catch (error) {
@@ -139,7 +139,7 @@ export const assignTask = async (req: Request, res: Response) => {
 /**
  * 6. Update Task (Admin/Mentor)
  */
-export const updateTask = async (req: Request, res: Response) => {
+export const updateTask = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { title, task_description, due_date, status, user_id, student_id } = req.body;
     const rawUserId = user_id || student_id;
@@ -157,6 +157,8 @@ export const updateTask = async (req: Request, res: Response) => {
                 [title, task_description, due_date, status || 'Pending', id]
             );
         }
+
+        await logAction(req.user?.id || null, 'UPDATE', 'Task Directives', `Updated task directive #${id}: ${title}`);
 
         res.status(200).json({ success: true, message: 'Task updated successfully.' });
     } catch (error) {
@@ -183,6 +185,8 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
             [status, targetId]
         );
 
+        await logAction(req.user?.id || null, 'UPDATE', 'Task Directives', `Set task #${targetId} status to ${status}`);
+
         res.status(200).json({ success: true, message: 'Task status updated successfully.' });
     } catch (error) {
         console.error("Error in updateTaskStatus:", error);
@@ -193,14 +197,17 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
 /**
  * 8. Delete Task (Admin/Mentor)
  */
-export const deleteTask = async (req: Request, res: Response) => {
+export const deleteTask = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
     try {
         await pool.query('DELETE FROM tasks WHERE id = ?', [id]);
+
+        await logAction(req.user?.id || null, 'DELETE', 'Task Directives', `Deleted task directive #${id}`);
+
         res.status(200).json({ success: true, message: 'Task deleted successfully.' });
     } catch (error) {
         console.error("Error in deleteTask:", error);
         res.status(500).json({ success: false, message: 'Error deleting task.' });
     }
-};
+};
