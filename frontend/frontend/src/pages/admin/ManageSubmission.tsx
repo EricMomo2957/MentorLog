@@ -12,7 +12,14 @@ interface Submission {
     status: string;
     file_path: string;
     submitted_at: string;
+    profile_pic?: string;
 }
+
+const getFullPicUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `http://localhost:5000${path}`;
+};
 
 const pastelAvatarStyles = [
     'bg-purple-100 text-purple-700 border-purple-200',
@@ -235,12 +242,20 @@ const ManageSubmission = () => {
                                                 />
                                             </td>
                                             
-                                            {/* Student Column with Pastel Initial Avatar */}
+                                            {/* Student Column with Photo or Pastel Initial Avatar */}
                                             <td className="py-3.5 px-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
-                                                        {initials}
-                                                    </div>
+                                                    {sub.profile_pic ? (
+                                                        <img 
+                                                            src={getFullPicUrl(sub.profile_pic)} 
+                                                            alt={sub.student_name} 
+                                                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs" 
+                                                        />
+                                                    ) : (
+                                                        <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
+                                                            {initials}
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <p className="font-bold text-slate-900 leading-tight">{sub.student_name}</p>
                                                         <p className="text-[10px] text-slate-400 font-mono">Ref ID: #{sub.id}</p>
