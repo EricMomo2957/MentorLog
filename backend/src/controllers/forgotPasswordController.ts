@@ -7,9 +7,12 @@ import pool from '../config/db';
  */
 export const getForgotPasswordRequests = async (req: Request, res: Response) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM password_resets ORDER BY status ASC, requested_at DESC'
-        );
+        const [rows] = await pool.query(`
+            SELECT pr.*, u.profile_pic 
+            FROM password_resets pr 
+            LEFT JOIN users u ON pr.email = u.email 
+            ORDER BY pr.status ASC, pr.requested_at DESC
+        `);
         res.status(200).json(rows);
     } catch (error) {
         console.error("Fetch Requests Error:", error);
