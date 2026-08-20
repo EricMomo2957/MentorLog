@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
-    Shield, Search, RefreshCw, Clock, User, HardDrive, 
+    Search, RefreshCw, Clock, HardDrive, 
     Filter, Download, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 
@@ -13,7 +13,14 @@ interface AuditLog {
     details: string;
     ip_address: string;
     created_at: string;
+    profile_pic?: string;
 }
+
+const getFullPicUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `http://localhost:5000${path}`;
+};
 
 const pastelAvatarStyles = [
     'bg-purple-100 text-purple-700 border-purple-200',
@@ -62,6 +69,9 @@ const ManageAuditLog = () => {
             case 'DELETE': return <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-full">DELETE</span>;
             case 'CREATE': return <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">CREATE</span>;
             case 'UPDATE': return <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full">UPDATE</span>;
+            case 'LOGIN': return <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full">LOGIN</span>;
+            case 'CLOCK_IN': return <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 rounded-full">CLOCK_IN</span>;
+            case 'CLOCK_OUT': return <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full">CLOCK_OUT</span>;
             default: return <span className="inline-block px-2.5 py-0.5 text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-full">{action}</span>;
         }
     };
@@ -136,6 +146,8 @@ const ManageAuditLog = () => {
                             <option value="UPDATE">UPDATE</option>
                             <option value="DELETE">DELETE</option>
                             <option value="LOGIN">LOGIN</option>
+                            <option value="CLOCK_IN">CLOCK_IN</option>
+                            <option value="CLOCK_OUT">CLOCK_OUT</option>
                         </select>
                         <Filter className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
@@ -214,12 +226,20 @@ const ManageAuditLog = () => {
                                                 </div>
                                             </td>
 
-                                            {/* Admin Contact */}
+                                            {/* Admin Contact with Photo or Pastel Initial Avatar */}
                                             <td className="py-3.5 px-4">
                                                 <div className="flex items-center gap-2.5">
-                                                    <div className={`w-7 h-7 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
-                                                        {initials}
-                                                    </div>
+                                                    {log.profile_pic ? (
+                                                        <img 
+                                                            src={getFullPicUrl(log.profile_pic)} 
+                                                            alt={log.admin_name} 
+                                                            className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs" 
+                                                        />
+                                                    ) : (
+                                                        <div className={`w-7 h-7 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
+                                                            {initials}
+                                                        </div>
+                                                    )}
                                                     <span className="font-bold text-slate-900">{log.admin_name || "System"}</span>
                                                 </div>
                                             </td>
