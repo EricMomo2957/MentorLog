@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { 
-    Inbox, CheckCircle2, Clock, XCircle, AlertCircle, Search, 
+    CheckCircle2, Clock, XCircle, AlertCircle, Search, 
     Filter, Download, ChevronLeft, ChevronRight, Check, X, RefreshCw
 } from 'lucide-react';
 
@@ -16,7 +16,14 @@ interface ServiceRequest {
     status: RequestStatus;
     urgency: UrgencyLevel;
     created_at: string;
+    profile_pic?: string;
 }
+
+const getFullPicUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `http://localhost:5000${path}`;
+};
 
 const pastelAvatarStyles = [
     'bg-purple-100 text-purple-700 border-purple-200',
@@ -260,15 +267,23 @@ const ManageRequest = () => {
                                                 />
                                             </td>
                                             
-                                            {/* Student Column with Pastel Initial Avatar */}
+                                            {/* Student Column with Photo or Pastel Initial Avatar */}
                                             <td className="py-3.5 px-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
-                                                        {initials}
-                                                    </div>
+                                                    {req.profile_pic ? (
+                                                        <img 
+                                                            src={getFullPicUrl(req.profile_pic)} 
+                                                            alt={req.student_name} 
+                                                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs" 
+                                                        />
+                                                    ) : (
+                                                        <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
+                                                            {initials}
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <p className="font-bold text-slate-900 leading-tight">{req.student_name}</p>
-                                                        <p className="text-[10px] text-slate-400 font-mono">ID: #{req.id}</p>
+                                                        <p className="text-[10px] text-slate-400 font-mono">Req ID: #{req.id}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -293,32 +308,35 @@ const ManageRequest = () => {
 
                                             {/* Action Buttons */}
                                             <td className="py-3.5 px-4 text-right">
-                                                <div className="flex items-center justify-end gap-1">
+                                                <div className="flex items-center justify-end gap-1.5">
                                                     {req.status !== 'Accepted' && (
                                                         <button 
                                                             onClick={() => handleUpdateStatus(req.id, 'Accepted')}
-                                                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-all font-semibold"
+                                                            className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 hover:border-emerald-600 rounded-md text-[11px] font-semibold transition-all shadow-xs"
                                                             title="Accept Request"
                                                         >
-                                                            <Check className="w-3.5 h-3.5" />
+                                                            <Check className="w-3 h-3" />
+                                                            <span>Accept</span>
                                                         </button>
                                                     )}
                                                     {req.status !== 'Rejected' && (
                                                         <button 
                                                             onClick={() => handleUpdateStatus(req.id, 'Rejected')}
-                                                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-md transition-all font-semibold"
+                                                            className="inline-flex items-center gap-1 px-2 py-1 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 rounded-md text-[11px] font-semibold transition-all shadow-xs"
                                                             title="Reject Request"
                                                         >
-                                                            <X className="w-3.5 h-3.5" />
+                                                            <X className="w-3 h-3" />
+                                                            <span>Reject</span>
                                                         </button>
                                                     )}
                                                     {req.status !== 'Processing' && (
                                                         <button 
                                                             onClick={() => handleUpdateStatus(req.id, 'Processing')}
-                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-all font-semibold text-[10px]"
+                                                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-md text-[11px] font-semibold transition-all shadow-xs"
                                                             title="Mark Processing"
                                                         >
-                                                            <Clock className="w-3.5 h-3.5" />
+                                                            <Clock className="w-3 h-3" />
+                                                            <span>Process</span>
                                                         </button>
                                                     )}
                                                 </div>
