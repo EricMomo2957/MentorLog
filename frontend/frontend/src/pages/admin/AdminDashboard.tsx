@@ -6,7 +6,8 @@ import {
 import { 
     Users, CheckSquare, Clock, 
     RefreshCw, Search, Plus, X, Megaphone, 
-    Calendar as CalendarIcon, MessageSquare, Inbox
+    Calendar as CalendarIcon, MessageSquare, Inbox,
+    Hourglass
 } from 'lucide-react';
 import TaskFeed from './TaskFeed';
 import api from '../../services/api';
@@ -16,16 +17,28 @@ interface User {
     id: number; 
     full_name: string; 
     email: string; 
+    student_id?: string;
+    course?: string;
+    profile_pic?: string;
+    ojt_hours_required?: number;
     role: 'admin' | 'student'; 
     created_at: string; 
 }
 
+const getFullPicUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `http://localhost:5000${path}`;
+};
+
 interface AttendanceLog { 
     id: number; 
+    user_id?: number;
     student_name: string; 
     clock_in: string; 
     clock_out: string | null; 
     status: 'Present' | 'Late' | 'Absent' | 'Excused'; 
+    total_hours?: number;
     is_active: boolean | number; 
 }
 
@@ -75,6 +88,13 @@ const pastelAvatarStyles = [
     'bg-amber-100 text-amber-700 border-amber-200',
 ];
 const getAvatarStyle = (id: number) => pastelAvatarStyles[id % pastelAvatarStyles.length];
+
+const getInitials = (name?: string) => {
+    if (!name) return 'UN';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+};
 
 const AdminDashboard = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -141,6 +161,13 @@ const AdminDashboard = () => {
     const attendanceRate = logs.length > 0 ? ((totalPresentAndLate / logs.length) * 100).toFixed(1) : "0.0";
     const studentUsers = users.filter(u => u.role === 'student');
 
+    // Helper to calculate total hours rendered by an intern
+    const getStudentRenderedHours = (userId: number, studentName: string) => {
+        return logs
+            .filter(l => l.user_id === userId || l.student_name === studentName)
+            .reduce((sum, l) => sum + (Number(l.total_hours) || 0), 0);
+    };
+
     // Chart Data
     const moduleMixData = [
         { name: 'Announcements', value: analyticsStats?.announcements || 0 },
@@ -170,6 +197,12 @@ const AdminDashboard = () => {
         { status: 'Accepted', count: analyticsStats?.requestDetails?.accepted || 0 },
         { status: 'Rejected', count: analyticsStats?.requestDetails?.rejected || 0 }
     ];
+
+    const filteredStudents = studentUsers.filter(u => 
+        u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.student_id && u.student_id.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
@@ -210,6 +243,141 @@ const AdminDashboard = () => {
                         <p className="text-xl font-extrabold text-slate-800">{stat.val}</p>
                     </div>
                 ))}
+            </div>
+
+            {/* OJT Intern Required Hours & Remaining (Minus) Hours Table */}
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <Hourglass className="w-4 h-4 text-blue-600" />
+                            <h3 className="text-base font-bold text-slate-900">Intern OJT Hours & Remaining Balance Tracker</h3>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">Live list of required hours, rendered hours, and minus (remaining) hours balance per intern</p>
+                    </div>
+
+                    <div className="relative w-full sm:w-64">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input 
+                            type="text" 
+                            placeholder="Filter by student name or ID..." 
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-500 outline-none transition-all"
+                        />
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <th className="py-3 px-4">OJT Intern Name ↕</th>
+                                <th className="py-3 px-4">Required Target Hours ↕</th>
+                                <th className="py-3 px-4">Rendered Logged Hours ↕</th>
+                                <th className="py-3 px-4">Minus Hours (Remaining) ↕</th>
+                                <th className="py-3 px-4">Completion Progress</th>
+                                <th className="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                            {filteredStudents.length > 0 ? (
+                                filteredStudents.map((user) => {
+                                    const avatarStyle = getAvatarStyle(user.id);
+                                    const initials = getInitials(user.full_name);
+                                    
+                                    const requiredHours = Number(user.ojt_hours_required) || 600;
+                                    const renderedHours = getStudentRenderedHours(user.id, user.full_name);
+                                    const remainingHours = Math.max(0, requiredHours - renderedHours);
+                                    const progressPct = Math.min(100, (renderedHours / requiredHours) * 100);
+
+                                    return (
+                                        <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
+                                            {/* Intern Avatar & Info */}
+                                            <td className="py-3.5 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    {user.profile_pic ? (
+                                                        <img 
+                                                            src={getFullPicUrl(user.profile_pic)} 
+                                                            alt={user.full_name} 
+                                                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs" 
+                                                        />
+                                                    ) : (
+                                                        <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 ${avatarStyle}`}>
+                                                            {initials}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 leading-tight">{user.full_name}</p>
+                                                        <p className="text-[10px] text-slate-400 font-mono">
+                                                            {user.course || 'OJT Intern'} • ID: {user.student_id || `#${user.id}`}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Required Target Hours */}
+                                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                                                {requiredHours} hrs
+                                            </td>
+
+                                            {/* Rendered Logged Hours */}
+                                            <td className="py-3.5 px-4 font-mono font-semibold text-emerald-700">
+                                                {renderedHours.toFixed(1)} hrs
+                                            </td>
+
+                                            {/* Minus Hours (Remaining Balance) */}
+                                            <td className="py-3.5 px-4">
+                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold border rounded-full ${
+                                                    remainingHours === 0 
+                                                        ? 'text-emerald-700 bg-emerald-50 border-emerald-200' 
+                                                        : 'text-amber-800 bg-amber-50 border-amber-200'
+                                                }`}>
+                                                    <Hourglass className="w-3 h-3" />
+                                                    -{remainingHours.toFixed(1)} hrs left
+                                                </span>
+                                            </td>
+
+                                            {/* Completion Progress Bar */}
+                                            <td className="py-3.5 px-4 min-w-[160px]">
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center text-[10px] font-semibold text-slate-500">
+                                                        <span>{progressPct.toFixed(1)}%</span>
+                                                        <span>{renderedHours.toFixed(0)}/{requiredHours}h</span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className={`h-full rounded-full transition-all duration-500 ${
+                                                                progressPct >= 100 ? 'bg-emerald-500' : 'bg-blue-600'
+                                                            }`} 
+                                                            style={{ width: `${progressPct}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Assign Task Action */}
+                                            <td className="py-3.5 px-4 text-right">
+                                                <button 
+                                                    onClick={() => { setSelectedStudent(user); setShowModal(true); }}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-xs transition-all shadow-xs"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" /> Assign Task
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan={6} className="py-12 text-center text-slate-400 text-xs italic">
+                                        No matching OJT intern accounts found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Analytics Charts Grid */}
@@ -306,87 +474,16 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Intern Directory Table & Activity Feed */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Intern Directory Table */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
-                        <div>
-                            <h3 className="text-base font-bold text-slate-900">Intern Directory</h3>
-                            <p className="text-[11px] text-slate-500">Select an intern to assign new task directives</p>
-                        </div>
-                        
-                        <div className="relative w-full sm:w-56">
-                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input 
-                                type="text" 
-                                placeholder="Search intern..." 
-                                value={searchTerm} 
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-500 outline-none transition-all"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr className="border-b border-slate-200 text-[10px] uppercase font-bold text-slate-400">
-                                    <th className="pb-3">Intern Name</th>
-                                    <th className="pb-3">Email Address</th>
-                                    <th className="pb-3 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-700">
-                                {studentUsers.filter(u => u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase())).length > 0 ? (
-                                    studentUsers.filter(u => u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase())).map((user) => {
-                                        const avatarStyle = getAvatarStyle(user.id);
-                                        return (
-                                            <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                                                <td className="py-3">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className={`w-7 h-7 rounded-full border flex items-center justify-center font-bold text-xs ${avatarStyle}`}>
-                                                            {user.full_name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <span className="font-semibold text-slate-900">{user.full_name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 font-mono text-slate-500 text-[11px]">{user.email}</td>
-                                                <td className="py-3 text-right">
-                                                    <button 
-                                                        onClick={() => { setSelectedStudent(user); setShowModal(true); }}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-md font-semibold text-[11px] transition-all"
-                                                    >
-                                                        <Plus className="w-3 h-3" /> Assign Task
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan={3} className="py-10 text-center text-slate-400 text-xs italic">
-                                            No matching intern accounts found.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+            {/* Task Activity Feed */}
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3">
+                    <h3 className="text-base font-bold text-slate-900">Task Activity Feed</h3>
+                    <p className="text-[11px] text-slate-500">Live task status updates across all OJT interns</p>
                 </div>
-
-                {/* Activity Feed */}
-                <div className="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-base font-bold text-slate-900">Task Activity Feed</h3>
-                        <p className="text-[11px] text-slate-500">Live task status updates</p>
-                    </div>
-                    <TaskFeed tasks={tasks} />
-                </div>
+                <TaskFeed tasks={tasks} />
             </div>
 
-            {/* Modal */}
+            {/* Task Assignment Modal */}
             {showModal && selectedStudent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
                     <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
