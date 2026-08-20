@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
-    Star, Trash2, Search, Filter, Download, ChevronLeft, ChevronRight 
+    Star, Trash2, Search, Filter, Download, ChevronLeft, ChevronRight, MessageSquare, Heart, Bug 
 } from 'lucide-react';
 
 interface Feedback {
@@ -97,14 +97,19 @@ const ManageFeedback = () => {
         }
     };
 
+    const fiveStarCount = feedbacks.filter(f => f.rating === 5).length;
+    const avgRating = feedbacks.length > 0 ? (feedbacks.reduce((acc, curr) => acc + curr.rating, 0) / feedbacks.length).toFixed(1) : '5.0';
+    const totalCount = feedbacks.length;
+    const bugCount = feedbacks.filter(f => f.category.toLowerCase().includes('bug') || f.category.toLowerCase().includes('issue')).length;
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             
             {/* Top Title & Primary Action Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Student Feedback Repository</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Review student ratings, evaluations, and program feedback</p>
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">OJT Program Feedback & Ratings</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Review student evaluation ratings, suggestions, and program feedback</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -115,6 +120,75 @@ const ManageFeedback = () => {
                         <Download className="w-4 h-4" />
                         <span>Export Feedback</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* 5-Star Reviews */}
+                <div 
+                    onClick={() => setFilterCategory('All')}
+                    className="bg-white rounded-2xl border border-slate-100 p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-md cursor-pointer"
+                >
+                    <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-2.5">
+                        <Star className="w-5 h-5 fill-amber-400" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        5-STAR REVIEWS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {fiveStarCount}
+                    </span>
+                </div>
+
+                {/* Average Rating */}
+                <div 
+                    onClick={() => setFilterCategory('All')}
+                    className="bg-white rounded-2xl border border-slate-100 p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-md cursor-pointer"
+                >
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                        <Heart className="w-5 h-5 fill-emerald-400" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        AVERAGE RATING
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {avgRating} <span className="text-xs font-bold text-amber-500">★</span>
+                    </span>
+                </div>
+
+                {/* Bug / Issue Reports */}
+                <div 
+                    onClick={() => setFilterCategory(filterCategory === 'Bug Report' ? 'All' : 'Bug Report')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterCategory === 'Bug Report' ? 'border-rose-400 ring-2 ring-rose-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-2.5">
+                        <Bug className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        BUG REPORTS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {bugCount}
+                    </span>
+                </div>
+
+                {/* Total Feedback */}
+                <div 
+                    onClick={() => setFilterCategory('All')}
+                    className="bg-white rounded-2xl border border-slate-100 p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-md cursor-pointer"
+                >
+                    <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center mb-2.5">
+                        <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        TOTAL FEEDBACKS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {totalCount}
+                    </span>
                 </div>
             </div>
 

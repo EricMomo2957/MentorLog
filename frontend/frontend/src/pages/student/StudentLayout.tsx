@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import logoPhoto from "../../assets/mentorlogOption.png"; 
 import api from '../../services/api';
+import { NotificationDropdown } from '../../components/NotificationDropdown';
 import { 
     LayoutDashboard, CheckSquare, Calendar, MessageSquare, 
     Inbox, Megaphone, User, HelpCircle, FileText, Settings, LogOut, Search, Bell
@@ -215,11 +216,8 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                             />
                         </div>
 
-                        {/* Notification Bell */}
-                        <button className="relative text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
-                            <Bell className="w-4 h-4" />
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full ring-2 ring-white"></span>
-                        </button>
+                        {/* Notification Bell Dropdown */}
+                        <NotificationDropdown />
 
                         {/* User Profile Pill with Live Photo */}
                         <Link to="/student-profile" className="flex items-center gap-2.5 pl-2 border-l border-slate-200 hover:opacity-80 transition-opacity">

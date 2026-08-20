@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { 
     CheckCircle2, Clock, XCircle, AlertCircle, Search, 
-    Filter, Download, ChevronLeft, ChevronRight, Check, X, RefreshCw
+    Filter, Download, ChevronLeft, ChevronRight, Check, X, RefreshCw, Inbox
 } from 'lucide-react';
 
 type RequestStatus = 'Pending' | 'Processing' | 'Accepted' | 'Rejected';
@@ -141,6 +141,11 @@ const ManageRequest = () => {
         }
     };
 
+    const pendingCount = requests.filter(r => r.status === 'Pending').length;
+    const processingCount = requests.filter(r => r.status === 'Processing').length;
+    const acceptedCount = requests.filter(r => r.status === 'Accepted').length;
+    const totalCount = requests.length;
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             
@@ -158,7 +163,7 @@ const ManageRequest = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Service Requests & Inquiries</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Review student document applications, endorsement requests, and service approvals</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Manage, review, and process student service tickets</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -168,16 +173,92 @@ const ManageRequest = () => {
                         className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
                     >
                         <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-600' : ''}`} />
-                        <span>Refresh Inbox</span>
+                        <span>Refresh Requests</span>
                     </button>
 
                     <button 
-                        onClick={() => alert("Exporting service requests...")} 
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
+                        onClick={() => alert("Exporting...")}
+                        disabled={requests.length === 0}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 disabled:opacity-50"
                     >
                         <Download className="w-4 h-4" />
-                        <span>Export Requests</span>
+                        <span>Export CSV</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Pending */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Pending' ? 'All' : 'Pending')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'Pending' ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-2.5">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        PENDING
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {pendingCount}
+                    </span>
+                </div>
+
+                {/* Processing */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Processing' ? 'All' : 'Processing')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'Processing' ? 'border-blue-400 ring-2 ring-blue-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                        <RefreshCw className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        PROCESSING
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {processingCount}
+                    </span>
+                </div>
+
+                {/* Accepted */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Accepted' ? 'All' : 'Accepted')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'Accepted' ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                        <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        ACCEPTED
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {acceptedCount}
+                    </span>
+                </div>
+
+                {/* Total Requests */}
+                <div 
+                    onClick={() => setFilterStatus('All')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'All' ? 'border-purple-400 ring-2 ring-purple-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center mb-2.5">
+                        <Inbox className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        TOTAL REQUESTS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {totalCount}
+                    </span>
                 </div>
             </div>
 

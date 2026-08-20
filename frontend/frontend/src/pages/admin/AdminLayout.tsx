@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import logoPhoto from '../../assets/mentorlogOption.png'; 
 import api from '../../services/api';
+import { NotificationDropdown } from '../../components/NotificationDropdown';
 import { 
     LayoutDashboard, CheckSquare, Users, FileText, CalendarCheck, 
     Megaphone, Inbox, HelpCircle, MessageSquare, Key, BarChart3, 
@@ -86,23 +87,19 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             items: [
                 { path: '/admin/manage-submissions', label: 'Submissions', icon: FileText },
                 { path: '/manage-attendance', label: 'Attendance Logs', icon: CalendarCheck },
-                { path: '/manage-announcements', label: 'Announcements', icon: Megaphone },
                 { path: '/manage-requests', label: 'Service Requests', icon: Inbox },
             ]
         },
         {
             title: "COMMUNICATION",
             items: [
-                { path: '/admin/ask-question', label: 'Question Inbox', icon: HelpCircle },
                 { path: '/manage-feedback', label: 'Student Feedback', icon: MessageSquare },
                 { path: '/manage-forgot-password', label: 'Password Resets', icon: Key },
             ]
         },
         {
-            title: "ANALYTICS & AUDIT",
+            title: "AUDIT & UTILITIES",
             items: [
-                { path: '/admin/reports', label: 'Report Analytics', icon: BarChart3 },
-                { path: '/admin-calendar', label: 'Admin Calendar', icon: Calendar },
                 { path: '/manage-audit-logs', label: 'System Audit Logs', icon: ShieldAlert },
                 { path: '/admin/manage-codes', label: 'Reference Codes', icon: Code2 },
             ]
@@ -111,13 +108,20 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
     const currentPath = location.pathname;
     let currentPageLabel = 'Dashboard';
-    navGroups.forEach(g => {
-        g.items.forEach(item => {
-            if (item.path === currentPath) currentPageLabel = item.label;
-        });
+    
+    const allNavItems = [
+        ...navGroups.flatMap(g => g.items),
+        { path: '/manage-announcements', label: 'Announcements', icon: Megaphone },
+        { path: '/admin/ask-question', label: 'Question Inbox', icon: HelpCircle },
+        { path: '/admin/reports', label: 'Report Analytics', icon: BarChart3 },
+        { path: '/admin-calendar', label: 'Admin Calendar', icon: Calendar },
+        { path: '/admin-settings', label: 'Settings', icon: Settings },
+        { path: '/admin-profile', label: 'My Profile', icon: Settings }
+    ];
+
+    allNavItems.forEach(item => {
+        if (item.path === currentPath) currentPageLabel = item.label;
     });
-    if (currentPath === '/admin-profile') currentPageLabel = 'My Profile';
-    if (currentPath === '/admin-settings') currentPageLabel = 'Settings';
 
     const picUrl = userPic ? getFullPicUrl(userPic) : null;
 
@@ -188,27 +192,77 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     ))}
                 </nav>
 
-                {/* Bottom Options (Settings & Logout) */}
+                {/* Bottom Options (Announcements, Question Inbox, Report Analytics, Admin Calendar, Settings & Logout) */}
                 <div className="p-4 border-t border-slate-800/80 space-y-1 shrink-0">
                     <Link
-                        to="/admin-settings"
-                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                            location.pathname === '/admin-settings'
-                            ? 'text-white bg-[#1e293b]'
+                        to="/manage-announcements"
+                        className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                            location.pathname === '/manage-announcements'
+                            ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
                             : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                         }`}
                     >
-                        <Settings className="w-4 h-4 text-slate-400" />
-                        <span>Settings</span>
+                        <Megaphone className={`w-4 h-4 ${location.pathname === '/manage-announcements' ? 'text-blue-400' : 'text-slate-400'}`} />
+                        <span>Announcements</span>
                     </Link>
-                    
-                    <button 
-                        onClick={() => setShowLogoutModal(true)} 
-                        className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group"
+
+                    <Link
+                        to="/admin/ask-question"
+                        className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                            location.pathname === '/admin/ask-question'
+                            ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        }`}
                     >
-                        <LogOut className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
-                        <span>Logout</span>
-                    </button>
+                        <HelpCircle className={`w-4 h-4 ${location.pathname === '/admin/ask-question' ? 'text-blue-400' : 'text-slate-400'}`} />
+                        <span>Question Inbox</span>
+                    </Link>
+
+                    <Link
+                        to="/admin/reports"
+                        className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                            location.pathname === '/admin/reports'
+                            ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        }`}
+                    >
+                        <BarChart3 className={`w-4 h-4 ${location.pathname === '/admin/reports' ? 'text-blue-400' : 'text-slate-400'}`} />
+                        <span>Report Analytics</span>
+                    </Link>
+
+                    <Link
+                        to="/admin-calendar"
+                        className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                            location.pathname === '/admin-calendar'
+                            ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        }`}
+                    >
+                        <Calendar className={`w-4 h-4 ${location.pathname === '/admin-calendar' ? 'text-blue-400' : 'text-slate-400'}`} />
+                        <span>Admin Calendar</span>
+                    </Link>
+
+                    <div className="pt-2 border-t border-slate-800/60 space-y-1">
+                        <Link
+                            to="/admin-settings"
+                            className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                                location.pathname === '/admin-settings'
+                                ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                            }`}
+                        >
+                            <Settings className={`w-4 h-4 ${location.pathname === '/admin-settings' ? 'text-blue-400' : 'text-slate-400'}`} />
+                            <span>Settings</span>
+                        </Link>
+                        
+                        <button 
+                            onClick={() => setShowLogoutModal(true)} 
+                            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group"
+                        >
+                            <LogOut className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
+                            <span>Logout</span>
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -238,11 +292,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                             />
                         </div>
 
-                        {/* Notification Bell */}
-                        <button className="relative text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
-                            <Bell className="w-4 h-4" />
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-                        </button>
+                        {/* Notification Bell Dropdown */}
+                        <NotificationDropdown />
 
                         {/* User Profile Pill with Live Photo */}
                         <Link to="/admin-profile" className="flex items-center gap-2.5 pl-2 border-l border-slate-200 hover:opacity-80 transition-opacity">

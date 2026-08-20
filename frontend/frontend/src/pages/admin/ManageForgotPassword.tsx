@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { 
     Mail, RefreshCw, CheckCircle2, Clock, 
-    AlertCircle, Search, Filter, Download, ChevronLeft, ChevronRight 
+    AlertCircle, Search, Filter, Download, ChevronLeft, ChevronRight, KeyRound 
 } from 'lucide-react';
 
 interface ForgotPasswordRequest {
@@ -105,14 +105,18 @@ const ManageForgotPassword = () => {
         }
     };
 
+    const pendingCount = requests.filter(r => r.status === 'pending').length;
+    const resolvedCount = requests.filter(r => r.status === 'resolved').length;
+    const totalCount = requests.length;
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             
             {/* Top Title & Primary Action Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Password Reset Tickets</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Review student account identity verification and reset password access requests</p>
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Password Reset Queue</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Manage and resolve intern account password recovery tickets</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -132,6 +136,63 @@ const ManageForgotPassword = () => {
                         <Download className="w-4 h-4" />
                         <span>Export Tickets</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Pending */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'pending' ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-2.5">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        PENDING TICKETS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {pendingCount}
+                    </span>
+                </div>
+
+                {/* Resolved */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'resolved' ? 'All' : 'resolved')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'resolved' ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                        <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        RESOLVED TICKETS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {resolvedCount}
+                    </span>
+                </div>
+
+                {/* Total */}
+                <div 
+                    onClick={() => setFilterStatus('All')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'All' ? 'border-blue-400 ring-2 ring-blue-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                        <KeyRound className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        TOTAL REQUESTS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {totalCount}
+                    </span>
                 </div>
             </div>
 

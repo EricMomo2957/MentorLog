@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
+import { PrintableDTRModal } from '../../components/PrintableDTRModal';
 import { 
     Clock, CheckCircle2, AlertCircle, XCircle, Search, 
-    Filter, Download, RefreshCw, ChevronLeft, ChevronRight 
+    Filter, Download, RefreshCw, ChevronLeft, ChevronRight, Users, Printer 
 } from 'lucide-react';
 
 interface AttendanceRecord {
@@ -46,6 +47,9 @@ const ManageAttendance = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('All');
     const [selectedRecords, setSelectedRecords] = useState<number[]>([]);
+
+    const [dateRange, setDateRange] = useState<string>('All');
+    const [isDTRModalOpen, setIsDTRModalOpen] = useState(false);
 
     const fetchAllAttendance = async () => {
         setLoading(true);
@@ -103,7 +107,25 @@ const ManageAttendance = () => {
         const matchesSearch = r.student_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
             (r.date && r.date.includes(searchTerm));
         const matchesStatus = filterStatus === 'All' || r.status === filterStatus;
-        return matchesSearch && matchesStatus;
+        
+        let matchesDate = true;
+        if (r.date && dateRange !== 'All') {
+            const recordDate = new Date(r.date.split('T')[0]);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (dateRange === 'Today') {
+                matchesDate = recordDate.toDateString() === today.toDateString();
+            } else if (dateRange === 'ThisWeek') {
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 7);
+                matchesDate = recordDate >= sevenDaysAgo;
+            } else if (dateRange === 'ThisMonth') {
+                matchesDate = recordDate.getMonth() === today.getMonth() && recordDate.getFullYear() === today.getFullYear();
+            }
+        }
+
+        return matchesSearch && matchesStatus && matchesDate;
     });
 
     const toggleSelectAll = () => {
@@ -122,6 +144,11 @@ const ManageAttendance = () => {
         }
     };
 
+    const presentCount = records.filter(r => r.status === 'Present').length;
+    const lateCount = records.filter(r => r.status === 'Late').length;
+    const absentCount = records.filter(r => r.status === 'Absent').length;
+    const totalCount = records.length;
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             
@@ -133,6 +160,14 @@ const ManageAttendance = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setIsDTRModalOpen(true)}
+                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 active:scale-98"
+                    >
+                        <Printer className="w-4 h-4 text-blue-400" />
+                        <span>Print DTR (Form 48)</span>
+                    </button>
+
                     <button 
                         onClick={fetchAllAttendance}
                         disabled={loading}
@@ -148,8 +183,83 @@ const ManageAttendance = () => {
                         className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 disabled:opacity-50"
                     >
                         <Download className="w-4 h-4" />
-                        <span>Export DTR (CSV)</span>
+                        <span>Export CSV</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Present */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Present' ? 'All' : 'Present')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'Present' ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                        <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        PRESENT
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {presentCount}
+                    </span>
+                </div>
+
+                {/* Late */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Late' ? 'All' : 'Late')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'Late' ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-2.5">
+                        <AlertCircle className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        LATE
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {lateCount}
+                    </span>
+                </div>
+
+                {/* Absent */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Absent' ? 'All' : 'Absent')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'Absent' ? 'border-rose-400 ring-2 ring-rose-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-2.5">
+                        <XCircle className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        ABSENT
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {absentCount}
+                    </span>
+                </div>
+
+                {/* Total Time Logs */}
+                <div 
+                    onClick={() => setFilterStatus('All')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'All' ? 'border-blue-400 ring-2 ring-blue-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        TOTAL LOGS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {totalCount}
+                    </span>
                 </div>
             </div>
 
@@ -172,10 +282,19 @@ const ManageAttendance = () => {
                         <Filter className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
 
-                    <button className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-1.5">
-                        <span>Log Date</span>
-                        <span className="text-slate-400">▾</span>
-                    </button>
+                    <div className="relative">
+                        <select 
+                            value={dateRange}
+                            onChange={(e) => setDateRange(e.target.value)}
+                            className="appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 pr-8 text-xs font-medium text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                            <option value="All">Date Range: All Time</option>
+                            <option value="Today">Today</option>
+                            <option value="ThisWeek">Past 7 Days</option>
+                            <option value="ThisMonth">This Month</option>
+                        </select>
+                        <Filter className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
                 </div>
 
                 {/* Right Search Input */}
@@ -316,6 +435,14 @@ const ManageAttendance = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Printable DTR Modal */}
+            <PrintableDTRModal 
+                isOpen={isDTRModalOpen} 
+                onClose={() => setIsDTRModalOpen(false)} 
+                studentName="OJT Master Attendance Ledger"
+                records={filteredRecords}
+            />
         </div>
     );
 };

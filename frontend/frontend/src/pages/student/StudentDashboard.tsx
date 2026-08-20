@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
+import { PrintableDTRModal } from '../../components/PrintableDTRModal';
 import { 
-    Clock, CheckCircle2, AlertCircle, Play, Square, 
-    ShieldCheck, AlertTriangle
+    Clock, Play, Square, CheckCircle2, ShieldCheck, AlertCircle, AlertTriangle, 
+    Calendar, CheckSquare, Megaphone, FileText, ArrowRight, Printer, Filter 
 } from 'lucide-react';
 
 // --- INTERFACES ---
@@ -51,6 +52,29 @@ const StudentDashboard = () => {
 
     const [pendingTasks, setPendingTasks] = useState<TaskItem[]>([]);
     const [latestAnnouncement, setLatestAnnouncement] = useState<AnnouncementItem | null>(null);
+
+    const [dateRange, setDateRange] = useState<string>('All');
+    const [isDTRModalOpen, setIsDTRModalOpen] = useState(false);
+
+    const filteredLogs = logs.filter(log => {
+        let matchesDate = true;
+        if (log.date && dateRange !== 'All') {
+            const recordDate = new Date(log.date.split('T')[0]);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (dateRange === 'Today') {
+                matchesDate = recordDate.toDateString() === today.toDateString();
+            } else if (dateRange === 'ThisWeek') {
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 7);
+                matchesDate = recordDate >= sevenDaysAgo;
+            } else if (dateRange === 'ThisMonth') {
+                matchesDate = recordDate.getMonth() === today.getMonth() && recordDate.getFullYear() === today.getFullYear();
+            }
+        }
+        return matchesDate;
+    });
 
     // --- HELPERS ---
     const getTodayDate = useCallback(() => new Date().toISOString().split('T')[0], []);
@@ -390,9 +414,35 @@ const StudentDashboard = () => {
 
             {/* Attendance History SaaS Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-                <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Attendance History Logs</h4>
-                    <span className="text-xs font-mono text-slate-500">{logs.length} Total Logs</span>
+                <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Attendance History Logs</h4>
+                        <span className="text-[11px] text-slate-500">{filteredLogs.length} Total Logs</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <select 
+                                value={dateRange}
+                                onChange={(e) => setDateRange(e.target.value)}
+                                className="appearance-none bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 text-xs font-medium text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
+                            >
+                                <option value="All">Date Range: All Time</option>
+                                <option value="Today">Today</option>
+                                <option value="ThisWeek">Past 7 Days</option>
+                                <option value="ThisMonth">This Month</option>
+                            </select>
+                            <Filter className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+
+                        <button 
+                            onClick={() => setIsDTRModalOpen(true)}
+                            className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-xs transition-all flex items-center gap-1.5 active:scale-98"
+                        >
+                            <Printer className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Print My DTR (Form 48)</span>
+                        </button>
+                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-xs">
@@ -406,7 +456,7 @@ const StudentDashboard = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-slate-700">
-                            {logs.length > 0 ? logs.map((row) => (
+                            {filteredLogs.length > 0 ? filteredLogs.map((row) => (
                                 <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
                                     <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{row.date}</td>
                                     <td className="py-3.5 px-4 font-mono text-emerald-700 font-semibold">{row.clock_in}</td>
@@ -428,13 +478,29 @@ const StudentDashboard = () => {
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={5} className="py-12 text-center text-slate-400 text-xs italic">No attendance records found.</td>
+                                    <td colSpan={5} className="py-12 text-center text-slate-400 text-xs italic">No attendance records found for this period.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            {/* Printable DTR Modal */}
+            <PrintableDTRModal 
+                isOpen={isDTRModalOpen}
+                onClose={() => setIsDTRModalOpen(false)}
+                studentName={localStorage.getItem('userName') || 'Student Intern'}
+                records={filteredLogs.map(l => ({
+                    id: l.id,
+                    student_name: localStorage.getItem('userName') || 'Student Intern',
+                    date: l.date,
+                    clock_in: l.clock_in,
+                    clock_out: l.clock_out,
+                    total_hours: Number(l.total_hours) || 0,
+                    status: l.status as 'Present' | 'Late' | 'Absent'
+                }))}
+            />
         </div>
     );
 };

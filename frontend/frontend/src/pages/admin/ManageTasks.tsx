@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
     Plus, Search, Download, Filter, Edit2, Trash2, 
-    CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, X
+    CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, X,
+    ListTodo, CheckSquare
 } from 'lucide-react';
 
 interface User {
@@ -177,6 +178,11 @@ const ManageTasks = () => {
         }
     };
 
+    const pendingCount = tasks.filter(t => t.status === 'Pending').length;
+    const inProgressCount = tasks.filter(t => t.status === 'In-Progress').length;
+    const completedCount = tasks.filter(t => t.status === 'Completed').length;
+    const totalCount = tasks.length;
+
     const filteredTasks = tasks.filter(t => {
         const matchesFilter = filter === 'All' || t.status === filter;
         const matchesSearch = searchQuery === '' || 
@@ -228,6 +234,81 @@ const ManageTasks = () => {
                     >
                         <Download className="w-4 h-4" />
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid (Matching Sample Photo) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Pending Tasks */}
+                <div 
+                    onClick={() => setFilter(filter === 'Pending' ? 'All' : 'Pending')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filter === 'Pending' ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        PENDING
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {pendingCount}
+                    </span>
+                </div>
+
+                {/* In-Progress Tasks */}
+                <div 
+                    onClick={() => setFilter(filter === 'In-Progress' ? 'All' : 'In-Progress')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filter === 'In-Progress' ? 'border-pink-400 ring-2 ring-pink-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center mb-2.5">
+                        <CheckSquare className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        IN-PROGRESS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {inProgressCount}
+                    </span>
+                </div>
+
+                {/* Completed Tasks */}
+                <div 
+                    onClick={() => setFilter(filter === 'Completed' ? 'All' : 'Completed')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filter === 'Completed' ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                        <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        COMPLETED
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {completedCount}
+                    </span>
+                </div>
+
+                {/* Total Tasks */}
+                <div 
+                    onClick={() => setFilter('All')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filter === 'All' ? 'border-purple-400 ring-2 ring-purple-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center mb-2.5">
+                        <ListTodo className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        TOTAL TASKS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {totalCount}
+                    </span>
                 </div>
             </div>
 

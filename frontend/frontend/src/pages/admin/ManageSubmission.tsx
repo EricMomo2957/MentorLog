@@ -136,6 +136,11 @@ const ManageSubmission = () => {
         }
     };
 
+    const pendingCount = submissions.filter(s => s.status.toLowerCase() === 'pending').length;
+    const approvedCount = submissions.filter(s => s.status.toLowerCase() === 'approved').length;
+    const rejectedCount = submissions.filter(s => s.status.toLowerCase() === 'rejected').length;
+    const totalCount = submissions.length;
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             
@@ -154,6 +159,81 @@ const ManageSubmission = () => {
                         <Download className="w-4 h-4" />
                         <span>Export Submissions</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Pending Submissions */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'pending' ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        PENDING
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {pendingCount}
+                    </span>
+                </div>
+
+                {/* Approved Submissions */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'approved' ? 'All' : 'approved')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'approved' ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                        <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        APPROVED
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {approvedCount}
+                    </span>
+                </div>
+
+                {/* Rejected Submissions */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'rejected' ? 'All' : 'rejected')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'rejected' ? 'border-rose-400 ring-2 ring-rose-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-2.5">
+                        <XCircle className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        REJECTED
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {rejectedCount}
+                    </span>
+                </div>
+
+                {/* Total Submissions */}
+                <div 
+                    onClick={() => setFilterStatus('All')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'All' ? 'border-purple-400 ring-2 ring-purple-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center mb-2.5">
+                        <FileText className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        TOTAL SUBMISSIONS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {totalCount}
+                    </span>
                 </div>
             </div>
 

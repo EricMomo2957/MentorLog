@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { 
     Search, Filter, Download, Edit2, Trash2, CheckCircle2, 
-    XCircle, ChevronLeft, ChevronRight, X, UserPlus, Phone
+    XCircle, ChevronLeft, ChevronRight, X, UserPlus, Phone,
+    Users, UserCheck, UserX, Clock
 } from 'lucide-react';
 
 interface Student {
@@ -130,23 +131,28 @@ const ManageStudents = () => {
         }
     };
 
+    const activeCount = students.filter(s => s.is_active).length;
+    const disabledCount = students.filter(s => !s.is_active).length;
+    const totalHoursRequired = students.reduce((acc, curr) => acc + (curr.ojt_hours_required || 0), 0);
+    const totalCount = students.length;
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             
             {/* Top Title & Primary Action Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Manage Interns & Students</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Directory of registered student interns, contact numbers, and profile photos</p>
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">OJT Intern Directory</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Manage enrolled OJT students, accounts, contact numbers, and required hours</p>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => alert("Student registration is managed via reference codes or registration portal.")} 
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 active:scale-98"
                     >
                         <UserPlus className="w-4 h-4" />
-                        <span>Register Intern</span>
+                        <span>Add Student</span>
                     </button>
 
                     <button 
@@ -156,6 +162,77 @@ const ManageStudents = () => {
                     >
                         <Download className="w-4 h-4" />
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Active Interns */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Active' ? 'All' : 'Active')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'Active' ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                        <UserCheck className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        ACTIVE INTERNS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {activeCount}
+                    </span>
+                </div>
+
+                {/* Disabled Accounts */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Disabled' ? 'All' : 'Disabled')}
+                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        filterStatus === 'Disabled' ? 'border-rose-400 ring-2 ring-rose-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-2.5">
+                        <UserX className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        DISABLED ACCOUNTS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {disabledCount}
+                    </span>
+                </div>
+
+                {/* Target Hours */}
+                <div 
+                    onClick={() => setFilterStatus('All')}
+                    className="bg-white rounded-2xl border border-slate-100 p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-md cursor-pointer"
+                >
+                    <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-2.5">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        TARGET OJT HOURS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {totalHoursRequired.toLocaleString()} <span className="text-xs font-bold text-slate-500">hrs</span>
+                    </span>
+                </div>
+
+                {/* Total Students */}
+                <div 
+                    onClick={() => setFilterStatus('All')}
+                    className="bg-white rounded-2xl border border-slate-100 p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-md cursor-pointer"
+                >
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                        <Users className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                        TOTAL INTERNS
+                    </span>
+                    <span className="text-3xl font-black text-slate-800">
+                        {totalCount}
+                    </span>
                 </div>
             </div>
 
