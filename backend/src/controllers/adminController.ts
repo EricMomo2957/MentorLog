@@ -1,16 +1,16 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
-import { logAction } from '../utils/logger'; // <--- ADD THIS LINE
+import { logAction } from '../utils/logger';
 import pool from '../config/db';
+
 /**
- * 1. FETCH ALL USERS (New)
- * Specifically for the Admin Dashboard User Directory
+ * 1. FETCH ALL USERS
  * GET: /api/admin/users/all
  */
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
         const [rows]: any = await db.execute(
-            'SELECT id, full_name, email, role, created_at FROM users ORDER BY created_at DESC'
+            'SELECT id, full_name, email, phone, student_id, course, year_level, profile_pic, role, created_at FROM users ORDER BY created_at DESC'
         );
         res.status(200).json({ success: true, data: rows });
     } catch (error) {
@@ -21,7 +21,6 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 /**
  * 2. DASHBOARD SUMMARY
- * Used for detailed charts/summary cards
  */
 export const getStudentSummary = async (req: Request, res: Response) => {
     try {
@@ -30,11 +29,13 @@ export const getStudentSummary = async (req: Request, res: Response) => {
                 u.id, 
                 u.full_name, 
                 u.email,
-                COALESCE(SUM(TIMESTAMPDIFF(HOUR, a.time_in, a.time_out)), 0) AS total_hours
+                u.phone,
+                u.profile_pic,
+                COALESCE(SUM(TIMESTAMPDIFF(HOUR, a.clock_in, a.clock_out)), 0) AS total_hours
             FROM users u
             LEFT JOIN attendance a ON u.id = a.user_id
             WHERE u.role = 'student'
-            GROUP BY u.id, u.full_name, u.email
+            GROUP BY u.id, u.full_name, u.email, u.phone, u.profile_pic
         `;
 
         const [rows] = await db.execute(query);
@@ -47,12 +48,11 @@ export const getStudentSummary = async (req: Request, res: Response) => {
 
 /**
  * 3. STUDENT DIRECTORY (FETCH ONLY STUDENTS)
- * Feeds the ManageStudent.tsx list
  */
 export const getAllStudents = async (req: Request, res: Response) => {
     try {
         const [rows]: any = await db.execute(
-            'SELECT id, full_name, email, student_id, course, ojt_hours_required, role, created_at FROM users WHERE role = "student" ORDER BY created_at DESC'
+            'SELECT id, full_name, email, phone, student_id, course, year_level, profile_pic, ojt_hours_required, role, created_at FROM users WHERE role = "student" ORDER BY created_at DESC'
         );
         res.status(200).json({ success: true, data: rows });
     } catch (error) {
@@ -66,25 +66,21 @@ export const getAllStudents = async (req: Request, res: Response) => {
  */
 export const updateStudent = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { full_name, student_id, ojt_hours_required } = req.body;
+    const { full_name, student_id, ojt_hours_required, phone, course, year_level } = req.body;
 
     try {
-        // 1. Execute the update in the users table
         await db.execute(
-            'UPDATE users SET full_name = ?, student_id = ?, ojt_hours_required = ? WHERE id = ? AND role = "student"',
-            [full_name, student_id, ojt_hours_required, id]
+            'UPDATE users SET full_name = ?, student_id = ?, ojt_hours_required = ?, phone = COALESCE(?, phone), course = COALESCE(?, course), year_level = COALESCE(?, year_level) WHERE id = ? AND role = "student"',
+            [full_name, student_id, ojt_hours_required, phone || null, course || null, year_level || null, id]
         );
 
-        // 2. LOG THE ACTION: Record WHO changed WHAT
-        // We use (req as any).user.id to get the Admin's ID from the token
         await logAction(
-            (req as any).user.id, 
+            (req as any).user?.id || 0, 
             'UPDATE', 
             'Student Management', 
             `Updated student: ${full_name} (ID: ${student_id})`
         );
 
-        // 3. Send success response to the frontend
         res.status(200).json({ 
             success: true, 
             message: "Student updated successfully and logged." 
@@ -117,7 +113,6 @@ export const deleteStudent = async (req: Request, res: Response) => {
  * 6. ADMIN MIDDLEWARE
  */
 export const adminOnly = (req: any, res: any, next: any) => {
-    // Convert to lowercase to ignore case sensitivity issues
     const role = req.user?.role?.toLowerCase();
 
     if (req.user && (role === 'admin' || role === 'mentor')) {
@@ -126,12 +121,12 @@ export const adminOnly = (req: any, res: any, next: any) => {
         return res.status(403).json({ message: "Access denied. Admins only." });
     }
 };
+
 /**
- * 7. UPDATE ADMIN PROFILE (Fixes the "N/A" ID issue)
+ * 7. UPDATE ADMIN PROFILE
  */
 export const updateAdminProfile = async (req: Request, res: Response) => {
     const { id } = req.params;
-    // Note: Use 'student_id' if that's where you store the Admin/Employee ID in your table
     const { full_name, email, student_id } = req.body; 
 
     try {
@@ -146,11 +141,11 @@ export const updateAdminProfile = async (req: Request, res: Response) => {
     }
 };
 
-// Look for this in your admin controller
+/**
+ * 8. GET AUDIT LOGS
+ */
 export const getAuditLogs = async (req: Request, res: Response) => {
     try {
-        // PROBLEM: INNER JOIN hides rows where user_id is null or invalid
-        // FIX: Use LEFT JOIN to see logs even if the name isn't found
         const [rows] = await pool.query(`
             SELECT 
                 al.*, 
