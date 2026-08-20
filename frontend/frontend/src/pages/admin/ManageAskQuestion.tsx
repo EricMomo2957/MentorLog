@@ -12,7 +12,14 @@ interface Question {
     message: string;
     status: 'pending' | 'replied' | 'closed';
     created_at: string;
+    profile_pic?: string;
 }
+
+const getFullPicUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `http://localhost:5000${path}`;
+};
 
 interface Reply {
     id: number;
@@ -219,9 +226,17 @@ const ManageAskQuestion = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2.5 mb-1">
-                                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center font-bold text-[10px] shrink-0 ${avatarStyle}`}>
-                                                {initials}
-                                            </div>
+                                            {q.profile_pic ? (
+                                                <img 
+                                                    src={getFullPicUrl(q.profile_pic)} 
+                                                    alt={q.student_name} 
+                                                    className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs" 
+                                                />
+                                            ) : (
+                                                <div className={`w-6 h-6 rounded-full border flex items-center justify-center font-bold text-[10px] shrink-0 ${avatarStyle}`}>
+                                                    {initials}
+                                                </div>
+                                            )}
                                             <span className="text-xs font-bold text-slate-900 truncate">{q.student_name}</span>
                                         </div>
 
