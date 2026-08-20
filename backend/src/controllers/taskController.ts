@@ -67,6 +67,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
         const [rows] = await pool.query(`
             SELECT 
                 t.id, 
+                t.user_id,
                 t.title,
                 t.task_description, 
                 t.status,
@@ -141,7 +142,8 @@ export const assignTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { title, task_description, due_date, status, user_id, student_id } = req.body;
-    const targetUserId = user_id || student_id;
+    const rawUserId = user_id || student_id;
+    const targetUserId = rawUserId && !isNaN(Number(rawUserId)) ? Number(rawUserId) : null;
 
     try {
         if (targetUserId) {
