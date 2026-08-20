@@ -149,7 +149,8 @@ export const getAuditLogs = async (req: Request, res: Response) => {
         const [rows] = await pool.query(`
             SELECT 
                 al.*, 
-                u.full_name as admin_name 
+                u.full_name as admin_name,
+                u.profile_pic 
             FROM audit_logs al
             LEFT JOIN users u ON al.user_id = u.id 
             ORDER BY al.created_at DESC

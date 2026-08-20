@@ -16,6 +16,7 @@ import { analyticsRouter } from './routes/analyticsRoutes';
 import progressRoutes from './routes/progressTrackingRoutes';
 import askQuestionRoutes from './routes/AskQuestionRoutes';
 import documentSubmissionRoutes from './routes/documentSubmissionRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -63,8 +64,9 @@ app.use('/api/announcements', announcementRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/questions', askQuestionRoutes);
 
-// 5. Document Management
+// 5. Document Management & Notifications
 app.use('/api/documents', documentSubmissionRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ==========================================
 // Server Configuration

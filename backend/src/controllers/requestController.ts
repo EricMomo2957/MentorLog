@@ -60,6 +60,8 @@ export const getAllRequests = async (_req: AuthRequest, res: Response) => {
     }
 };
 
+import { createNotification } from './notificationController';
+
 /**
  * 3. Update Status (Admin Side)
  */
@@ -72,11 +74,24 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
     }
 
     try {
+        const [reqRows]: any = await db.execute("SELECT student_id, subject FROM service_requests WHERE id = ?", [id]);
+
         const query = "UPDATE service_requests SET status = ? WHERE id = ?";
         const [result]: any = await db.execute(query, [status, id]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: "Request not found" });
+        }
+
+        if (reqRows.length > 0) {
+            const studentId = reqRows[0].student_id;
+            const subject = reqRows[0].subject;
+            await createNotification(
+                studentId, 
+                "Service Request Status Updated", 
+                `Your service request "${subject}" status was updated to: ${status}`, 
+                status === 'Accepted' ? 'success' : status === 'Rejected' ? 'error' : 'info'
+            );
         }
 
         await logAction(req.user?.id, 'UPDATE', 'Service Requests', `Set request #${id} status to ${status}`);

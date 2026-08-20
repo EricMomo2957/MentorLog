@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/db';
 import { logAction } from '../utils/logger';
+import { createNotification } from './notificationController';
 
 interface AuthRequest extends Request {
     user?: {
@@ -125,6 +126,13 @@ export const assignTask = async (req: AuthRequest, res: Response) => {
         await pool.query(
             'INSERT INTO tasks (user_id, title, task_description, status, due_date) VALUES (?, ?, ?, "Pending", ?)',
             [targetUserId, title || 'New Assignment', task_description || '', due_date || new Date()]
+        );
+
+        await createNotification(
+            targetUserId, 
+            "New OJT Task Assigned", 
+            `You have been assigned a new task: "${title || 'New Assignment'}".`, 
+            'info'
         );
 
         await logAction(req.user?.id || null, 'CREATE', 'Task Directives', `Assigned task "${title || 'New Assignment'}" to student ID #${targetUserId}`);
