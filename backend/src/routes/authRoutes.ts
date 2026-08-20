@@ -1,4 +1,7 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { login, register, forgotPassword, getProfile, updateProfile } from '../controllers/authController';    
 import { 
     getForgotPasswordRequests, 
@@ -8,35 +11,44 @@ import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
+// Ensure profile uploads directory exists
+const uploadsDir = path.resolve(__dirname, '../../uploads/profiles');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const profileStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const uploadProfile = multer({ 
+    storage: profileStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }
+});
+
 // ==========================================
 // STUDENT / PUBLIC ROUTES
 // ==========================================
 
-// POST: http://localhost:5000/api/auth/login
 router.post('/login', login);
-
-// POST: http://localhost:5000/api/auth/register
 router.post('/register', register);
-
-// POST: http://localhost:5000/api/auth/forgot-password
-// This is the one that inserts the request into the database
 router.post('/forgot-password', forgotPassword);
 
-// GET & PUT profile
+// GET & PUT profile with optional image upload
 router.get('/profile', protect, getProfile);
-router.put('/profile', protect, updateProfile);
-
+router.put('/profile', protect, uploadProfile.single('profile_pic'), updateProfile);
 
 // ==========================================
 // ADMIN MANAGEMENT ROUTES
 // ==========================================
 
-// GET: http://localhost:5000/api/auth/forgot-password-requests
-// This fetches the list for your ManageForgotPassword.tsx table
 router.get('/forgot-password-requests', getForgotPasswordRequests);
-
-// PUT: http://localhost:5000/api/auth/resolve-password/:id
-// This updates the status from 'pending' to 'resolved'
 router.put('/resolve-password/:id', resolvePasswordRequest);
 
-export default router;
+export default router;
