@@ -3,7 +3,7 @@ import {
     getAllRequests, 
     updateRequestStatus, 
     submitRequest,
-    getMyRequests // 1. Import the new controller function
+    getMyRequests
 } from '../controllers/requestController';
 import { protect, adminOnly, studentOnly } from '../middleware/authMiddleware';
 
@@ -21,7 +21,6 @@ router.post('/submit', protect, studentOnly, submitRequest);
  * @desc    Fetch requests belonging to the logged-in student
  * @access  Private (Student Only)
  */
-// 2. Add this route so the frontend table can fetch data
 router.get('/my-requests', protect, studentOnly, getMyRequests);
 
 /**
@@ -32,10 +31,12 @@ router.get('/my-requests', protect, studentOnly, getMyRequests);
 router.get('/all', protect, adminOnly, getAllRequests);
 
 /**
+ * @route   PUT /api/requests/:id/status
  * @route   PATCH /api/requests/:id/status
  * @desc    Admin updates status of a request
  * @access  Private (Admin Only)
  */
+router.put('/:id/status', protect, adminOnly, updateRequestStatus);
 router.patch('/:id/status', protect, adminOnly, updateRequestStatus);
 
 export default router;
