@@ -1,5 +1,6 @@
 import { Response, Request } from 'express';
 import db from '../config/db';
+import { logAction } from '../utils/logger';
 
 // Use this interface to fix 'req.user' TypeScript errors
 interface AuthRequest extends Request {
@@ -15,7 +16,6 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
     try {
         if (action === 'clock-in') {
             // Check if ANY record exists for today (Active or Completed)
-            // In toggleAttendance clock-in check:
             const [rows]: any = await db.execute(
                 'SELECT id, clock_out FROM attendance WHERE user_id = ? AND date = CURDATE() LIMIT 1',
                 [userId]
@@ -23,11 +23,9 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
 
             // If a record exists for today
             if (rows && rows.length > 0) {
-                // If they already clocked out, they are done for the day
                 if (rows[0].clock_out !== null) {
                     return res.status(400).json({ message: "Attendance already completed for today." });
                 }
-                // If clock_out is null, they are already clocked in
                 return res.status(400).json({ message: "You are already clocked in." });
             }
 
@@ -53,6 +51,9 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 [userId, status]
             );
 
+            // Audit Log
+            await logAction(userId, 'CREATE', 'Attendance', `Clocked in for shift (Status: ${status})`);
+
             return res.json({ 
                 success: true, 
                 status, 
@@ -61,18 +62,22 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
         } 
         
         if (action === 'clock-out') {
-            // Only update if there is an active session (is_active = 1) for today
             const [result]: any = await db.execute(`
                 UPDATE attendance 
                 SET clock_out = NOW(), 
                     is_active = 0,
-                    total_hours = TIMESTAMPDIFF(SECOND, clock_in, NOW()) / 3600 
-                WHERE user_id = ? AND is_active = 1 AND date = CURDATE()
+                    total_hours = GREATEST(0, TIMESTAMPDIFF(SECOND, clock_in, NOW()) / 3600) 
+                WHERE user_id = ? AND (is_active = 1 OR clock_out IS NULL)
+                ORDER BY id DESC
+                LIMIT 1
             `, [userId]);
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({ message: "No active session found to clock out." });
             }
+
+            // Audit Log
+            await logAction(userId, 'UPDATE', 'Attendance', `Clocked out of shift`);
 
             return res.json({ success: true, message: "Clocked out successfully" });
         }
@@ -84,13 +89,12 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
 
 export const getAllAttendance = async (_req: Request, res: Response) => {
     const sql = `
-        SELECT a.*, u.full_name as student_name 
+        SELECT a.*, u.full_name as student_name, u.profile_pic, u.student_id, u.course 
         FROM attendance a 
         JOIN users u ON a.user_id = u.id 
         ORDER BY a.date DESC
     `;
     try {
-        // Use [rows] for mysql2/promise to remove the "No overload" error
         const [results] = await db.execute(sql);
         res.status(200).json({ success: true, data: results });
     } catch (err) {
