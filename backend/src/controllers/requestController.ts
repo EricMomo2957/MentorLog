@@ -1,7 +1,7 @@
-// src/controllers/requestController.ts
 import { Response } from 'express';
 import db from '../config/db';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { logAction } from '../utils/logger';
 
 type RequestStatus = 'Pending' | 'Processing' | 'Accepted' | 'Rejected';
 
@@ -13,7 +13,6 @@ export const submitRequest = async (req: AuthRequest, res: Response) => {
     
     // Extract identity safely
     const studentId = req.user?.id; 
-    // Use type assertion or optional chaining to avoid "property does not exist" error
     const studentName = (req.user as any)?.full_name || "Unknown Student"; 
 
     if (!subject || !message) {
@@ -33,6 +32,8 @@ export const submitRequest = async (req: AuthRequest, res: Response) => {
             message, 
             urgency || 'Normal'
         ]);
+
+        await logAction(studentId, 'CREATE', 'Service Requests', `Submitted request: ${subject}`);
         
         res.status(201).json({ success: true, message: "Request submitted successfully" });
     } catch (error) {
@@ -46,7 +47,12 @@ export const submitRequest = async (req: AuthRequest, res: Response) => {
  */
 export const getAllRequests = async (_req: AuthRequest, res: Response) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM service_requests ORDER BY created_at DESC');
+        const [rows] = await db.execute(`
+            SELECT sr.*, u.profile_pic 
+            FROM service_requests sr 
+            LEFT JOIN users u ON sr.student_id = u.id 
+            ORDER BY sr.created_at DESC
+        `);
         res.status(200).json({ success: true, data: rows });
     } catch (error) {
         console.error("Fetch Error:", error);
@@ -72,6 +78,8 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: "Request not found" });
         }
+
+        await logAction(req.user?.id, 'UPDATE', 'Service Requests', `Set request #${id} status to ${status}`);
 
         res.status(200).json({ success: true, message: `Request status updated to ${status}` });
     } catch (error) {
