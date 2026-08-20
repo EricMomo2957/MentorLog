@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import logoPhoto from '../../assets/mentorlogOption.png'; 
+import api from '../../services/api';
 import { 
     LayoutDashboard, CheckSquare, Users, FileText, CalendarCheck, 
     Megaphone, Inbox, HelpCircle, MessageSquare, Key, BarChart3, 
-    Calendar, ShieldAlert, Code2, User, Settings, LogOut, Search, Bell
+    Calendar, ShieldAlert, Code2, Settings, LogOut, Search, Bell
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -22,11 +23,49 @@ interface NavGroup {
     items: NavItem[];
 }
 
+const getFullPicUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `http://localhost:5000${path}`;
+};
+
 const AdminLayout = ({ children }: AdminLayoutProps) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [showLogoutModal, setShowLogoutModal] = useState(false); 
-    const userName = localStorage.getItem('userName') || 'Vitalji';
+    const [userName, setUserName] = useState<string>(localStorage.getItem('userName') || 'Vitalji');
+    const [userPic, setUserPic] = useState<string | undefined>(undefined);
+
+    const fetchAdminProfile = useCallback(async () => {
+        try {
+            const res = await api.get('/auth/profile');
+            const userData = res.data?.user || res.data;
+            if (userData) {
+                if (userData.full_name) {
+                    setUserName(userData.full_name);
+                    localStorage.setItem('userName', userData.full_name);
+                }
+                if (userData.profile_pic) {
+                    setUserPic(userData.profile_pic);
+                }
+            }
+        } catch (err) {
+            console.error("Admin Profile Fetch Error:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchAdminProfile();
+
+        const handleProfileUpdate = () => {
+            fetchAdminProfile();
+        };
+
+        window.addEventListener('profileUpdated', handleProfileUpdate);
+        return () => {
+            window.removeEventListener('profileUpdated', handleProfileUpdate);
+        };
+    }, [fetchAdminProfile]);
 
     const confirmLogout = () => {
         localStorage.clear();
@@ -70,7 +109,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         }
     ];
 
-    // Find current page title for breadcrumbs
     const currentPath = location.pathname;
     let currentPageLabel = 'Dashboard';
     navGroups.forEach(g => {
@@ -80,6 +118,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     });
     if (currentPath === '/admin-profile') currentPageLabel = 'My Profile';
     if (currentPath === '/admin-settings') currentPageLabel = 'Settings';
+
+    const picUrl = userPic ? getFullPicUrl(userPic) : null;
 
     return (
         <div className="flex min-h-screen bg-[#f8fafc] text-slate-800 font-sans selection:bg-blue-500/20">
@@ -95,6 +135,27 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     <div>
                         <h2 className="text-base font-black tracking-tight text-white leading-none">MentorLog</h2>
                         <span className="text-[10px] text-slate-400 font-medium">Enterprise Suite</span>
+                    </div>
+                </div>
+
+                {/* Sidenav Admin Profile Card */}
+                <div className="mx-4 mb-4 p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center gap-3">
+                    <Link to="/admin-profile" className="shrink-0 hover:opacity-80 transition-opacity">
+                        {picUrl ? (
+                            <img 
+                                src={picUrl} 
+                                alt={userName} 
+                                className="w-10 h-10 rounded-full object-cover border border-amber-400/40 shadow-xs" 
+                            />
+                        ) : (
+                            <div className="w-10 h-10 rounded-full bg-amber-600 text-white font-bold text-xs flex items-center justify-center border border-amber-400/30">
+                                {userName.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-white truncate leading-tight">{userName}</p>
+                        <p className="text-[10px] text-amber-400 truncate font-semibold">Administrator</p>
                     </div>
                 </div>
 
@@ -183,11 +244,19 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
                         </button>
 
-                        {/* User Profile Pill */}
+                        {/* User Profile Pill with Live Photo */}
                         <Link to="/admin-profile" className="flex items-center gap-2.5 pl-2 border-l border-slate-200 hover:opacity-80 transition-opacity">
-                            <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 font-bold text-xs shadow-xs">
-                                {userName.charAt(0)}
-                            </div>
+                            {picUrl ? (
+                                <img 
+                                    src={picUrl} 
+                                    alt={userName} 
+                                    className="w-8 h-8 rounded-full object-cover border border-amber-300 shadow-xs" 
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 font-bold text-xs shadow-xs">
+                                    {userName.charAt(0).toUpperCase()}
+                                </div>
+                            )}
                             <span className="text-xs font-semibold text-slate-700 hidden md:inline">{userName}</span>
                         </Link>
                     </div>
