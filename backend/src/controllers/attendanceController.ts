@@ -29,14 +29,15 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 return res.status(400).json({ message: "You are already clocked in." });
             }
 
-            // Logic for Late vs Present
+            // Logic for Late vs Present (Schedule: 8:00 AM - 5:00 PM)
+            // Present: 8:00 AM - 8:30 AM
+            // Late: After 8:30 AM
             const now = new Date();
             const hour = now.getHours();
             const minute = now.getMinutes();
             let status = 'Present';
 
-            // Late if after 8:15 AM
-            if (hour > 8 || (hour === 8 && minute > 15)) {
+            if (hour > 8 || (hour === 8 && minute > 30)) {
                 status = 'Late';
             }
 
@@ -66,7 +67,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 UPDATE attendance 
                 SET clock_out = NOW(), 
                     is_active = 0,
-                    total_hours = GREATEST(0, TIMESTAMPDIFF(SECOND, clock_in, NOW()) / 3600) 
+                    total_hours = GREATEST(0, ROUND(TIMESTAMPDIFF(SECOND, CONCAT(date, ' ', clock_in), NOW()) / 3600, 2)) 
                 WHERE user_id = ? AND (is_active = 1 OR clock_out IS NULL)
                 ORDER BY id DESC
                 LIMIT 1
@@ -88,16 +89,100 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
 };
 
 export const getAllAttendance = async (_req: Request, res: Response) => {
-    const sql = `
-        SELECT a.*, u.full_name as student_name, u.profile_pic, u.student_id, u.course 
-        FROM attendance a 
-        JOIN users u ON a.user_id = u.id 
-        ORDER BY a.date DESC
-    `;
     try {
-        const [results] = await db.execute(sql);
-        res.status(200).json({ success: true, data: results });
+        // 1. Fetch real attendance logs with DATE_FORMAT to avoid UTC timezone shifts
+        const sqlLogs = `
+            SELECT a.id, a.user_id, DATE_FORMAT(a.date, '%Y-%m-%d') as date, a.clock_in, a.clock_out, a.status, a.total_hours, a.is_active,
+                   u.full_name as student_name, u.profile_pic, u.student_id, u.course 
+            FROM attendance a 
+            JOIN users u ON a.user_id = u.id 
+            ORDER BY a.date DESC, a.id DESC
+        `;
+        const [logs]: any = await db.execute(sqlLogs);
+
+        // 2. Fetch all active student interns
+        const sqlStudents = `
+            SELECT id, full_name as student_name, profile_pic, student_id, course 
+            FROM users 
+            WHERE role = 'student' AND (is_active = 1 OR is_active IS NULL)
+        `;
+        const [students]: any = await db.execute(sqlStudents);
+
+        // 3. Determine unique dates to check for attendance
+        // Always include TODAY's date (formatted as YYYY-MM-DD in local time)
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        const uniqueDates = new Set<string>();
+        uniqueDates.add(todayStr);
+
+        const formatDateHelper = (val: any) => {
+            if (!val) return todayStr;
+            if (typeof val === 'string') return val.split('T')[0];
+            if (val instanceof Date) {
+                const y = val.getFullYear();
+                const m = String(val.getMonth() + 1).padStart(2, '0');
+                const d = String(val.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return String(val).split('T')[0];
+        };
+
+        logs.forEach((log: any) => {
+            if (log.date) {
+                uniqueDates.add(formatDateHelper(log.date));
+            }
+        });
+
+        // Map logged attendance by date + user_id
+        const loggedMap = new Set<string>();
+        logs.forEach((log: any) => {
+            const dStr = formatDateHelper(log.date);
+            loggedMap.add(`${dStr}_${log.user_id}`);
+        });
+
+        // 4. Generate Absent entries for active students who didn't clock in on each date
+        const absentLogs: any[] = [];
+        let synthId = -1;
+
+        Array.from(uniqueDates).forEach((dateStr) => {
+            students.forEach((st: any) => {
+                const key = `${dateStr}_${st.id}`;
+                if (!loggedMap.has(key)) {
+                    absentLogs.push({
+                        id: synthId--,
+                        user_id: st.id,
+                        student_name: st.student_name,
+                        profile_pic: st.profile_pic,
+                        student_id: st.student_id,
+                        course: st.course,
+                        date: dateStr,
+                        clock_in: '---',
+                        clock_out: '---',
+                        status: 'Absent',
+                        total_hours: 0,
+                        is_active: 0
+                    });
+                }
+            });
+        });
+
+        // Combine real logs and absent records, sorted by date DESC, student_name ASC
+        const combined = [...logs, ...absentLogs].sort((a, b) => {
+            const dateA = formatDateHelper(a.date);
+            const dateB = formatDateHelper(b.date);
+            if (dateA !== dateB) {
+                return dateB.localeCompare(dateA); // Newest dates first
+            }
+            return (a.student_name || '').localeCompare(b.student_name || '');
+        });
+
+        res.status(200).json({ success: true, data: combined });
     } catch (err) {
+        console.error("GetAllAttendance Error:", err);
         res.status(500).json({ success: false, message: "Database error" });
     }
 };
