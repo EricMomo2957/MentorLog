@@ -46,6 +46,7 @@ interface TaskLog {
     id: number; 
     user_id: number; 
     student_name?: string; 
+    profile_pic?: string;
     title: string; 
     task_description: string; 
     status: 'Pending' | 'In-Progress' | 'Completed'; 
