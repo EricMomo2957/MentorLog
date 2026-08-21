@@ -20,6 +20,43 @@ interface PrintableDTRModalProps {
     monthYear?: string;
 }
 
+const formatTimeString = (timeStr: string | null | undefined): string => {
+    if (!timeStr) return '---';
+    if (timeStr.includes('T')) {
+        const d = new Date(timeStr);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+    }
+    const parts = timeStr.trim().split(':');
+    if (parts.length >= 2) {
+        let hours = parseInt(parts[0], 10);
+        const minutes = parts[1];
+        const seconds = parts[2] ? parts[2].split(' ')[0] : undefined;
+        if (timeStr.toUpperCase().includes('AM') || timeStr.toUpperCase().includes('PM')) {
+            return timeStr;
+        }
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return seconds 
+            ? `${pad(hours)}:${minutes}:${seconds} ${ampm}`
+            : `${pad(hours)}:${minutes} ${ampm}`;
+    }
+    return timeStr;
+};
+
+const formatDateString = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return '--';
+    const cleanDate = dateStr.split('T')[0];
+    const dateObj = new Date(cleanDate + 'T00:00:00');
+    if (!isNaN(dateObj.getTime())) {
+        return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
+    }
+    return cleanDate;
+};
+
 export const PrintableDTRModal = ({
     isOpen,
     onClose,
@@ -108,9 +145,9 @@ export const PrintableDTRModal = ({
                             ) : (
                                 records.map((r, i) => (
                                     <tr key={i} className="text-center border-b border-slate-300 font-sans">
-                                        <td className="border border-slate-400 py-2 px-2 font-mono font-semibold">{r.date.split('T')[0]}</td>
-                                        <td className="border border-slate-400 py-2 px-2 font-mono">{r.clock_in}</td>
-                                        <td className="border border-slate-400 py-2 px-2 font-mono">{r.clock_out || '---'}</td>
+                                        <td className="border border-slate-400 py-2 px-2 font-mono font-semibold">{formatDateString(r.date)}</td>
+                                        <td className="border border-slate-400 py-2 px-2 font-mono">{formatTimeString(r.clock_in)}</td>
+                                        <td className="border border-slate-400 py-2 px-2 font-mono">{formatTimeString(r.clock_out)}</td>
                                         <td className="border border-slate-400 py-2 px-2 font-mono font-bold text-emerald-800">
                                             {Number(r.total_hours).toFixed(2)} hrs
                                         </td>
