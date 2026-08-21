@@ -79,6 +79,43 @@ const StudentDashboard = () => {
     // --- HELPERS ---
     const getTodayDate = useCallback(() => new Date().toISOString().split('T')[0], []);
 
+    const formatTimeString = (timeStr: string | null | undefined): string => {
+        if (!timeStr) return '--';
+        if (timeStr.includes('T')) {
+            const d = new Date(timeStr);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            }
+        }
+        const parts = timeStr.trim().split(':');
+        if (parts.length >= 2) {
+            let hours = parseInt(parts[0], 10);
+            const minutes = parts[1];
+            const seconds = parts[2] ? parts[2].split(' ')[0] : undefined;
+            if (timeStr.toUpperCase().includes('AM') || timeStr.toUpperCase().includes('PM')) {
+                return timeStr;
+            }
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            return seconds 
+                ? `${pad(hours)}:${minutes}:${seconds} ${ampm}`
+                : `${pad(hours)}:${minutes} ${ampm}`;
+        }
+        return timeStr;
+    };
+
+    const formatDateString = (dateStr: string | null | undefined): string => {
+        if (!dateStr) return '--';
+        const cleanDate = dateStr.split('T')[0];
+        const dateObj = new Date(cleanDate + 'T00:00:00');
+        if (!isNaN(dateObj.getTime())) {
+            return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
+        }
+        return cleanDate;
+    };
+
     // --- TOAST AUTO-HIDE ---
     useEffect(() => {
         if (toast) {
@@ -163,7 +200,7 @@ const StudentDashboard = () => {
                     const isLate = response.data.status === 'Late';
                     setToast({ 
                         message: isLate 
-                            ? "Shift started! (Marked as Late Arrival — Clocked in after 8:15 AM)" 
+                            ? "Shift started! (Marked as Late Arrival — Clocked in after 8:30 AM)" 
                             : "Shift started! (On-Time Present)", 
                         type: isLate ? 'warning' : 'success' 
                     });
@@ -458,10 +495,10 @@ const StudentDashboard = () => {
                         <tbody className="divide-y divide-slate-100 text-slate-700">
                             {filteredLogs.length > 0 ? filteredLogs.map((row) => (
                                 <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
-                                    <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{row.date}</td>
-                                    <td className="py-3.5 px-4 font-mono text-emerald-700 font-semibold">{row.clock_in}</td>
+                                    <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{formatDateString(row.date)}</td>
+                                    <td className="py-3.5 px-4 font-mono text-emerald-700 font-semibold">{formatTimeString(row.clock_in)}</td>
                                     <td className="py-3.5 px-4 font-mono text-slate-600">
-                                        {row.clock_out ? row.clock_out : <span className="italic text-blue-600 font-semibold">Active...</span>}
+                                        {row.clock_out ? formatTimeString(row.clock_out) : <span className="italic text-blue-600 font-semibold">Active...</span>}
                                     </td>
                                     <td className="py-3.5 px-4 font-mono font-semibold text-slate-700">
                                         {row.total_hours ? `${Number(row.total_hours).toFixed(2)} hrs` : '--'}
@@ -494,9 +531,9 @@ const StudentDashboard = () => {
                 records={filteredLogs.map(l => ({
                     id: l.id,
                     student_name: localStorage.getItem('userName') || 'Student Intern',
-                    date: l.date,
-                    clock_in: l.clock_in,
-                    clock_out: l.clock_out,
+                    date: formatDateString(l.date),
+                    clock_in: formatTimeString(l.clock_in),
+                    clock_out: l.clock_out ? formatTimeString(l.clock_out) : null,
                     total_hours: Number(l.total_hours) || 0,
                     status: l.status as 'Present' | 'Late' | 'Absent'
                 }))}
