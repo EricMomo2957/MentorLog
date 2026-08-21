@@ -41,6 +41,33 @@ const getInitials = (name?: string) => {
     return name.slice(0, 2).toUpperCase();
 };
 
+const formatTimeString = (timeStr: string | null | undefined): string => {
+    if (!timeStr) return '--';
+    if (timeStr.includes('T')) {
+        const d = new Date(timeStr);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+    }
+    const parts = timeStr.trim().split(':');
+    if (parts.length >= 2) {
+        let hours = parseInt(parts[0], 10);
+        const minutes = parts[1];
+        const seconds = parts[2] ? parts[2].split(' ')[0] : undefined;
+        if (timeStr.toUpperCase().includes('AM') || timeStr.toUpperCase().includes('PM')) {
+            return timeStr;
+        }
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return seconds 
+            ? `${pad(hours)}:${minutes}:${seconds} ${ampm}`
+            : `${pad(hours)}:${minutes} ${ampm}`;
+    }
+    return timeStr;
+};
+
 const ManageAttendance = () => {
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [loading, setLoading] = useState(true);
@@ -103,27 +130,52 @@ const ManageAttendance = () => {
         }
     };
 
+    const getTodayYMD = () => {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
+
+    const parseYMD = (dateStr: string) => {
+        const clean = dateStr.split('T')[0];
+        const parts = clean.split('-');
+        if (parts.length === 3) {
+            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        }
+        return new Date(dateStr);
+    };
+
+    const checkMatchesDate = (rDate: string, range: string) => {
+        if (!rDate || range === 'All') return true;
+        const cleanDate = rDate.split('T')[0];
+        const todayYMD = getTodayYMD();
+
+        if (range === 'Today') {
+            return cleanDate === todayYMD;
+        }
+
+        const recordDate = parseYMD(rDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (range === 'ThisWeek') {
+            const sevenDaysAgo = new Date(today);
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            return recordDate >= sevenDaysAgo;
+        } else if (range === 'ThisMonth') {
+            return recordDate.getMonth() === today.getMonth() && recordDate.getFullYear() === today.getFullYear();
+        }
+
+        return true;
+    };
+
     const filteredRecords = records.filter(r => {
         const matchesSearch = r.student_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
             (r.date && r.date.includes(searchTerm));
         const matchesStatus = filterStatus === 'All' || r.status === filterStatus;
-        
-        let matchesDate = true;
-        if (r.date && dateRange !== 'All') {
-            const recordDate = new Date(r.date.split('T')[0]);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            if (dateRange === 'Today') {
-                matchesDate = recordDate.toDateString() === today.toDateString();
-            } else if (dateRange === 'ThisWeek') {
-                const sevenDaysAgo = new Date(today);
-                sevenDaysAgo.setDate(today.getDate() - 7);
-                matchesDate = recordDate >= sevenDaysAgo;
-            } else if (dateRange === 'ThisMonth') {
-                matchesDate = recordDate.getMonth() === today.getMonth() && recordDate.getFullYear() === today.getFullYear();
-            }
-        }
+        const matchesDate = checkMatchesDate(r.date, dateRange);
 
         return matchesSearch && matchesStatus && matchesDate;
     });
@@ -144,10 +196,12 @@ const ManageAttendance = () => {
         }
     };
 
-    const presentCount = records.filter(r => r.status === 'Present').length;
-    const lateCount = records.filter(r => r.status === 'Late').length;
-    const absentCount = records.filter(r => r.status === 'Absent').length;
-    const totalCount = records.length;
+    const dateScopedRecords = records.filter(r => checkMatchesDate(r.date, dateRange));
+
+    const presentCount = dateScopedRecords.filter(r => r.status === 'Present').length;
+    const lateCount = dateScopedRecords.filter(r => r.status === 'Late').length;
+    const absentCount = dateScopedRecords.filter(r => r.status === 'Absent').length;
+    const totalCount = dateScopedRecords.length;
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
@@ -387,10 +441,10 @@ const ManageAttendance = () => {
                                             <td className="py-3.5 px-4">
                                                 <div className="flex flex-col">
                                                     <span className="font-semibold text-slate-800 flex items-center gap-1">
-                                                        <Clock className="w-3 h-3 text-emerald-600" /> {record.clock_in}
+                                                        <Clock className="w-3 h-3 text-emerald-600" /> {formatTimeString(record.clock_in)}
                                                     </span>
                                                     <span className={`text-[10px] ${record.clock_out ? 'text-slate-500' : 'text-blue-600 font-semibold italic'}`}>
-                                                        {record.clock_out ? `Out: ${record.clock_out}` : 'Active Session'}
+                                                        {record.clock_out ? `Out: ${formatTimeString(record.clock_out)}` : 'Active Session'}
                                                     </span>
                                                 </div>
                                             </td>
