@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
     BarChart, Bar, XAxis, YAxis, CartesianGrid 
 } from 'recharts';
 import { 
     Users, CheckSquare, Clock, 
-    RefreshCw, Search, Plus, X, Megaphone, 
+    RefreshCw, Search, Plus, Megaphone, 
     Calendar as CalendarIcon, MessageSquare, Inbox,
     Hourglass
 } from 'lucide-react';
@@ -98,16 +99,13 @@ const getInitials = (name?: string) => {
 };
 
 const AdminDashboard = () => {
+    const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
     const [logs, setLogs] = useState<AttendanceLog[]>([]);
     const [tasks, setTasks] = useState<TaskLog[]>([]);
     const [analyticsStats, setAnalyticsStats] = useState<SystemStats | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
-    const [formData, setFormData] = useState({ title: '', description: '', due_date: '' });
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
@@ -133,29 +131,6 @@ const AdminDashboard = () => {
     useEffect(() => { 
         fetchAllData(); 
     }, [fetchAllData]);
-
-    const handleAssignTask = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedStudent) return;
-        setIsSubmitting(true);
-
-        try {
-            await api.post('/tasks/assign', {
-                student_id: selectedStudent.id,
-                title: formData.title,
-                task_description: formData.description,
-                due_date: formData.due_date
-            });
-            alert("Task assigned successfully!");
-            setShowModal(false);
-            setFormData({ title: '', description: '', due_date: '' });
-            fetchAllData(); 
-        } catch (error) {
-            console.error(error); 
-        } finally { 
-            setIsSubmitting(false); 
-        }
-    };
 
     // Stats Calculations
     const totalPresentAndLate = logs.filter(l => l.status === 'Present' || l.status === 'Late').length;
@@ -225,25 +200,187 @@ const AdminDashboard = () => {
                 </button>
             </div>
 
-            {/* 7-Metric Stat Summary Cards */}
+            {/* 7-Metric Stat Summary Cards with Light Earth Tone Colors & Click Navigation */}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                 {[
-                    { label: 'Users', val: analyticsStats?.users ?? users.length, icon: Users, color: 'text-blue-600 bg-blue-50 border-blue-200' },
-                    { label: 'Tasks', val: analyticsStats?.tasks ?? tasks.length, icon: CheckSquare, color: 'text-pink-600 bg-pink-50 border-pink-200' },
-                    { label: 'Attendance', val: analyticsStats?.attendance ?? logs.length, icon: Clock, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-                    { label: 'Services', val: analyticsStats?.requests ?? 0, icon: Inbox, color: 'text-violet-600 bg-violet-50 border-violet-200' },
-                    { label: 'Bulletins', val: analyticsStats?.announcements ?? 0, icon: Megaphone, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-                    { label: 'Events', val: analyticsStats?.events ?? 0, icon: CalendarIcon, color: 'text-sky-600 bg-sky-50 border-sky-200' },
-                    { label: 'Feedbacks', val: analyticsStats?.feedbacks ?? 0, icon: MessageSquare, color: 'text-rose-600 bg-rose-50 border-rose-200' },
+                    { 
+                        label: 'Users', 
+                        val: analyticsStats?.users ?? users.length, 
+                        icon: Users, 
+                        path: '/manage-students',
+                        cardBg: 'bg-[#f2f6f3] border-[#d4e2d6] hover:border-[#b0c7b3] hover:shadow-xs', 
+                        iconColor: 'bg-[#e0ece2] border-[#c0d6c3] text-[#2d4a34]',
+                        textColor: 'text-[#243c2a]',
+                        labelColor: 'text-[#486650]'
+                    },
+                    { 
+                        label: 'Tasks', 
+                        val: analyticsStats?.tasks ?? tasks.length, 
+                        icon: CheckSquare, 
+                        path: '/manage-tasks',
+                        cardBg: 'bg-[#fcf4f1] border-[#f4dcd4] hover:border-[#e6b9ab] hover:shadow-xs', 
+                        iconColor: 'bg-[#f7e4dd] border-[#eccdcb] text-[#9c4c36]',
+                        textColor: 'text-[#753424]',
+                        labelColor: 'text-[#9c5645]'
+                    },
+                    { 
+                        label: 'Attendance', 
+                        val: analyticsStats?.attendance ?? logs.length, 
+                        icon: Clock, 
+                        path: '/manage-attendance',
+                        cardBg: 'bg-[#fcf8f1] border-[#f5e6d2] hover:border-[#e6cb9f] hover:shadow-xs', 
+                        iconColor: 'bg-[#f8ead7] border-[#edd6b6] text-[#996825]',
+                        textColor: 'text-[#6e4614]',
+                        labelColor: 'text-[#946e38]'
+                    },
+                    { 
+                        label: 'Services', 
+                        val: analyticsStats?.requests ?? 0, 
+                        icon: Inbox, 
+                        path: '/manage-requests',
+                        cardBg: 'bg-[#f6f4f8] border-[#e4dfed] hover:border-[#c7bed8] hover:shadow-xs', 
+                        iconColor: 'bg-[#eae5f3] border-[#d6cdcf] text-[#59516e]',
+                        textColor: 'text-[#3c364c]',
+                        labelColor: 'text-[#645b7d]'
+                    },
+                    { 
+                        label: 'Bulletins', 
+                        val: analyticsStats?.announcements ?? 0, 
+                        icon: Megaphone, 
+                        path: '/manage-announcements',
+                        cardBg: 'bg-[#faf6ed] border-[#f2e4c9] hover:border-[#dfc99b] hover:shadow-xs', 
+                        iconColor: 'bg-[#f8edd5] border-[#eadbb4] text-[#946b27]',
+                        textColor: 'text-[#694a16]',
+                        labelColor: 'text-[#917036]'
+                    },
+                    { 
+                        label: 'Events', 
+                        val: analyticsStats?.events ?? 0, 
+                        icon: CalendarIcon, 
+                        path: '/admin-calendar',
+                        cardBg: 'bg-[#f2f5f7] border-[#d8e0e4] hover:border-[#b3c2c9] hover:shadow-xs', 
+                        iconColor: 'bg-[#e2eaed] border-[#c7d5db] text-[#3d5a6c]',
+                        textColor: 'text-[#263b48]',
+                        labelColor: 'text-[#4c6a7d]'
+                    },
+                    { 
+                        label: 'Feedbacks', 
+                        val: analyticsStats?.feedbacks ?? 0, 
+                        icon: MessageSquare, 
+                        path: '/manage-feedback',
+                        cardBg: 'bg-[#faf2f4] border-[#f3d7df] hover:border-[#e2b4c2] hover:shadow-xs', 
+                        iconColor: 'bg-[#f6e1e6] border-[#ebc8d1] text-[#9c4b60]',
+                        textColor: 'text-[#6e2f3e]',
+                        labelColor: 'text-[#995364]'
+                    },
                 ].map((stat) => (
-                    <div key={stat.label} className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs text-center hover:border-slate-300 transition-all">
-                        <div className={`w-7 h-7 mx-auto mb-2 rounded-lg border flex items-center justify-center ${stat.color}`}>
+                    <div 
+                        key={stat.label} 
+                        onClick={() => navigate(stat.path)}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer text-center group active:scale-98 ${stat.cardBg}`}
+                    >
+                        <div className={`w-7 h-7 mx-auto mb-2 rounded-lg border flex items-center justify-center transition-transform group-hover:scale-110 ${stat.iconColor}`}>
                             <stat.icon className="w-3.5 h-3.5" />
                         </div>
-                        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-0.5">{stat.label}</p>
-                        <p className="text-xl font-extrabold text-slate-800">{stat.val}</p>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${stat.labelColor}`}>{stat.label}</p>
+                        <p className={`text-xl font-extrabold ${stat.textColor}`}>{stat.val}</p>
                     </div>
                 ))}
+            </div>
+
+            {/* 4 Analytics & Status Charts Positioned ABOVE Intern OJT Hours Tracker */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                {/* 1. System Module Mix */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                            <h3 className="text-xs font-bold text-slate-800">System Modules Data Mix</h3>
+                            <p className="text-[10px] text-slate-400">Data distribution across entities</p>
+                        </div>
+                        <span className="text-[9px] font-semibold uppercase bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">Overview</span>
+                    </div>
+                    <div className="h-44 flex items-center justify-center">
+                        {moduleMixData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={moduleMixData} innerRadius={35} outerRadius={60} paddingAngle={3} dataKey="value">
+                                        {moduleMixData.map((_, index) => (
+                                            <Cell key={`cell-module-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} stroke="#ffffff" strokeWidth={2} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#0f172a', fontSize: '11px' }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <p className="text-slate-400 text-[11px] italic">No telemetry data</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* 2. Attendance Status Breakdown */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                            <h3 className="text-xs font-bold text-slate-800">Attendance Breakdown</h3>
+                            <p className="text-[10px] text-slate-400">Present, Late, Absent ratio</p>
+                        </div>
+                        <span className="text-[9px] font-semibold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">{attendanceRate}%</span>
+                    </div>
+                    <div className="h-44 flex items-center justify-center">
+                        {attendanceBreakdownData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={attendanceBreakdownData} innerRadius={35} outerRadius={60} paddingAngle={3} dataKey="value">
+                                        {attendanceBreakdownData.map((entry, index) => (
+                                            <Cell key={`cell-att-${index}`} fill={entry.name === 'Present' ? '#10b981' : entry.name === 'Late' ? '#f59e0b' : '#ef4444'} stroke="#ffffff" strokeWidth={2} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#0f172a', fontSize: '11px' }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <p className="text-slate-400 text-[11px] italic">No attendance data</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* 3. Task Progress Status */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2">
+                    <div className="border-b border-slate-100 pb-2">
+                        <h3 className="text-xs font-bold text-slate-800">Task Progress Status</h3>
+                        <p className="text-[10px] text-slate-400">Pending, In-Progress, Completed</p>
+                    </div>
+                    <div className="h-44">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={taskProgressData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="status" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                                <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={18} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 4. Service Request Status */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-2">
+                    <div className="border-b border-slate-100 pb-2">
+                        <h3 className="text-xs font-bold text-slate-800">Service Request Status</h3>
+                        <p className="text-[10px] text-slate-400">Pending, Processing, Accepted, Rejected</p>
+                    </div>
+                    <div className="h-44">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={requestStatusData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="status" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                                <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={18} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
             </div>
 
             {/* OJT Intern Required Hours & Remaining (Minus) Hours Table */}
@@ -360,8 +497,8 @@ const AdminDashboard = () => {
                                             {/* Assign Task Action */}
                                             <td className="py-3.5 px-4 text-right">
                                                 <button 
-                                                    onClick={() => { setSelectedStudent(user); setShowModal(true); }}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-xs transition-all shadow-xs"
+                                                    onClick={() => navigate('/manage-tasks', { state: { studentId: user.id, studentName: user.full_name, openModal: true } })}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-xs transition-all shadow-xs active:scale-98"
                                                 >
                                                     <Plus className="w-3.5 h-3.5" /> Assign Task
                                                 </button>
@@ -381,100 +518,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Analytics Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* 1. System Module Mix */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <div>
-                            <h3 className="text-sm font-bold text-slate-800">System Modules Data Mix</h3>
-                            <p className="text-[11px] text-slate-500">Distribution across system entities</p>
-                        </div>
-                        <span className="text-[10px] font-semibold uppercase bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full">Overview</span>
-                    </div>
-                    <div className="h-56 flex items-center justify-center">
-                        {moduleMixData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={moduleMixData} innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
-                                        {moduleMixData.map((_, index) => (
-                                            <Cell key={`cell-module-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} stroke="#ffffff" strokeWidth={2} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#0f172a', fontSize: '12px' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p className="text-slate-400 text-xs italic">No telemetry data recorded yet.</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* 2. Attendance Status Breakdown */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <div>
-                            <h3 className="text-sm font-bold text-slate-800">Attendance Breakdown</h3>
-                            <p className="text-[11px] text-slate-500">Ratio of Present, Late, and Absent logs</p>
-                        </div>
-                        <span className="text-[10px] font-semibold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full">{attendanceRate}% Rate</span>
-                    </div>
-                    <div className="h-56 flex items-center justify-center">
-                        {attendanceBreakdownData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={attendanceBreakdownData} innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
-                                        {attendanceBreakdownData.map((entry, index) => (
-                                            <Cell key={`cell-att-${index}`} fill={entry.name === 'Present' ? '#10b981' : entry.name === 'Late' ? '#f59e0b' : '#ef4444'} stroke="#ffffff" strokeWidth={2} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#0f172a', fontSize: '12px' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p className="text-slate-400 text-xs italic">No attendance data logged yet.</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* 3. Task Progress Overview */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-sm font-bold text-slate-800">Task Progress Status</h3>
-                        <p className="text-[11px] text-slate-500">Pending, In-Progress, and Completed tasks</p>
-                    </div>
-                    <div className="h-56">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={taskProgressData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="status" stroke="#94a3b8" fontSize={11} axisLine={false} tickLine={false} />
-                                <YAxis stroke="#94a3b8" fontSize={11} axisLine={false} tickLine={false} />
-                                <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={24} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* 4. Service Request Status */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-sm font-bold text-slate-800">Service Request Status</h3>
-                        <p className="text-[11px] text-slate-500">Pending, Processing, Accepted, and Rejected requests</p>
-                    </div>
-                    <div className="h-56">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={requestStatusData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="status" stroke="#94a3b8" fontSize={11} axisLine={false} tickLine={false} />
-                                <YAxis stroke="#94a3b8" fontSize={11} axisLine={false} tickLine={false} />
-                                <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={24} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-
             {/* Task Activity Feed */}
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
                 <div className="border-b border-slate-100 pb-3">
@@ -483,75 +526,6 @@ const AdminDashboard = () => {
                 </div>
                 <TaskFeed tasks={tasks} />
             </div>
-
-            {/* Task Assignment Modal */}
-            {showModal && selectedStudent && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
-                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                            <div>
-                                <h3 className="text-base font-bold text-slate-900">Assign Task Directive</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Assignee: <span className="font-semibold text-blue-600">{selectedStudent.full_name}</span></p>
-                            </div>
-                            <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        
-                        <form onSubmit={handleAssignTask} className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600">Task Title</label>
-                                <input 
-                                    required 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white" 
-                                    value={formData.title} 
-                                    onChange={(e) => setFormData({...formData, title: e.target.value})} 
-                                    placeholder="e.g. Prepare Weekly OJT Report" 
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600">Description</label>
-                                <textarea 
-                                    required 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 h-24 outline-none focus:border-blue-500 focus:bg-white resize-none" 
-                                    value={formData.description} 
-                                    onChange={(e) => setFormData({...formData, description: e.target.value})} 
-                                    placeholder="Provide detailed instructions..." 
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600">Due Date</label>
-                                <input 
-                                    required 
-                                    type="date" 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white" 
-                                    value={formData.due_date} 
-                                    onChange={(e) => setFormData({...formData, due_date: e.target.value})} 
-                                />
-                            </div>
-                            
-                            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-                                <button 
-                                    type="button" 
-                                    onClick={() => setShowModal(false)} 
-                                    className="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 font-semibold text-xs hover:bg-slate-200 transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    disabled={isSubmitting} 
-                                    className="px-4 py-2 bg-blue-600 rounded-lg text-white font-semibold text-xs hover:bg-blue-700 transition-all shadow-xs disabled:opacity-50"
-                                >
-                                    {isSubmitting ? 'Assigning...' : 'Assign Task'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
