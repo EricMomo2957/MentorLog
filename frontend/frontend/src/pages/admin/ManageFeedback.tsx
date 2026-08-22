@@ -123,20 +123,20 @@ const ManageFeedback = () => {
                 </div>
             </div>
 
-            {/* Status Metric Cards Grid */}
+            {/* Status Metric Cards Grid with Light Earth Tone Colors */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* 5-Star Reviews */}
                 <div 
                     onClick={() => setFilterCategory('All')}
-                    className="bg-white rounded-2xl border border-slate-100 p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-md cursor-pointer"
+                    className="bg-[#fcf8f1] border-[#f5e6d2] hover:border-[#e6cb9f] rounded-2xl border p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-xs cursor-pointer active:scale-98"
                 >
-                    <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-2.5">
-                        <Star className="w-5 h-5 fill-amber-400" />
+                    <div className="w-11 h-11 rounded-xl bg-[#f8ead7] border border-[#edd6b6] text-[#996825] flex items-center justify-center mb-2.5">
+                        <Star className="w-5 h-5 fill-[#996825]" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#946e38] tracking-wider uppercase mb-1">
                         5-STAR REVIEWS
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#6e4614]">
                         {fiveStarCount}
                     </span>
                 </div>
@@ -144,33 +144,33 @@ const ManageFeedback = () => {
                 {/* Average Rating */}
                 <div 
                     onClick={() => setFilterCategory('All')}
-                    className="bg-white rounded-2xl border border-slate-100 p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-md cursor-pointer"
+                    className="bg-[#f2f6f3] border-[#d4e2d6] hover:border-[#b0c7b3] rounded-2xl border p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-xs cursor-pointer active:scale-98"
                 >
-                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
-                        <Heart className="w-5 h-5 fill-emerald-400" />
+                    <div className="w-11 h-11 rounded-xl bg-[#e0ece2] border border-[#c0d6c3] text-[#2d4a34] flex items-center justify-center mb-2.5">
+                        <Heart className="w-5 h-5 fill-[#2d4a34]" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#486650] tracking-wider uppercase mb-1">
                         AVERAGE RATING
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
-                        {avgRating} <span className="text-xs font-bold text-amber-500">★</span>
+                    <span className="text-3xl font-black text-[#243c2a]">
+                        {avgRating} <span className="text-xs font-bold text-[#946e38]">★</span>
                     </span>
                 </div>
 
                 {/* Bug / Issue Reports */}
                 <div 
                     onClick={() => setFilterCategory(filterCategory === 'Bug Report' ? 'All' : 'Bug Report')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filterCategory === 'Bug Report' ? 'border-rose-400 ring-2 ring-rose-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#faf2f4] ${
+                        filterCategory === 'Bug Report' ? 'border-[#9c4b60] ring-2 ring-[#9c4b60]/20 shadow-xs' : 'border-[#f3d7df] hover:border-[#e2b4c2]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#f6e1e6] border border-[#ebc8d1] text-[#9c4b60] flex items-center justify-center mb-2.5">
                         <Bug className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#995364] tracking-wider uppercase mb-1">
                         BUG REPORTS
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#6e2f3e]">
                         {bugCount}
                     </span>
                 </div>
@@ -178,15 +178,15 @@ const ManageFeedback = () => {
                 {/* Total Feedback */}
                 <div 
                     onClick={() => setFilterCategory('All')}
-                    className="bg-white rounded-2xl border border-slate-100 p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-md cursor-pointer"
+                    className="bg-[#f6f4f8] border-[#e4dfed] hover:border-[#c7bed8] rounded-2xl border p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all hover:shadow-xs cursor-pointer active:scale-98"
                 >
-                    <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#eae5f3] border border-[#d6cdcf] text-[#59516e] flex items-center justify-center mb-2.5">
                         <MessageSquare className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#645b7d] tracking-wider uppercase mb-1">
                         TOTAL FEEDBACKS
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#3c364c]">
                         {totalCount}
                     </span>
                 </div>
