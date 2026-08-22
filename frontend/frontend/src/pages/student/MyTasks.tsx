@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import { 
     CheckCircle2, Clock, AlertCircle, Filter, Download, 
-    ChevronDown, Calendar, CheckSquare, RefreshCw 
+    ChevronDown, Calendar, CheckSquare, RefreshCw, FileText, Image as ImageIcon, ExternalLink, Paperclip
 } from 'lucide-react';
 
 interface Task {
@@ -12,9 +12,23 @@ interface Task {
     task_description: string;
     status: 'Pending' | 'In-Progress' | 'Completed';
     due_date: string;
+    attachment_url?: string;
+    attachment_name?: string;
 }
 
 type FilterType = 'All' | 'Pending' | 'In-Progress' | 'Completed';
+
+const getFullPicUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `http://localhost:5000${path}`;
+};
+
+const isImageFile = (filename?: string) => {
+    if (!filename) return false;
+    const ext = filename.toLowerCase();
+    return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.webp') || ext.endsWith('.gif');
+};
 
 const MyTasks = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -122,7 +136,7 @@ const MyTasks = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">My Assigned OJT Tasks</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Track, complete, and update the status of your assigned internship directives</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Track, complete, view attachments, and update the status of your assigned internship directives</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -137,7 +151,7 @@ const MyTasks = () => {
                 </div>
             </div>
 
-            {/* Filter & Control Bar (Automoor Style) */}
+            {/* Filter & Control Bar */}
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
                 
                 {/* Left Filter Pill Buttons */}
@@ -171,7 +185,7 @@ const MyTasks = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredTasks.map((task) => (
                         <div key={task.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 <div className="flex justify-between items-start">
                                     {getStatusBadge(task.status)}
                                     <span className="text-[10px] font-mono text-slate-400">ID: #{task.id}</span>
@@ -179,6 +193,60 @@ const MyTasks = () => {
                                 
                                 <h3 className="text-base font-bold text-slate-900 leading-snug">{task.title}</h3>
                                 <p className="text-xs text-slate-600 leading-relaxed">{task.task_description || 'No additional details provided.'}</p>
+
+                                {/* Attached Photo or Document Resource Section */}
+                                {task.attachment_url && (
+                                    <div className="pt-3 border-t border-slate-100 space-y-2">
+                                        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            <Paperclip className="w-3.5 h-3.5 text-blue-600" />
+                                            <span>OJT Resource Attachment</span>
+                                        </div>
+
+                                        {isImageFile(task.attachment_name || task.attachment_url) ? (
+                                            <div className="space-y-2">
+                                                <a 
+                                                    href={getFullPicUrl(task.attachment_url)} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="block rounded-lg overflow-hidden border border-slate-200 group"
+                                                >
+                                                    <img 
+                                                        src={getFullPicUrl(task.attachment_url)} 
+                                                        alt={task.attachment_name || 'Task Resource Photo'} 
+                                                        className="w-full max-h-48 object-cover group-hover:scale-102 transition-transform duration-300"
+                                                    />
+                                                </a>
+                                                <a 
+                                                    href={getFullPicUrl(task.attachment_url)} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    download
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all shadow-2xs"
+                                                >
+                                                    <Download className="w-3.5 h-3.5" />
+                                                    <span className="truncate max-w-[200px]">Download {task.attachment_name || 'Resource Photo'}</span>
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <a 
+                                                href={getFullPicUrl(task.attachment_url)} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                download
+                                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all w-full justify-between group shadow-2xs"
+                                            >
+                                                <div className="flex items-center gap-2 truncate">
+                                                    <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                                                    <span className="truncate font-bold">{task.attachment_name || 'Attached Document Resource'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <Download className="w-3.5 h-3.5 text-blue-600 group-hover:translate-y-0.5 transition-transform" />
+                                                    <span className="text-[10px] text-blue-600 font-bold uppercase">Download</span>
+                                                </div>
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex items-center justify-between pt-3 border-t border-slate-100">
