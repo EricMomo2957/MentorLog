@@ -14,4 +14,23 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+// Ensure tasks table has attachment_url and attachment_name columns
+const initDb = async () => {
+    try {
+        await pool.query(`
+            ALTER TABLE tasks 
+            ADD COLUMN IF NOT EXISTS attachment_url VARCHAR(255) NULL,
+            ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255) NULL
+        `);
+    } catch (err) {
+        try {
+            await pool.query(`ALTER TABLE tasks ADD COLUMN attachment_url VARCHAR(255) NULL`);
+        } catch (_) {}
+        try {
+            await pool.query(`ALTER TABLE tasks ADD COLUMN attachment_name VARCHAR(255) NULL`);
+        } catch (_) {}
+    }
+};
+initDb();
+
 export default pool;
