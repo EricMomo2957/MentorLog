@@ -61,6 +61,7 @@ router.post(
 );
 
 // GET: All users (Students & Admins) see the news
+router.get('/', getAnnouncements);
 router.get('/all', getAnnouncements);
 
 // PUT: Admin updates an existing announcement (handles text and optional new image)
