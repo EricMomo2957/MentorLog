@@ -23,8 +23,19 @@ const storage = multer.diskStorage({
     }
 });
 
+const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowedTypes = /jpeg|jpg|png|webp|pdf|doc|docx|txt/;
+    const extName = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    if (extName) {
+        cb(null, true);
+    } else {
+        cb(new Error("Only valid document and image files are allowed!"));
+    }
+};
+
 const upload = multer({ 
     storage: storage,
+    fileFilter: fileFilter,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB Limit
 });
 
