@@ -18,6 +18,9 @@ import askQuestionRoutes from './routes/AskQuestionRoutes';
 import documentSubmissionRoutes from './routes/documentSubmissionRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+
 // Load environment variables
 dotenv.config();
 
@@ -25,10 +28,28 @@ dotenv.config();
 const app = express();
 
 // ==========================================
-// Middleware
+// Security & Core Middleware
 // ==========================================
+// 1. Helmet Security Headers (configured to allow static image uploads)
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// 2. CORS & Body Parser
 app.use(cors());
 app.use(express.json());
+
+// 3. Brute-Force Rate Limiter for Auth Routes (30 requests / 15 mins)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many attempts from this IP. Please try again in 15 minutes." }
+});
+
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // Serve static files for uploads (OCR Schedules, User Avatars, etc.)
 // Using path.resolve ensures it works regardless of where you start the process
