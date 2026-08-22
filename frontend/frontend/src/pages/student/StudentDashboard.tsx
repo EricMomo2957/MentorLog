@@ -3,7 +3,7 @@ import api from '../../services/api';
 import { PrintableDTRModal } from '../../components/PrintableDTRModal';
 import { 
     Clock, Play, Square, CheckCircle2, ShieldCheck, AlertCircle, AlertTriangle, 
-    Calendar, CheckSquare, Megaphone, FileText, ArrowRight, Printer, Filter 
+    Printer, Filter 
 } from 'lucide-react';
 
 // --- INTERFACES ---
@@ -50,6 +50,7 @@ const StudentDashboard = () => {
     const [activeLogItem, setActiveLogItem] = useState<AttendanceLog | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
+    const [allTasks, setAllTasks] = useState<TaskItem[]>([]);
     const [pendingTasks, setPendingTasks] = useState<TaskItem[]>([]);
     const [latestAnnouncement, setLatestAnnouncement] = useState<AnnouncementItem | null>(null);
 
@@ -132,7 +133,7 @@ const StudentDashboard = () => {
                 api.get('/attendance/weekly-report'),
                 api.get('/auth/profile'),
                 api.get('/tasks/my-tasks').catch(() => ({ data: [] })),
-                api.get('/announcements').catch(() => ({ data: [] }))
+                api.get('/announcements/all').catch(() => ({ data: [] }))
             ]);
 
             const historyData = historyRes.data;
@@ -146,6 +147,7 @@ const StudentDashboard = () => {
             }
 
             if (Array.isArray(taskData)) {
+                setAllTasks(taskData);
                 setPendingTasks(taskData.filter((t: TaskItem) => t.status !== 'Completed'));
             }
 
@@ -242,6 +244,14 @@ const StudentDashboard = () => {
     };
 
     const progressPercentage = Math.min((report.accumulated_hours / totalTargetHours) * 100, 100);
+
+    const presentCount = logs.filter(l => l.status === 'Present').length;
+    const lateCount = logs.filter(l => l.status === 'Late').length;
+    const absentCount = logs.filter(l => l.status === 'Absent').length;
+
+    const pendingTasksCount = allTasks.filter(t => t.status === 'Pending').length;
+    const inProgressTasksCount = allTasks.filter(t => t.status === 'In-Progress' || t.status === 'In-Process').length;
+    const completedTasksCount = allTasks.filter(t => t.status === 'Completed').length;
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
@@ -360,7 +370,7 @@ const StudentDashboard = () => {
                 </div>
 
                 {/* Attendance Summary */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-3">
                     <div className="flex justify-between items-center">
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Attendance Verification</span>
                         <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">
@@ -368,20 +378,27 @@ const StudentDashboard = () => {
                         </span>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <span className="text-4xl font-extrabold text-slate-900 font-mono tracking-tight">
-                                {report.days_present}
+                    {/* Present, Late, and Absent Breakdown Counters */}
+                    <div className="grid grid-cols-3 gap-2.5 text-center pt-1">
+                        <div className="bg-emerald-50/80 border border-emerald-200/80 p-3 rounded-xl">
+                            <span className="text-2xl font-extrabold text-emerald-700 font-mono block">
+                                {presentCount}
                             </span>
-                            <span className="text-sm font-semibold text-slate-500 ml-2">Days Present</span>
+                            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block mt-0.5">Present</span>
                         </div>
 
-                        <div className="text-right">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block border ${
-                                report.days_late > 0 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-slate-600 bg-slate-100 border-slate-200'
-                            }`}>
-                                {report.days_late} Late Arrivals
+                        <div className="bg-amber-50/80 border border-amber-200/80 p-3 rounded-xl">
+                            <span className="text-2xl font-extrabold text-amber-700 font-mono block">
+                                {lateCount}
                             </span>
+                            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block mt-0.5">Late</span>
+                        </div>
+
+                        <div className="bg-rose-50/80 border border-rose-200/80 p-3 rounded-xl">
+                            <span className="text-2xl font-extrabold text-rose-700 font-mono block">
+                                {absentCount}
+                            </span>
+                            <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider block mt-0.5">Absent</span>
                         </div>
                     </div>
                 </div>
@@ -390,36 +407,53 @@ const StudentDashboard = () => {
             {/* Overview Grid: Pending Tasks & Office Bulletin */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Pending Tasks Widget */}
+                {/* Task Directives Overview Widget with Breakdown */}
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
                     <div>
-                        <div className="flex justify-between items-center mb-3 pb-2.5 border-b border-slate-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-100">
                             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                                📌 Pending Assigned Directives
+                                📌 Assigned Directives & Status
                             </h4>
-                            {pendingTasks.length > 0 && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                    {pendingTasks.length} Pending
+
+                            {/* Task Breakdown Badges: Pending, In-Progress, Completed */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                    {pendingTasksCount} Pending
                                 </span>
-                            )}
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                    {inProgressTasksCount} In-Progress
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {completedTasksCount} Completed
+                                </span>
+                            </div>
                         </div>
 
                         {pendingTasks.length > 0 ? (
                             <div className="space-y-2">
                                 {pendingTasks.slice(0, 3).map((task) => (
                                     <div key={task.id} className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 flex items-center justify-between">
-                                        <div className="space-y-0.5 max-w-[70%]">
-                                            <p className="text-xs font-bold text-slate-900 truncate">{task.title}</p>
+                                        <div className="space-y-0.5 max-w-[65%]">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`inline-block px-1.5 py-0.2 text-[9px] font-bold border rounded ${
+                                                    task.status === 'In-Progress' || task.status === 'In-Process'
+                                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                                }`}>
+                                                    {task.status}
+                                                </span>
+                                                <p className="text-xs font-bold text-slate-900 truncate">{task.title}</p>
+                                            </div>
                                             <p className="text-[11px] text-slate-500 truncate">{task.task_description || 'No description'}</p>
                                         </div>
-                                        <span className="text-[10px] font-mono font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                                        <span className="text-[10px] font-mono font-semibold text-slate-600 bg-white px-2 py-1 rounded border border-slate-200">
                                             Due {task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
                                         </span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-slate-400 text-xs italic py-6 text-center">No pending tasks assigned.</p>
+                            <p className="text-slate-400 text-xs italic py-6 text-center">No active task directives assigned.</p>
                         )}
                     </div>
                 </div>
