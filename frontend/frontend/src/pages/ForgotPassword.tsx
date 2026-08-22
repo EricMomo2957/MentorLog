@@ -28,18 +28,33 @@ const ForgotPassword = () => {
 
     return (
         <div className="h-screen w-full flex bg-[#020617] text-slate-200 font-sans overflow-hidden">
-            <div className="hidden lg:flex lg:w-1/2 h-full relative overflow-hidden flex-col items-center justify-center p-12 bg-linear-to-br from-[#0f172a] to-[#020617] border-r border-slate-800/50">
-                <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full -ml-48 -mt-48" />
+            {/* --- LEFT SIDE: VISUAL BRANDING --- */}
+            <div className="hidden lg:flex lg:w-1/2 h-full relative overflow-hidden flex-col justify-center p-12 lg:p-16 border-r border-slate-800/50">
+                {/* Background Image */}
+                <img 
+                    src={ojtPicture} 
+                    alt="OJT Background" 
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+
+                {/* Dark Overlays & Gradients for Contrast */}
+                <div className="absolute inset-0 bg-linear-to-t from-[#020617] via-[#020617]/85 to-[#020617]/50" />
+                <div className="absolute inset-0 bg-blue-950/30 mix-blend-overlay" />
+
+                {/* Glow Effects */}
+                <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/20 blur-[120px] rounded-full -ml-48 -mt-48 pointer-events-none" />
+                <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-600/20 blur-[120px] rounded-full -mr-48 -mb-48 pointer-events-none" />
+
+                {/* Content over background */}
                 <div className="relative z-10 max-w-lg">
-                    <img src={mentorLogLogo} alt="Logo" className="w-16 h-16 mb-6 drop-shadow-2xl" />
-                    <h1 className="text-5xl font-black tracking-tighter text-white mb-4 leading-tight">
+                    <img src={mentorLogLogo} alt="Logo" className="w-16 h-16 mb-8 drop-shadow-2xl" />
+                    <h1 className="text-5xl lg:text-6xl font-black tracking-tighter text-white mb-6 leading-tight">
                         Secure your <br />
                         <span className="bg-linear-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent italic">Account Access.</span>
                     </h1>
-                    <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
-                        {/* FIX: Changed max-h-[320px] to max-h-80 */}
-                        <img src={ojtPicture} alt="OJT" className="w-full h-auto max-h-80 object-cover" />
-                    </div>
+                    <p className="text-lg text-slate-300 font-medium leading-relaxed">
+                        Reset your password and regain seamless access to your MentorLog internship dashboard.
+                    </p>
                 </div>
             </div>
 

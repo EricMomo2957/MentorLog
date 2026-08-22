@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserCircle, Mail, Lock, Key } from 'lucide-react'; 
 import mentorLogLogo from '../assets/mentorlogOption.png'; 
+import ojtPicture from '../assets/ojt-picture.jpg';
 import api from '../services/api';
 
 const Register = () => {
@@ -52,29 +53,42 @@ const Register = () => {
     return (
         <div className="min-h-screen flex bg-[#020617] text-slate-200 font-sans">
             {/* --- LEFT SIDE: BRANDING --- */}
-            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col items-center justify-center p-12 bg-linear-to-br from-[#0f172a] to-[#020617] border-r border-slate-800/50">
-                <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full -ml-48 -mt-48" />
-                <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-600/10 blur-[120px] rounded-full -mr-48 -mb-48" />
+            <div className="hidden lg:flex lg:w-1/2 min-h-screen relative overflow-hidden flex-col justify-center p-12 lg:p-16 border-r border-slate-800/50">
+                {/* Background Image */}
+                <img 
+                    src={ojtPicture} 
+                    alt="OJT Background" 
+                    className="absolute inset-0 w-full h-full object-cover object-center"
+                />
 
+                {/* Dark Overlays & Gradients for Contrast */}
+                <div className="absolute inset-0 bg-linear-to-t from-[#020617] via-[#020617]/85 to-[#020617]/50" />
+                <div className="absolute inset-0 bg-blue-950/30 mix-blend-overlay" />
+
+                {/* Glow Effects */}
+                <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/20 blur-[120px] rounded-full -ml-48 -mt-48 pointer-events-none" />
+                <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-600/20 blur-[120px] rounded-full -mr-48 -mb-48 pointer-events-none" />
+
+                {/* Content over background */}
                 <div className="relative z-10 max-w-lg">
                     <img src={mentorLogLogo} alt="Logo" className="w-20 h-20 mb-8 drop-shadow-2xl" />
-                    <h1 className="text-6xl font-black tracking-tighter text-white mb-6 leading-tight">
+                    <h1 className="text-5xl lg:text-6xl font-black tracking-tighter text-white mb-6 leading-tight">
                         Start your <br />
-                        <span className="bg-linear-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">Professional Journey.</span>
+                        <span className="bg-linear-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent italic">Professional Journey.</span>
                     </h1>
-                    <p className="text-lg text-slate-400 font-medium leading-relaxed mb-10">
+                    <p className="text-lg text-slate-300 font-medium leading-relaxed mb-10">
                         Join the platform designed for modern OJT programs. Manage your tasks, track your hours, and excel in your internship.
                     </p>
                     
                     <div className="flex items-center gap-6">
                         <div className="flex -space-x-3">
                             {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="w-10 h-10 rounded-full border-2 border-[#020617] bg-slate-800 flex items-center justify-center text-xs font-bold">
+                                <div key={i} className="w-10 h-10 rounded-full border-2 border-[#020617] bg-slate-800/80 backdrop-blur-sm flex items-center justify-center text-xs font-bold text-white">
                                     {String.fromCharCode(64 + i)}
                                 </div>
                             ))}
                         </div>
-                        <p className="text-sm text-slate-500 font-bold tracking-wide">TRUSTED BY 500+ INTERNS</p>
+                        <p className="text-sm text-slate-300 font-bold tracking-wide">TRUSTED BY 500+ INTERNS</p>
                     </div>
                 </div>
             </div>
