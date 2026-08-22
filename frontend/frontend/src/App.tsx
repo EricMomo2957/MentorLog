@@ -18,7 +18,6 @@ import AdminCalendar from './pages/admin/AdminCalendar';
 import ManageRequest from './pages/admin/ManageRequest';
 import ManageFeedback from './pages/admin/ManageFeedback';
 import ManageAnnouncement from './pages/admin/ManageAnnouncement';
-import ReportAnalytics from './pages/admin/ReportAnalytics';
 import ManageForgotPassword from './pages/admin/ManageForgotPassword';
 import ManageAskQuestion from './pages/admin/ManageAskQuestion';
 import ManageSubmission from './pages/admin/ManageSubmission';
@@ -62,7 +61,6 @@ function App() {
           { path: "/admin-profile", element: <AdminProfile /> }, 
           { path: "/admin-settings", element: <AdminSettings /> },
           { path: "/manage-feedback", element: <ManageFeedback /> },
-          { path: "/admin/reports", element: <ReportAnalytics /> },
           { path: "/manage-announcements", element: <ManageAnnouncement /> },
           { path: "/manage-forgot-password", element: <ManageForgotPassword /> },
           { path: "/admin/ask-question", element: <ManageAskQuestion /> },
