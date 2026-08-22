@@ -3,7 +3,7 @@ import api from '../../services/api';
 import { PrintableDTRModal } from '../../components/PrintableDTRModal';
 import { 
     Clock, CheckCircle2, AlertCircle, XCircle, Search, 
-    Filter, Download, RefreshCw, ChevronLeft, ChevronRight, Users, Printer 
+    Filter, Download, RefreshCw, ChevronLeft, ChevronRight, Printer 
 } from 'lucide-react';
 
 interface AttendanceRecord {
