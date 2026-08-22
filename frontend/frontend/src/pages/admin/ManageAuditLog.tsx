@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
     Search, RefreshCw, Clock, HardDrive, 
-    Filter, Download, ChevronLeft, ChevronRight 
+    Filter, Download, ChevronLeft, ChevronRight, ShieldAlert
 } from 'lucide-react';
 
 interface AuditLog {
@@ -127,6 +127,81 @@ const ManageAuditLog = () => {
                         <Download className="w-4 h-4" />
                         <span>Export Logs</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid with Light Earth Tone Colors */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Create Events */}
+                <div 
+                    onClick={() => setFilterAction(filterAction === 'CREATE' ? 'All' : 'CREATE')}
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f6f3] ${
+                        filterAction === 'CREATE' ? 'border-[#2d4a34] ring-2 ring-[#2d4a34]/20 shadow-xs' : 'border-[#d4e2d6] hover:border-[#b0c7b3]'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-[#e0ece2] border border-[#c0d6c3] text-[#2d4a34] flex items-center justify-center mb-2.5">
+                        <ShieldAlert className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#486650] tracking-wider uppercase mb-1">
+                        CREATE ACTIONS
+                    </span>
+                    <span className="text-3xl font-black text-[#243c2a]">
+                        {logs.filter(l => l.action?.toUpperCase() === 'CREATE').length}
+                    </span>
+                </div>
+
+                {/* Update Events */}
+                <div 
+                    onClick={() => setFilterAction(filterAction === 'UPDATE' ? 'All' : 'UPDATE')}
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#fcf8f1] ${
+                        filterAction === 'UPDATE' ? 'border-[#996825] ring-2 ring-[#996825]/20 shadow-xs' : 'border-[#f5e6d2] hover:border-[#e6cb9f]'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-[#f8ead7] border border-[#edd6b6] text-[#996825] flex items-center justify-center mb-2.5">
+                        <RefreshCw className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#946e38] tracking-wider uppercase mb-1">
+                        UPDATE ACTIONS
+                    </span>
+                    <span className="text-3xl font-black text-[#6e4614]">
+                        {logs.filter(l => l.action?.toUpperCase() === 'UPDATE').length}
+                    </span>
+                </div>
+
+                {/* Delete Events */}
+                <div 
+                    onClick={() => setFilterAction(filterAction === 'DELETE' ? 'All' : 'DELETE')}
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#faf2f4] ${
+                        filterAction === 'DELETE' ? 'border-[#9c4b60] ring-2 ring-[#9c4b60]/20 shadow-xs' : 'border-[#f3d7df] hover:border-[#e2b4c2]'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-[#f6e1e6] border border-[#ebc8d1] text-[#9c4b60] flex items-center justify-center mb-2.5">
+                        <ShieldAlert className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#995364] tracking-wider uppercase mb-1">
+                        DELETE ACTIONS
+                    </span>
+                    <span className="text-3xl font-black text-[#6e2f3e]">
+                        {logs.filter(l => l.action?.toUpperCase() === 'DELETE').length}
+                    </span>
+                </div>
+
+                {/* Total Audit Logs */}
+                <div 
+                    onClick={() => setFilterAction('All')}
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f5f7] ${
+                        filterAction === 'All' ? 'border-[#3d5a6c] ring-2 ring-[#3d5a6c]/20 shadow-xs' : 'border-[#d8e0e4] hover:border-[#b3c2c9]'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-[#e2eaed] border border-[#c7d5db] text-[#3d5a6c] flex items-center justify-center mb-2.5">
+                        <ShieldAlert className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#4c6a7d] tracking-wider uppercase mb-1">
+                        TOTAL AUDIT TRAIL
+                    </span>
+                    <span className="text-3xl font-black text-[#263b48]">
+                        {logs.length}
+                    </span>
                 </div>
             </div>
 
