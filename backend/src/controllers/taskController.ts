@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import pool from '../config/db';
 import { logAction } from '../utils/logger';
 import { createNotification } from './notificationController';
+import fs from 'fs';
+import path from 'path';
 
 interface AuthRequest extends Request {
     user?: {
@@ -72,6 +74,8 @@ export const getAllTasks = async (req: Request, res: Response) => {
                 t.task_description, 
                 t.status,
                 t.due_date, 
+                t.attachment_url,
+                t.attachment_name,
                 u.full_name as student_name,
                 u.profile_pic 
             FROM tasks t
@@ -112,20 +116,24 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * 5. Admin Assigns a Task to a Specific Student
+ * 5. Admin Assigns a Task to a Specific Student (Supports Photo & Document Attachment)
  */
 export const assignTask = async (req: AuthRequest, res: Response) => {
     const { student_id, user_id, title, task_description, due_date } = req.body;
     const targetUserId = student_id || user_id;
 
+    const attachmentUrl = req.file ? `/uploads/tasks/${req.file.filename}` : null;
+    const attachmentName = req.file ? req.file.originalname : null;
+
     if (!targetUserId || (!title && !task_description)) {
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         return res.status(400).json({ success: false, message: 'Student ID and Task details are required.' });
     }
 
     try {
         await pool.query(
-            'INSERT INTO tasks (user_id, title, task_description, status, due_date) VALUES (?, ?, ?, "Pending", ?)',
-            [targetUserId, title || 'New Assignment', task_description || '', due_date || new Date()]
+            'INSERT INTO tasks (user_id, title, task_description, status, due_date, attachment_url, attachment_name) VALUES (?, ?, ?, "Pending", ?, ?, ?)',
+            [targetUserId, title || 'New Assignment', task_description || '', due_date || new Date(), attachmentUrl, attachmentName]
         );
 
         await createNotification(
@@ -140,12 +148,13 @@ export const assignTask = async (req: AuthRequest, res: Response) => {
         res.status(201).json({ success: true, message: 'Task assigned to student successfully!' });
     } catch (error) {
         console.error("Error in assignTask:", error);
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ success: false, message: 'Error assigning task.' });
     }
 };
 
 /**
- * 6. Update Task (Admin/Mentor)
+ * 6. Update Task (Admin/Mentor, Supports Updating Attachments)
  */
 export const updateTask = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
@@ -154,16 +163,38 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     const targetUserId = rawUserId && !isNaN(Number(rawUserId)) ? Number(rawUserId) : null;
 
     try {
-        if (targetUserId) {
-            await pool.query(
-                'UPDATE tasks SET title = ?, task_description = ?, due_date = ?, status = ?, user_id = ? WHERE id = ?',
-                [title, task_description, due_date, status || 'Pending', targetUserId, id]
-            );
+        let attachmentUrl = null;
+        let attachmentName = null;
+
+        if (req.file) {
+            attachmentUrl = `/uploads/tasks/${req.file.filename}`;
+            attachmentName = req.file.originalname;
+        }
+
+        if (req.file) {
+            if (targetUserId) {
+                await pool.query(
+                    'UPDATE tasks SET title = ?, task_description = ?, due_date = ?, status = ?, user_id = ?, attachment_url = ?, attachment_name = ? WHERE id = ?',
+                    [title, task_description, due_date, status || 'Pending', targetUserId, attachmentUrl, attachmentName, id]
+                );
+            } else {
+                await pool.query(
+                    'UPDATE tasks SET title = ?, task_description = ?, due_date = ?, status = ?, attachment_url = ?, attachment_name = ? WHERE id = ?',
+                    [title, task_description, due_date, status || 'Pending', attachmentUrl, attachmentName, id]
+                );
+            }
         } else {
-            await pool.query(
-                'UPDATE tasks SET title = ?, task_description = ?, due_date = ?, status = ? WHERE id = ?',
-                [title, task_description, due_date, status || 'Pending', id]
-            );
+            if (targetUserId) {
+                await pool.query(
+                    'UPDATE tasks SET title = ?, task_description = ?, due_date = ?, status = ?, user_id = ? WHERE id = ?',
+                    [title, task_description, due_date, status || 'Pending', targetUserId, id]
+                );
+            } else {
+                await pool.query(
+                    'UPDATE tasks SET title = ?, task_description = ?, due_date = ?, status = ? WHERE id = ?',
+                    [title, task_description, due_date, status || 'Pending', id]
+                );
+            }
         }
 
         await logAction(req.user?.id || null, 'UPDATE', 'Task Directives', `Updated task directive #${id}: ${title}`);
@@ -171,6 +202,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
         res.status(200).json({ success: true, message: 'Task updated successfully.' });
     } catch (error) {
         console.error("Error in updateTask:", error);
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ success: false, message: 'Error updating task.' });
     }
 };
@@ -198,7 +230,7 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
         res.status(200).json({ success: true, message: 'Task status updated successfully.' });
     } catch (error) {
         console.error("Error in updateTaskStatus:", error);
-        res.status(500).json({ success: false, message: 'Error updating task status.' });
+        res.status(500).json({ message: 'Error updating task status.' });
     }
 };
 
@@ -209,6 +241,12 @@ export const deleteTask = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
     try {
+        const [rows]: any = await pool.query('SELECT attachment_url FROM tasks WHERE id = ?', [id]);
+        if (rows.length > 0 && rows[0].attachment_url) {
+            const filePath = path.join(__dirname, '../../', rows[0].attachment_url);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+
         await pool.query('DELETE FROM tasks WHERE id = ?', [id]);
 
         await logAction(req.user?.id || null, 'DELETE', 'Task Directives', `Deleted task directive #${id}`);
