@@ -34,16 +34,17 @@ app.use(express.json());
 // Using path.resolve ensures it works regardless of where you start the process
 app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
-// ==========================================
-// API Routes
-// ==========================================
+import { checkDbConnection } from './config/db';
 
-/**
- * Note: Your Audit Logs and Admin Profile routes are nested inside adminRoutes.
- * They are now accessible at:
- * - GET /api/admin/audit-logs
- * - PUT /api/admin/profile/:id
- */
+// Health Check Endpoint
+app.get('/api/health', async (_req, res) => {
+    const isDbConnected = await checkDbConnection();
+    res.status(isDbConnected ? 200 : 503).json({
+        status: 'UP',
+        database: isDbConnected ? 'CONNECTED' : 'DISCONNECTED',
+        timestamp: new Date().toISOString()
+    });
+});
 
 // 1. Authentication
 app.use('/api/auth', authRoutes);
