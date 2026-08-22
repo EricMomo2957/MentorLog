@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import { 
-    MessageSquare, Send, Trash2, Edit3, Search, Filter, Download
+    MessageSquare, Send, Trash2, Edit3, Search, Download, Clock, CheckCircle2, HelpCircle
 } from 'lucide-react';
 
 interface Question {
@@ -168,6 +168,63 @@ const ManageAskQuestion = () => {
                         <Download className="w-4 h-4" />
                         <span>Export Inbox</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid with Light Earth Tone Colors */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Pending Inquiries */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'pending' ? 'All' : 'pending')}
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#fcf8f1] ${
+                        filterStatus === 'pending' ? 'border-[#996825] ring-2 ring-[#996825]/20 shadow-xs' : 'border-[#f5e6d2] hover:border-[#e6cb9f]'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-[#f8ead7] border border-[#edd6b6] text-[#996825] flex items-center justify-center mb-2.5">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#946e38] tracking-wider uppercase mb-1">
+                        PENDING INQUIRIES
+                    </span>
+                    <span className="text-3xl font-black text-[#6e4614]">
+                        {questions.filter(q => q.status === 'pending').length}
+                    </span>
+                </div>
+
+                {/* Answered Inquiries */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'replied' ? 'All' : 'replied')}
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f6f3] ${
+                        filterStatus === 'replied' ? 'border-[#2d4a34] ring-2 ring-[#2d4a34]/20 shadow-xs' : 'border-[#d4e2d6] hover:border-[#b0c7b3]'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-[#e0ece2] border border-[#c0d6c3] text-[#2d4a34] flex items-center justify-center mb-2.5">
+                        <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#486650] tracking-wider uppercase mb-1">
+                        ANSWERED INQUIRIES
+                    </span>
+                    <span className="text-3xl font-black text-[#243c2a]">
+                        {questions.filter(q => q.status === 'replied').length}
+                    </span>
+                </div>
+
+                {/* Total Threads */}
+                <div 
+                    onClick={() => setFilterStatus('All')}
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f6f4f8] ${
+                        filterStatus === 'All' ? 'border-[#59516e] ring-2 ring-[#59516e]/20 shadow-xs' : 'border-[#e4dfed] hover:border-[#c7bed8]'
+                    }`}
+                >
+                    <div className="w-11 h-11 rounded-xl bg-[#eae5f3] border border-[#d6cdcf] text-[#59516e] flex items-center justify-center mb-2.5">
+                        <HelpCircle className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#645b7d] tracking-wider uppercase mb-1">
+                        TOTAL THREADS
+                    </span>
+                    <span className="text-3xl font-black text-[#3c364c]">
+                        {questions.length}
+                    </span>
                 </div>
             </div>
 
