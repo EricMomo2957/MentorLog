@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Clock, ShieldCheck, Save, MapPin, Lock } from 'lucide-react';
+import { Settings, Clock, Save, Lock } from 'lucide-react';
 
 const AdminSettings = () => {
     const [settings, setSettings] = useState({

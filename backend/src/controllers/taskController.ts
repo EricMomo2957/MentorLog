@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/db';
 import { logAction } from '../utils/logger';
-import { createNotification } from './notificationController';
+import { createNotification, notifyAdmins } from './notificationController';
 import fs from 'fs';
 import path from 'path';
 
@@ -220,10 +220,25 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
     }
 
     try {
+        const [tRows]: any = await pool.query(
+            'SELECT t.title, u.full_name FROM tasks t JOIN users u ON t.user_id = u.id WHERE t.id = ?',
+            [targetId]
+        );
+
         await pool.query(
             'UPDATE tasks SET status = ? WHERE id = ?',
             [status, targetId]
         );
+
+        if (tRows && tRows.length > 0) {
+            const studentName = tRows[0].full_name;
+            const taskTitle = tRows[0].title;
+            await notifyAdmins(
+                'Task Status Updated',
+                `${studentName} updated task status to "${status}" for "${taskTitle}".`,
+                status === 'Completed' ? 'success' : 'info'
+            );
+        }
 
         await logAction(req.user?.id || null, 'UPDATE', 'Task Directives', `Set task #${targetId} status to ${status}`);
 

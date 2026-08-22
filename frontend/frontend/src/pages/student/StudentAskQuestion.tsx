@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { 
     MessageSquare, Send, ArrowLeft, Download, Plus, 
-    CheckCircle2, AlertCircle, Clock 
+    CheckCircle2, Clock 
 } from 'lucide-react';
 
 interface Question {

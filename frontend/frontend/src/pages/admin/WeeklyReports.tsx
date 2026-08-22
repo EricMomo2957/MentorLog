@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Calendar, BarChart3, Clock, AlertTriangle } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 
 interface ReportData {
     student_name: string;

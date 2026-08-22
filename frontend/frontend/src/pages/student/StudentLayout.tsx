@@ -5,7 +5,7 @@ import api from '../../services/api';
 import { NotificationDropdown } from '../../components/NotificationDropdown';
 import { 
     LayoutDashboard, CheckSquare, Calendar, MessageSquare, 
-    Inbox, Megaphone, User, HelpCircle, FileText, Settings, LogOut, Search, Bell
+    Inbox, Megaphone, User, HelpCircle, FileText, Settings, LogOut, Search
 } from 'lucide-react';
 
 interface NavItem {

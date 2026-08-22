@@ -3,6 +3,7 @@ import db from '../config/db';
 import fs from 'fs'; 
 import path from 'path';
 import { logAction } from '../utils/logger';
+import { notifyAdmins, createNotification } from './notificationController';
 
 export const submitDocument = async (req: Request, res: Response) => {
     try {
@@ -18,6 +19,12 @@ export const submitDocument = async (req: Request, res: Response) => {
 
         await logAction(Number(student_id) || null, 'CREATE', 'Document Vault', `Uploaded ${document_type} file: ${req.file?.originalname || 'Document'}`);
         
+        await notifyAdmins(
+            'New Document Submission',
+            `${student_name || 'An OJT Student'} submitted a document: ${document_type}`,
+            'info'
+        );
+
         return res.status(201).json({ message: "Document submitted successfully!" });
     } catch (err) {
         console.error("Submission Error:", err);
@@ -48,6 +55,16 @@ export const updateSubmissionStatus = async (req: Request, res: Response) => {
         
         const sql = "UPDATE document_submissions SET status = ?, feedback = ? WHERE id = ?";
         await db.query(sql, [status, feedback, id]);
+
+        const [subRows]: any = await db.query("SELECT student_id, document_type FROM document_submissions WHERE id = ?", [id]);
+        if (subRows && subRows.length > 0) {
+            await createNotification(
+                subRows[0].student_id,
+                'Document Status Update',
+                `Your submission for "${subRows[0].document_type}" has been updated to "${status}".`,
+                status?.toLowerCase() === 'approved' ? 'success' : 'warning'
+            );
+        }
 
         await logAction((req as any).user?.id || null, 'UPDATE', 'Document Vault', `Updated submission #${id} status to ${status}`);
         

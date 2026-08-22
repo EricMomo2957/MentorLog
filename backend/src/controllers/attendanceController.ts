@@ -1,6 +1,7 @@
 import { Response, Request } from 'express';
 import db from '../config/db';
 import { logAction } from '../utils/logger';
+import { notifyAdmins } from './notificationController';
 
 // Use this interface to fix 'req.user' TypeScript errors
 interface AuthRequest extends Request {
@@ -55,6 +56,11 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
             // Audit Log
             await logAction(userId, 'CREATE', 'Attendance', `Clocked in for shift (Status: ${status})`);
 
+            // Notify Admins
+            const [uRows]: any = await db.execute('SELECT full_name FROM users WHERE id = ?', [userId]);
+            const studentName = (uRows && uRows[0]?.full_name) || 'An OJT Student';
+            await notifyAdmins('Student Clocked In', `${studentName} clocked in for shift (Status: ${status}).`, 'info');
+
             return res.json({ 
                 success: true, 
                 status, 
@@ -79,6 +85,11 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
 
             // Audit Log
             await logAction(userId, 'UPDATE', 'Attendance', `Clocked out of shift`);
+
+            // Notify Admins
+            const [uRows]: any = await db.execute('SELECT full_name FROM users WHERE id = ?', [userId]);
+            const studentName = (uRows && uRows[0]?.full_name) || 'An OJT Student';
+            await notifyAdmins('Student Clocked Out', `${studentName} clocked out of shift.`, 'info');
 
             return res.json({ success: true, message: "Clocked out successfully" });
         }

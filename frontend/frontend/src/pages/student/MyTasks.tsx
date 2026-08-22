@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import { 
-    CheckCircle2, Clock, AlertCircle, Filter, Download, 
-    ChevronDown, Calendar, CheckSquare, RefreshCw, FileText, Image as ImageIcon, ExternalLink, Paperclip
+    CheckCircle2, Clock, AlertCircle, Download, 
+    ChevronDown, Calendar, RefreshCw, FileText, Paperclip
 } from 'lucide-react';
 
 interface Task {

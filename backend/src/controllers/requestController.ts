@@ -35,6 +35,12 @@ export const submitRequest = async (req: AuthRequest, res: Response) => {
 
         await logAction(studentId, 'CREATE', 'Service Requests', `Submitted request: ${subject}`);
         
+        await notifyAdmins(
+            'New Service Request',
+            `${studentName} submitted a request: "${subject}" (${urgency || 'Normal'})`,
+            'info'
+        );
+
         res.status(201).json({ success: true, message: "Request submitted successfully" });
     } catch (error) {
         console.error("Submission Error:", error);
@@ -60,7 +66,7 @@ export const getAllRequests = async (_req: AuthRequest, res: Response) => {
     }
 };
 
-import { createNotification } from './notificationController';
+import { createNotification, notifyAdmins } from './notificationController';
 
 /**
  * 3. Update Status (Admin Side)

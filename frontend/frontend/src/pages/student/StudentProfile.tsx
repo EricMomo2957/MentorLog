@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
-    User, Mail, Phone, BookOpen, Award, 
+    User, Mail, Phone, Award, 
     Edit2, ShieldCheck, Download, X, Upload, Camera 
 } from 'lucide-react';
 

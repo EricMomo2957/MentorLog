@@ -1,4 +1,4 @@
-import { Printer, X, Download } from 'lucide-react';
+import { Printer, X } from 'lucide-react';
 
 interface AttendanceRecord {
     id: number;

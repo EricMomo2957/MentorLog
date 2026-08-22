@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../config/db';
+import { createNotification, notifyAdmins } from './notificationController';
 
 export const getAllQuestions = async (req: Request, res: Response) => {
     try {
@@ -35,6 +36,11 @@ export const askQuestion = async (req: Request, res: Response) => {
             `INSERT INTO intern_questions (student_id, subject, message, status) VALUES (?, ?, ?, 'pending')`,
             [student_id, subject, message]
         );
+
+        const [uRows]: any = await db.execute('SELECT full_name FROM users WHERE id = ?', [student_id]);
+        const sName = (uRows && uRows[0]?.full_name) || 'An OJT Student';
+        await notifyAdmins('New Student Inquiry', `${sName} sent a question: "${subject}"`, 'info');
+
         res.status(201).json({ success: true, message: "Question submitted successfully" });
     } catch (error: unknown) {
         console.error(error);
@@ -62,6 +68,29 @@ export const postReply = async (req: Request, res: Response) => {
             `UPDATE intern_questions SET status = ? WHERE id = ?`,
             [newStatus, question_id]
         );
+
+        if (sender_role === 'intern') {
+            const [qRows]: any = await db.execute(
+                'SELECT q.subject, u.full_name FROM intern_questions q JOIN users u ON q.student_id = u.id WHERE q.id = ?',
+                [question_id]
+            );
+            const sName = (qRows && qRows[0]?.full_name) || 'An OJT Student';
+            const subj = (qRows && qRows[0]?.subject) || 'Inquiry';
+            await notifyAdmins('New Reply from Student', `${sName} replied on thread: "${subj}"`, 'info');
+        } else {
+            const [qRows]: any = await db.execute(
+                'SELECT student_id, subject FROM intern_questions WHERE id = ?',
+                [question_id]
+            );
+            if (qRows && qRows.length > 0) {
+                await createNotification(
+                    qRows[0].student_id,
+                    'New Reply from Admin',
+                    `An admin replied to your question: "${qRows[0].subject}"`,
+                    'info'
+                );
+            }
+        }
 
         res.status(200).json({ success: true });
     } catch (error: unknown) {

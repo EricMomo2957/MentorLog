@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { 
-    Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, 
-    MapPin, Clock, Edit2, Trash2, Search, Filter, Download, X
+    ChevronLeft, ChevronRight, Plus, 
+    MapPin, Clock, Edit2, Trash2, Search, Download, X
 } from 'lucide-react';
 import { 
   format, 

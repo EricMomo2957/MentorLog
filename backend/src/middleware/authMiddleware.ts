@@ -3,6 +3,10 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
+if (!process.env.JWT_SECRET) {
+    console.warn("⚠️  [Security Warning] JWT_SECRET is not defined in .env. Using default development secret.");
+}
+
 // Interface for JWT payload decoding
 interface DecodedToken {
     id: number;

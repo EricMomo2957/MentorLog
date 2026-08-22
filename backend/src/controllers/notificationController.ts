@@ -29,6 +29,22 @@ export const createNotification = async (userId: number, title: string, message:
 };
 
 /**
+ * Helper utility to create notifications for all system administrators
+ */
+export const notifyAdmins = async (title: string, message: string, type: string = 'info') => {
+    try {
+        const [admins]: any = await db.execute(`SELECT id FROM users WHERE role = 'admin'`);
+        if (Array.isArray(admins) && admins.length > 0) {
+            for (const admin of admins) {
+                await createNotification(admin.id, title, message, type);
+            }
+        }
+    } catch (err) {
+        console.error("Error notifying admins:", err);
+    }
+};
+
+/**
  * GET /api/notifications
  * Fetch notifications for current logged in user
  */

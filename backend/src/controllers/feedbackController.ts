@@ -2,6 +2,7 @@ import { Response } from 'express';
 import db from '../config/db';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { logAction } from '../utils/logger';
+import { notifyAdmins } from './notificationController';
 
 /**
  * STUDENT LOGIC
@@ -23,6 +24,12 @@ export const submitFeedback = async (req: AuthRequest, res: Response) => {
         await db.execute(query, [studentId, studentName, category, content, rating]);
 
         await logAction(studentId, 'CREATE', 'Student Feedback', `Submitted program feedback (Rating: ${rating}/5, Category: ${category})`);
+
+        await notifyAdmins(
+            'New Feedback Submitted',
+            `${studentName} submitted a ${rating}-star ${category} feedback.`,
+            'info'
+        );
 
         res.status(201).json({ success: true, message: "Feedback submitted. Thank you!" });
     } catch (error) {

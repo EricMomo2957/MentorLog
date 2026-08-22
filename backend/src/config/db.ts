@@ -30,6 +30,19 @@ const initDb = async () => {
             await pool.query(`ALTER TABLE tasks ADD COLUMN attachment_name VARCHAR(255) NULL`);
         } catch (_) {}
     }
+
+    // Safely add performance indexes for MySQL / XAMPP
+    const addIndexSafe = async (tableName: string, indexName: string, columnsSql: string) => {
+        try {
+            await pool.query(`CREATE INDEX ${indexName} ON ${tableName} (${columnsSql})`);
+        } catch (_) {}
+    };
+
+    await addIndexSafe('attendance', 'idx_attendance_user_date', 'user_id, date');
+    await addIndexSafe('notifications', 'idx_notifications_user_read', 'user_id, is_read');
+    await addIndexSafe('tasks', 'idx_tasks_user_status', 'user_id, status');
+    await addIndexSafe('service_requests', 'idx_requests_student_status', 'student_id, status');
+    await addIndexSafe('document_submissions', 'idx_docs_student_status', 'student_id, status');
 };
 initDb();
 

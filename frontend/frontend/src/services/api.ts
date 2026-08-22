@@ -1,7 +1,17 @@
 import axios from 'axios';
 
+export const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+export const API_BASE_URL = `${BACKEND_URL}/api`;
+
+export const getFullImageUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${BACKEND_URL}${cleanPath}`;
+};
+
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', 
+  baseURL: API_BASE_URL, 
 });
 
 api.interceptors.request.use((config) => {
