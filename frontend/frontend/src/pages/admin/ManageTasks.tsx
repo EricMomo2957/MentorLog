@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../services/api';
 import { 
     Plus, Search, Download, Filter, Edit2, Trash2, 
     CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, X,
-    ListTodo, CheckSquare
+    ListTodo, CheckSquare, Paperclip, FileText, ExternalLink, Image as ImageIcon
 } from 'lucide-react';
 
 interface User {
@@ -21,6 +22,8 @@ interface Task {
     task_description: string;
     status: 'Pending' | 'In-Progress' | 'Completed';
     due_date: string;
+    attachment_url?: string;
+    attachment_name?: string;
     student_name?: string; 
     profile_pic?: string;
 }
@@ -52,7 +55,14 @@ const getInitials = (name?: string) => {
     return name.slice(0, 2).toUpperCase();
 };
 
+const isImageFile = (filename?: string) => {
+    if (!filename) return false;
+    const ext = filename.toLowerCase();
+    return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.webp') || ext.endsWith('.gif');
+};
+
 const ManageTasks = () => {
+    const location = useLocation();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [students, setStudents] = useState<User[]>([]);
     const [filter, setFilter] = useState<string>('All');
@@ -62,6 +72,7 @@ const ManageTasks = () => {
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
     const [formData, setFormData] = useState({
         user_id: '',
         title: '',
@@ -91,7 +102,18 @@ const ManageTasks = () => {
 
     useEffect(() => {
         fetchDatabaseData();
-    }, []);
+        if (location.state?.studentId) {
+            setEditingTask(null);
+            setFormData({
+                user_id: location.state.studentId.toString(),
+                title: '',
+                task_description: '',
+                due_date: '',
+                status: 'Pending'
+            });
+            setIsModalOpen(true);
+        }
+    }, [location.state]);
 
     const toggleStatus = async (task: Task) => {
         const statusOrder: Task['status'][] = ['Pending', 'In-Progress', 'Completed'];
@@ -108,21 +130,26 @@ const ManageTasks = () => {
         const isEditing = !!editingTask;
         const targetUserId = formData.user_id ? parseInt(formData.user_id, 10) : undefined;
 
+        const postData = new FormData();
+        if (targetUserId) postData.append('student_id', targetUserId.toString());
+        postData.append('user_id', targetUserId ? targetUserId.toString() : '');
+        postData.append('title', formData.title);
+        postData.append('task_description', formData.task_description);
+        postData.append('due_date', formData.due_date);
+        postData.append('status', formData.status);
+
+        if (attachmentFile) {
+            postData.append('attachment', attachmentFile);
+        }
+
         try {
             if (isEditing && editingTask) {
-                await api.put(`/tasks/${editingTask.id}`, {
-                    user_id: targetUserId, 
-                    title: formData.title,
-                    task_description: formData.task_description,
-                    due_date: formData.due_date,
-                    status: formData.status
+                await api.put(`/tasks/${editingTask.id}`, postData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
                 });
             } else {
-                await api.post('/tasks/assign', {
-                    student_id: targetUserId, 
-                    title: formData.title,
-                    task_description: formData.task_description,
-                    due_date: formData.due_date
+                await api.post('/tasks/assign', postData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
                 });
             }
             await fetchDatabaseData();
@@ -142,6 +169,7 @@ const ManageTasks = () => {
     };
 
     const openModal = (task?: Task) => {
+        setAttachmentFile(null);
         if (task) {
             setEditingTask(task);
             let formattedDueDate = '';
@@ -165,7 +193,10 @@ const ManageTasks = () => {
         setIsModalOpen(true);
     };
 
-    const closeModal = () => setIsModalOpen(false);
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setAttachmentFile(null);
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -215,7 +246,7 @@ const ManageTasks = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">OJT Task Directives</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Manage, assign, and track intern project tasks</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Manage, assign, attach resources, and track intern project tasks</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -237,22 +268,22 @@ const ManageTasks = () => {
                 </div>
             </div>
 
-            {/* Status Metric Cards Grid (Matching Sample Photo) */}
+            {/* Status Metric Cards Grid with Light Earth Tone Colors */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Pending Tasks */}
                 <div 
                     onClick={() => setFilter(filter === 'Pending' ? 'All' : 'Pending')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filter === 'Pending' ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#fcf8f1] ${
+                        filter === 'Pending' ? 'border-[#996825] ring-2 ring-[#996825]/20 shadow-xs' : 'border-[#f5e6d2] hover:border-[#e6cb9f]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#f8ead7] border border-[#edd6b6] text-[#996825] flex items-center justify-center mb-2.5">
                         <Clock className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#946e38] tracking-wider uppercase mb-1">
                         PENDING
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#6e4614]">
                         {pendingCount}
                     </span>
                 </div>
@@ -260,17 +291,17 @@ const ManageTasks = () => {
                 {/* In-Progress Tasks */}
                 <div 
                     onClick={() => setFilter(filter === 'In-Progress' ? 'All' : 'In-Progress')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filter === 'In-Progress' ? 'border-pink-400 ring-2 ring-pink-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#fcf4f1] ${
+                        filter === 'In-Progress' ? 'border-[#9c4c36] ring-2 ring-[#9c4c36]/20 shadow-xs' : 'border-[#f4dcd4] hover:border-[#e6b9ab]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#f7e4dd] border border-[#eccdcb] text-[#9c4c36] flex items-center justify-center mb-2.5">
                         <CheckSquare className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#9c5645] tracking-wider uppercase mb-1">
                         IN-PROGRESS
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#753424]">
                         {inProgressCount}
                     </span>
                 </div>
@@ -278,17 +309,17 @@ const ManageTasks = () => {
                 {/* Completed Tasks */}
                 <div 
                     onClick={() => setFilter(filter === 'Completed' ? 'All' : 'Completed')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filter === 'Completed' ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f6f3] ${
+                        filter === 'Completed' ? 'border-[#2d4a34] ring-2 ring-[#2d4a34]/20 shadow-xs' : 'border-[#d4e2d6] hover:border-[#b0c7b3]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#e0ece2] border border-[#c0d6c3] text-[#2d4a34] flex items-center justify-center mb-2.5">
                         <CheckCircle2 className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#486650] tracking-wider uppercase mb-1">
                         COMPLETED
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#243c2a]">
                         {completedCount}
                     </span>
                 </div>
@@ -296,23 +327,23 @@ const ManageTasks = () => {
                 {/* Total Tasks */}
                 <div 
                     onClick={() => setFilter('All')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filter === 'All' ? 'border-purple-400 ring-2 ring-purple-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f6f4f8] ${
+                        filter === 'All' ? 'border-[#59516e] ring-2 ring-[#59516e]/20 shadow-xs' : 'border-[#e4dfed] hover:border-[#c7bed8]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#eae5f3] border border-[#d6cdcf] text-[#59516e] flex items-center justify-center mb-2.5">
                         <ListTodo className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#645b7d] tracking-wider uppercase mb-1">
                         TOTAL TASKS
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#3c364c]">
                         {totalCount}
                     </span>
                 </div>
             </div>
 
-            {/* Filter & Control Bar (Automoor Style) */}
+            {/* Filter & Control Bar */}
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
                 
                 {/* Left Filter Pill Buttons */}
@@ -334,11 +365,6 @@ const ManageTasks = () => {
                     <button className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-1.5">
                         <span>Created Date</span>
                         <span className="text-slate-400">▾</span>
-                    </button>
-
-                    <button className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-1.5">
-                        <span>Advanced Filters</span>
-                        <Filter className="w-3 h-3 text-slate-400" />
                     </button>
                 </div>
 
@@ -379,7 +405,7 @@ const ManageTasks = () => {
                                         />
                                     </th>
                                     <th className="py-3 px-4">Intern Assigned ↕</th>
-                                    <th className="py-3 px-4">Task Details ↕</th>
+                                    <th className="py-3 px-4">Task Details & Resources ↕</th>
                                     <th className="py-3 px-4">Due Date ↕</th>
                                     <th className="py-3 px-4">Status ↕</th>
                                     <th className="py-3 px-4 text-right">Actions</th>
@@ -390,6 +416,7 @@ const ManageTasks = () => {
                                     const avatarStyle = getAvatarStyle(task.user_id || task.id);
                                     const initials = getInitials(task.student_name);
                                     const isChecked = selectedTasks.includes(task.id);
+                                    const hasAttachment = !!task.attachment_url;
 
                                     return (
                                         <tr key={task.id} className={`hover:bg-slate-50/80 transition-colors ${isChecked ? 'bg-blue-50/30' : ''}`}>
@@ -402,7 +429,7 @@ const ManageTasks = () => {
                                                 />
                                             </td>
                                             
-                                            {/* Student Column with Photo or Pastel Initial Avatar */}
+                                            {/* Student Column */}
                                             <td className="py-3.5 px-4">
                                                 <div className="flex items-center gap-3">
                                                     {task.profile_pic ? (
@@ -423,10 +450,30 @@ const ManageTasks = () => {
                                                 </div>
                                             </td>
 
-                                            {/* Task Details */}
-                                            <td className="py-3.5 px-4 max-w-xs">
+                                            {/* Task Details & Attached Resources */}
+                                            <td className="py-3.5 px-4 max-w-sm space-y-1">
                                                 <p className="font-semibold text-slate-900 leading-snug">{task.title}</p>
-                                                <p className="text-slate-500 text-[11px] line-clamp-1 mt-0.5">{task.task_description}</p>
+                                                <p className="text-slate-500 text-[11px] line-clamp-2">{task.task_description}</p>
+                                                
+                                                {/* Attachment Badge */}
+                                                {hasAttachment && (
+                                                    <div className="pt-1">
+                                                        <a 
+                                                            href={getFullPicUrl(task.attachment_url)} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all shadow-2xs group"
+                                                        >
+                                                            {isImageFile(task.attachment_name || task.attachment_url) ? (
+                                                                <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                                                            ) : (
+                                                                <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                                            )}
+                                                            <span className="truncate max-w-[180px]">{task.attachment_name || 'Attached Resource'}</span>
+                                                            <ExternalLink className="w-3 h-3 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </td>
 
                                             {/* Due Date */}
@@ -447,7 +494,7 @@ const ManageTasks = () => {
                                                     <button 
                                                         onClick={() => openModal(task)}
                                                         className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-all"
-                                                        title="Edit Task"
+                                                        title="Edit Task & Resource Attachments"
                                                     >
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
@@ -492,13 +539,13 @@ const ManageTasks = () => {
                 </div>
             </div>
 
-            {/* Clean White Modal */}
+            {/* Task Add / Edit Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
                     <div className="bg-white border border-slate-200 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <h2 className="text-lg font-bold text-slate-900">
-                                {editingTask ? 'Edit Task Directive' : 'Assign New Task'}
+                                {editingTask ? 'Edit Task Directive' : 'Assign New Task Directive'}
                             </h2>
                             <button onClick={closeModal} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
                                 <X className="w-4 h-4" />
@@ -543,13 +590,33 @@ const ManageTasks = () => {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600">Description</label>
+                                <label className="text-xs font-semibold text-slate-600">Description / Guidelines</label>
                                 <textarea 
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-xs h-24 outline-none focus:border-blue-500 focus:bg-white resize-none"
                                     value={formData.task_description}
                                     onChange={(e) => setFormData({...formData, task_description: e.target.value})}
-                                    placeholder="Enter instructions..."
+                                    placeholder="Enter detailed instructions for student..."
                                 />
+                            </div>
+
+                            {/* File Resource Attachment Input */}
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-600 flex items-center justify-between">
+                                    <span>Photo / Document Resource</span>
+                                    <span className="text-[10px] text-slate-400 font-normal">Images, PDF, DOCX, ZIP (Optional)</span>
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input 
+                                        type="file" 
+                                        onChange={(e) => setAttachmentFile(e.target.files ? e.target.files[0] : null)}
+                                        className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-200 rounded-lg bg-slate-50 cursor-pointer"
+                                    />
+                                </div>
+                                {editingTask?.attachment_url && !attachmentFile && (
+                                    <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-1">
+                                        <Paperclip className="w-3.5 h-3.5" /> Current Resource: <a href={getFullPicUrl(editingTask.attachment_url)} target="_blank" rel="noopener noreferrer" className="underline font-bold">{editingTask.attachment_name || 'Attached File'}</a>
+                                    </p>
+                                )}
                             </div>
 
                             {editingTask && (
@@ -579,7 +646,7 @@ const ManageTasks = () => {
                                     type="submit" 
                                     className="px-4 py-2 bg-blue-600 rounded-lg text-white font-semibold text-xs hover:bg-blue-700 transition-all shadow-xs"
                                 >
-                                    Save Task
+                                    Save Task Directive
                                 </button>
                             </div>
                         </form>
