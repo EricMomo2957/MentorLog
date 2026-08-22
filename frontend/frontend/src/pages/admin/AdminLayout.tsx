@@ -5,8 +5,8 @@ import api from '../../services/api';
 import { NotificationDropdown } from '../../components/NotificationDropdown';
 import { 
     LayoutDashboard, CheckSquare, Users, FileText, CalendarCheck, 
-    Megaphone, Inbox, HelpCircle, MessageSquare, Key, BarChart3, 
-    Calendar, ShieldAlert, Code2, Settings, LogOut, Search, Bell
+    Megaphone, Inbox, HelpCircle, MessageSquare, Key, 
+    Calendar, ShieldAlert, Code2, Settings, LogOut, Search
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -113,7 +113,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         ...navGroups.flatMap(g => g.items),
         { path: '/manage-announcements', label: 'Announcements', icon: Megaphone },
         { path: '/admin/ask-question', label: 'Question Inbox', icon: HelpCircle },
-        { path: '/admin/reports', label: 'Report Analytics', icon: BarChart3 },
         { path: '/admin-calendar', label: 'Admin Calendar', icon: Calendar },
         { path: '/admin-settings', label: 'Settings', icon: Settings },
         { path: '/admin-profile', label: 'My Profile', icon: Settings }
@@ -219,18 +218,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     </Link>
 
                     <Link
-                        to="/admin/reports"
-                        className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
-                            location.pathname === '/admin/reports'
-                            ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                        }`}
-                    >
-                        <BarChart3 className={`w-4 h-4 ${location.pathname === '/admin/reports' ? 'text-blue-400' : 'text-slate-400'}`} />
-                        <span>Report Analytics</span>
-                    </Link>
-
-                    <Link
                         to="/admin-calendar"
                         className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
                             location.pathname === '/admin-calendar'
@@ -314,7 +301,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                 </header>
 
                 {/* PAGE CONTENT */}
-                <main className="flex-1 bg-[#f8fafc] p-6 lg:p-8">
+                <main className="flex-1 bg-white p-6 lg:p-8">
                     {children}
                 </main>
             </div>
