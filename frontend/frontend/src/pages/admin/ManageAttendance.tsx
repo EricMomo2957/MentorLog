@@ -242,22 +242,22 @@ const ManageAttendance = () => {
                 </div>
             </div>
 
-            {/* Status Metric Cards Grid */}
+            {/* Status Metric Cards Grid with Light Earth Tone Colors */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Present */}
                 <div 
                     onClick={() => setFilterStatus(filterStatus === 'Present' ? 'All' : 'Present')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filterStatus === 'Present' ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f6f3] ${
+                        filterStatus === 'Present' ? 'border-[#2d4a34] ring-2 ring-[#2d4a34]/20 shadow-xs' : 'border-[#d4e2d6] hover:border-[#b0c7b3]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#e0ece2] border border-[#c0d6c3] text-[#2d4a34] flex items-center justify-center mb-2.5">
                         <CheckCircle2 className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#486650] tracking-wider uppercase mb-1">
                         PRESENT
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#243c2a]">
                         {presentCount}
                     </span>
                 </div>
@@ -265,17 +265,17 @@ const ManageAttendance = () => {
                 {/* Late */}
                 <div 
                     onClick={() => setFilterStatus(filterStatus === 'Late' ? 'All' : 'Late')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filterStatus === 'Late' ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#fcf8f1] ${
+                        filterStatus === 'Late' ? 'border-[#996825] ring-2 ring-[#996825]/20 shadow-xs' : 'border-[#f5e6d2] hover:border-[#e6cb9f]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#f8ead7] border border-[#edd6b6] text-[#996825] flex items-center justify-center mb-2.5">
                         <AlertCircle className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#946e38] tracking-wider uppercase mb-1">
                         LATE
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#6e4614]">
                         {lateCount}
                     </span>
                 </div>
@@ -283,17 +283,17 @@ const ManageAttendance = () => {
                 {/* Absent */}
                 <div 
                     onClick={() => setFilterStatus(filterStatus === 'Absent' ? 'All' : 'Absent')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filterStatus === 'Absent' ? 'border-rose-400 ring-2 ring-rose-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#faf2f4] ${
+                        filterStatus === 'Absent' ? 'border-[#9c4b60] ring-2 ring-[#9c4b60]/20 shadow-xs' : 'border-[#f3d7df] hover:border-[#e2b4c2]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#f6e1e6] border border-[#ebc8d1] text-[#9c4b60] flex items-center justify-center mb-2.5">
                         <XCircle className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#995364] tracking-wider uppercase mb-1">
                         ABSENT
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#6e2f3e]">
                         {absentCount}
                     </span>
                 </div>
@@ -301,17 +301,17 @@ const ManageAttendance = () => {
                 {/* Total Time Logs */}
                 <div 
                     onClick={() => setFilterStatus('All')}
-                    className={`bg-white rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        filterStatus === 'All' ? 'border-blue-400 ring-2 ring-blue-400/20 shadow-md' : 'border-slate-100 shadow-xs'
+                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f5f7] ${
+                        filterStatus === 'All' ? 'border-[#3d5a6c] ring-2 ring-[#3d5a6c]/20 shadow-xs' : 'border-[#d8e0e4] hover:border-[#b3c2c9]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-[#e2eaed] border border-[#c7d5db] text-[#3d5a6c] flex items-center justify-center mb-2.5">
                         <Clock className="w-5 h-5" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-slate-400 tracking-wider uppercase mb-1">
+                    <span className="text-[11px] font-extrabold text-[#4c6a7d] tracking-wider uppercase mb-1">
                         TOTAL LOGS
                     </span>
-                    <span className="text-3xl font-black text-slate-800">
+                    <span className="text-3xl font-black text-[#263b48]">
                         {totalCount}
                     </span>
                 </div>
