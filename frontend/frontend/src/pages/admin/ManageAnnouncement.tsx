@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
-    Megaphone, Image, Plus, Trash2, Edit3, CheckCircle2, 
-    Search, Filter, Download, X
+    Megaphone, Image, Trash2, Edit3, 
+    Search, Download
 } from 'lucide-react';
 
 interface Announcement {
@@ -111,6 +111,48 @@ const ManageAnnouncement = () => {
                         <Download className="w-4 h-4" />
                         <span>Export Bulletins</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Status Metric Cards Grid with Light Earth Tone Colors */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Total Published Bulletins */}
+                <div className="bg-[#faf6ed] border border-[#f2e4c9] hover:border-[#dfc99b] rounded-2xl p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all">
+                    <div className="w-11 h-11 rounded-xl bg-[#f8edd5] border border-[#eadbb4] text-[#946b27] flex items-center justify-center mb-2.5">
+                        <Megaphone className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#917036] tracking-wider uppercase mb-1">
+                        TOTAL BULLETINS
+                    </span>
+                    <span className="text-3xl font-black text-[#694a16]">
+                        {announcements.length}
+                    </span>
+                </div>
+
+                {/* Banner Image Posts */}
+                <div className="bg-[#f2f6f3] border border-[#d4e2d6] hover:border-[#b0c7b3] rounded-2xl p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all">
+                    <div className="w-11 h-11 rounded-xl bg-[#e0ece2] border border-[#c0d6c3] text-[#2d4a34] flex items-center justify-center mb-2.5">
+                        <Image className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#486650] tracking-wider uppercase mb-1">
+                        BANNER POSTS
+                    </span>
+                    <span className="text-3xl font-black text-[#243c2a]">
+                        {announcements.filter(a => a.image_url).length}
+                    </span>
+                </div>
+
+                {/* Text Directives */}
+                <div className="bg-[#f2f5f7] border border-[#d8e0e4] hover:border-[#b3c2c9] rounded-2xl p-5 text-center flex flex-col items-center justify-center shadow-xs transition-all">
+                    <div className="w-11 h-11 rounded-xl bg-[#e2eaed] border border-[#c7d5db] text-[#3d5a6c] flex items-center justify-center mb-2.5">
+                        <Megaphone className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#4c6a7d] tracking-wider uppercase mb-1">
+                        TEXT DIRECTIVES
+                    </span>
+                    <span className="text-3xl font-black text-[#263b48]">
+                        {announcements.filter(a => !a.image_url).length}
+                    </span>
                 </div>
             </div>
 
