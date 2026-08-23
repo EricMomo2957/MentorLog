@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
+import { Eye, EyeOff } from 'lucide-react';
 import mentorLogLogo from '../assets/mentorlogOption.png'; 
 import ojtPicture from '../assets/ojt-picture.jpg';
 import api from '../services/api';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -84,7 +86,7 @@ const Login = () => {
                     {/* BACK TO LANDING ARROW */}
                     <button 
                         onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest mb-4 group"
+                        className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest mb-4 group cursor-pointer"
                     >
                         <FiArrowLeft className="text-lg group-hover:-translate-x-1 transition-transform" /> Back to Home
                     </button>
@@ -105,17 +107,31 @@ const Login = () => {
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Email Address</label>
                             <input 
                                 type="email" name="email" placeholder="name@university.edu" 
+                                value={formData.email}
                                 onChange={handleChange} required 
                                 className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm font-medium" 
                             />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Password</label>
-                            <input 
-                                type="password" name="password" placeholder="••••••••" 
-                                onChange={handleChange} required 
-                                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm font-medium" 
-                            />
+                            <div className="relative">
+                                <input 
+                                    type={showPassword ? "text" : "password"} 
+                                    name="password" 
+                                    placeholder="••••••••" 
+                                    value={formData.password}
+                                    onChange={handleChange} required 
+                                    className="w-full p-4 pr-12 rounded-2xl bg-slate-900 border border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm font-medium" 
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1 cursor-pointer"
+                                    title={showPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
+                            </div>
                         </div>
                         
                         <button 
