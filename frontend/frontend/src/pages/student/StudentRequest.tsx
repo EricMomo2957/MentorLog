@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getAdminSettings } from '../admin/AdminSettings';
 import { 
     CheckCircle2, Clock, XCircle, AlertCircle, 
     Plus, RefreshCw 
@@ -53,6 +54,15 @@ const StudentRequest = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const currentSettings = getAdminSettings();
+        if (currentSettings.maintenanceMode) {
+            setToast({
+                message: currentSettings.maintenanceNotice || "System is under maintenance. Request submissions are temporarily restricted.",
+                type: 'error'
+            });
+            return;
+        }
+
         const token = localStorage.getItem('token');
 
         if (!subject || !message) {
