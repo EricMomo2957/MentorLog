@@ -6,7 +6,8 @@ import { NotificationDropdown } from '../../components/NotificationDropdown';
 import { 
     LayoutDashboard, CheckSquare, Users, FileText, CalendarCheck, 
     Megaphone, Inbox, HelpCircle, MessageSquare, Key, 
-    Calendar, ShieldAlert, Code2, Settings, LogOut, Search
+    Calendar, ShieldAlert, Code2, Settings, LogOut, Search,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -67,6 +68,18 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             window.removeEventListener('profileUpdated', handleProfileUpdate);
         };
     }, [fetchAdminProfile]);
+
+    const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+        return localStorage.getItem('mentorlog_admin_sidenav_collapsed') === 'true';
+    });
+
+    const toggleSidebar = () => {
+        setIsCollapsed(prev => {
+            const next = !prev;
+            localStorage.setItem('mentorlog_admin_sidenav_collapsed', String(next));
+            return next;
+        });
+    };
 
     const confirmLogout = () => {
         localStorage.removeItem('token');
@@ -133,47 +146,86 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         <div className="flex min-h-screen bg-[#f8fafc] text-slate-800 font-sans selection:bg-blue-500/20">
             
             {/* --- SIDEBAR (Dark Navy Automoor Theme) --- */}
-            <aside className="w-64 bg-[#0b1329] text-slate-300 flex flex-col sticky top-0 h-screen z-50 shrink-0 border-r border-slate-800 shadow-xl">
+            <aside className={`bg-[#0b1329] text-slate-300 flex flex-col sticky top-0 h-screen z-50 shrink-0 border-r border-slate-800 shadow-xl transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
                 
                 {/* Brand Header */}
-                <div className="p-6 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/30 shrink-0">
-                        <img src={logoPhoto} alt="Logo" className="w-6 h-6 object-contain rounded" />
-                    </div>
-                    <div>
-                        <h2 className="text-base font-black tracking-tight text-white leading-none">MentorLog</h2>
-                        <span className="text-[10px] text-slate-400 font-medium">Enterprise Suite</span>
-                    </div>
+                <div className={`flex items-center justify-between border-b border-slate-800/60 ${isCollapsed ? 'p-3 justify-center' : 'p-5'}`}>
+                    {!isCollapsed ? (
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/30 shrink-0">
+                                <img src={logoPhoto} alt="Logo" className="w-6 h-6 object-contain rounded" />
+                            </div>
+                            <div className="min-w-0">
+                                <h2 className="text-base font-black tracking-tight text-white leading-none truncate">MentorLog</h2>
+                                <span className="text-[10px] text-slate-400 font-medium truncate block">Enterprise Suite</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/30 shrink-0" title="MentorLog Enterprise">
+                            <img src={logoPhoto} alt="Logo" className="w-6 h-6 object-contain rounded" />
+                        </div>
+                    )}
+
+                    {/* Toggle Bar Button */}
+                    <button
+                        onClick={toggleSidebar}
+                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer shadow-xs shrink-0"
+                        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                    >
+                        {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    </button>
                 </div>
 
                 {/* Sidenav Admin Profile Card */}
-                <div className="mx-4 mb-4 p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center gap-3">
-                    <Link to="/admin-profile" className="shrink-0 hover:opacity-80 transition-opacity">
-                        {picUrl ? (
-                            <img 
-                                src={picUrl} 
-                                alt={userName} 
-                                className="w-10 h-10 rounded-full object-cover border border-amber-400/40 shadow-xs" 
-                            />
-                        ) : (
-                            <div className="w-10 h-10 rounded-full bg-amber-600 text-white font-bold text-xs flex items-center justify-center border border-amber-400/30">
-                                {userName.charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                    </Link>
-                    <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-white truncate leading-tight">{userName}</p>
-                        <p className="text-[10px] text-amber-400 truncate font-semibold">Administrator</p>
+                {!isCollapsed ? (
+                    <div className="mx-4 my-4 p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center gap-3">
+                        <Link to="/admin-profile" className="shrink-0 hover:opacity-80 transition-opacity">
+                            {picUrl ? (
+                                <img 
+                                    src={picUrl} 
+                                    alt={userName} 
+                                    className="w-10 h-10 rounded-full object-cover border border-amber-400/40 shadow-xs" 
+                                />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-amber-600 text-white font-bold text-xs flex items-center justify-center border border-amber-400/30">
+                                    {userName.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                        </Link>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-white truncate leading-tight">{userName}</p>
+                            <p className="text-[10px] text-amber-400 truncate font-semibold">Administrator</p>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="mx-2 my-4 flex justify-center">
+                        <Link to="/admin-profile" title={`${userName} (Administrator)`} className="hover:opacity-80 transition-opacity">
+                            {picUrl ? (
+                                <img 
+                                    src={picUrl} 
+                                    alt={userName} 
+                                    className="w-10 h-10 rounded-full object-cover border border-amber-400/40 shadow-xs" 
+                                />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-amber-600 text-white font-bold text-xs flex items-center justify-center border border-amber-400/30">
+                                    {userName.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                        </Link>
+                    </div>
+                )}
 
                 {/* Navigation Menu */}
-                <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {navGroups.map((group) => (
                         <div key={group.title} className="space-y-1">
-                            <h3 className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
-                                {group.title}
-                            </h3>
+                            {!isCollapsed ? (
+                                <h3 className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                                    {group.title}
+                                </h3>
+                            ) : (
+                                <div className="h-px bg-slate-800/60 my-2 mx-1" />
+                            )}
                             {group.items.map((link) => {
                                 const isActive = location.pathname === link.path;
                                 const IconComponent = link.icon;
@@ -181,14 +233,15 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                                     <Link 
                                         key={link.path}
                                         to={link.path} 
-                                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group ${
+                                        title={isCollapsed ? link.label : undefined}
+                                        className={`flex items-center gap-3 ${isCollapsed ? 'justify-center px-2 py-3' : 'px-3.5 py-2.5'} rounded-xl text-xs font-medium transition-all group ${
                                             isActive 
                                             ? 'text-white bg-[#1e293b] font-semibold shadow-inner' 
                                             : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                                         }`}
                                     >
-                                        <IconComponent className={`w-4 h-4 transition-colors ${isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                                        <span>{link.label}</span>
+                                        <IconComponent className={`w-4 h-4 transition-colors shrink-0 ${isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
+                                        {!isCollapsed && <span>{link.label}</span>}
                                     </Link>
                                 );
                             })}
@@ -196,63 +249,68 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     ))}
                 </nav>
 
-                {/* Bottom Options (Announcements, Question Inbox, Report Analytics, Admin Calendar, Settings & Logout) */}
-                <div className="p-4 border-t border-slate-800/80 space-y-1 shrink-0">
+                {/* Bottom Options (Announcements, Question Inbox, Admin Calendar, Settings & Logout) */}
+                <div className="p-3 border-t border-slate-800/80 space-y-1 shrink-0">
                     <Link
                         to="/manage-announcements"
-                        className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                        title={isCollapsed ? "Announcements" : undefined}
+                        className={`flex items-center gap-3 ${isCollapsed ? 'justify-center p-2.5' : 'px-3.5 py-2'} rounded-xl text-xs font-medium transition-all ${
                             location.pathname === '/manage-announcements'
                             ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
                             : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                         }`}
                     >
-                        <Megaphone className={`w-4 h-4 ${location.pathname === '/manage-announcements' ? 'text-blue-400' : 'text-slate-400'}`} />
-                        <span>Announcements</span>
+                        <Megaphone className={`w-4 h-4 shrink-0 ${location.pathname === '/manage-announcements' ? 'text-blue-400' : 'text-slate-400'}`} />
+                        {!isCollapsed && <span>Announcements</span>}
                     </Link>
 
                     <Link
                         to="/admin/ask-question"
-                        className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                        title={isCollapsed ? "Question Inbox" : undefined}
+                        className={`flex items-center gap-3 ${isCollapsed ? 'justify-center p-2.5' : 'px-3.5 py-2'} rounded-xl text-xs font-medium transition-all ${
                             location.pathname === '/admin/ask-question'
                             ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
                             : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                         }`}
                     >
-                        <HelpCircle className={`w-4 h-4 ${location.pathname === '/admin/ask-question' ? 'text-blue-400' : 'text-slate-400'}`} />
-                        <span>Question Inbox</span>
+                        <HelpCircle className={`w-4 h-4 shrink-0 ${location.pathname === '/admin/ask-question' ? 'text-blue-400' : 'text-slate-400'}`} />
+                        {!isCollapsed && <span>Question Inbox</span>}
                     </Link>
 
                     <Link
                         to="/admin-calendar"
-                        className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                        title={isCollapsed ? "Admin Calendar" : undefined}
+                        className={`flex items-center gap-3 ${isCollapsed ? 'justify-center p-2.5' : 'px-3.5 py-2'} rounded-xl text-xs font-medium transition-all ${
                             location.pathname === '/admin-calendar'
                             ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
                             : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                         }`}
                     >
-                        <Calendar className={`w-4 h-4 ${location.pathname === '/admin-calendar' ? 'text-blue-400' : 'text-slate-400'}`} />
-                        <span>Admin Calendar</span>
+                        <Calendar className={`w-4 h-4 shrink-0 ${location.pathname === '/admin-calendar' ? 'text-blue-400' : 'text-slate-400'}`} />
+                        {!isCollapsed && <span>Admin Calendar</span>}
                     </Link>
 
                     <div className="pt-2 border-t border-slate-800/60 space-y-1">
                         <Link
                             to="/admin-settings"
-                            className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                            title={isCollapsed ? "Settings" : undefined}
+                            className={`flex items-center gap-3 ${isCollapsed ? 'justify-center p-2.5' : 'px-3.5 py-2'} rounded-xl text-xs font-medium transition-all ${
                                 location.pathname === '/admin-settings'
                                 ? 'text-white bg-[#1e293b] font-semibold shadow-inner'
                                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                             }`}
                         >
-                            <Settings className={`w-4 h-4 ${location.pathname === '/admin-settings' ? 'text-blue-400' : 'text-slate-400'}`} />
-                            <span>Settings</span>
+                            <Settings className={`w-4 h-4 shrink-0 ${location.pathname === '/admin-settings' ? 'text-blue-400' : 'text-slate-400'}`} />
+                            {!isCollapsed && <span>Settings</span>}
                         </Link>
                         
                         <button 
                             onClick={() => setShowLogoutModal(true)} 
-                            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group"
+                            title={isCollapsed ? "Logout" : undefined}
+                            className={`w-full flex items-center gap-3 ${isCollapsed ? 'justify-center p-2.5' : 'px-3.5 py-2'} rounded-xl text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all group cursor-pointer`}
                         >
-                            <LogOut className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
-                            <span>Logout</span>
+                            <LogOut className="w-4 h-4 text-slate-400 group-hover:text-red-400 shrink-0" />
+                            {!isCollapsed && <span>Logout</span>}
                         </button>
                     </div>
                 </div>
