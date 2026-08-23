@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
     Clock, CheckCircle2, ShieldCheck, FileText, 
     ArrowRight, Sparkles, BarChart3, ChevronRight, 
-    UserCheck, Calendar, Award, Lock, Zap
+    UserCheck, Calendar, Award, Lock, Zap, Globe, Mail
 } from 'lucide-react';
 import mentorLogLogo from '../assets/mentorlogOption.png';
 import ojtPicture from '../assets/ojt-picture.jpg';
@@ -294,23 +294,96 @@ const LandingPage = () => {
             </section>
 
             {/* --- FOOTER --- */}
-            <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-12 px-6">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-                    <div className="flex items-center gap-3">
-                        <img src={mentorLogLogo} alt="MentorLog" className="w-8 h-8" />
-                        <span className="text-lg font-black text-white tracking-tight">
-                            Mentor<span className="text-emerald-400">Log</span>
-                        </span>
-                    </div>
+            <footer className="relative z-10 bg-slate-50 text-slate-800 border-t border-slate-200 font-sans pt-16 pb-8 px-6 sm:px-12">
+                <div className="max-w-7xl mx-auto space-y-12">
                     
-                    <p className="text-xs text-slate-500 font-medium">
-                        © 2026 MentorLog • Cebu City. All rights reserved.
-                    </p>
+                    {/* Top Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                        
+                        {/* Brand & Description Column (Left - 5 Cols) */}
+                        <div className="lg:col-span-5 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <img src={mentorLogLogo} alt="MentorLog" className="w-8 h-8 drop-shadow-xs" />
+                                <span className="text-xl font-black text-slate-900 tracking-tight">
+                                    Mentor<span className="text-emerald-600">Log</span>
+                                </span>
+                            </div>
 
-                    <div className="flex items-center gap-6 text-xs text-slate-400 font-medium">
-                        <Link to="/login" className="hover:text-white transition-colors">Sign In</Link>
-                        <Link to="/register" className="hover:text-white transition-colors">Register</Link>
-                        <Link to="/forgot-password" className="hover:text-white transition-colors">Forgot Password</Link>
+                            <p className="text-xs text-slate-600 font-medium leading-relaxed max-w-md">
+                                Transparent internship tracking, automated daily time records (DTR), accomplishment log management, and intern progress tracking for <strong className="text-slate-900 font-bold">OJT Programs, Supervisors, & Universities.</strong>
+                            </p>
+
+                            {/* Social & Action Circular Buttons */}
+                            <div className="flex items-center gap-3 pt-2">
+                                <a 
+                                    href="#features" 
+                                    className="w-9 h-9 rounded-full bg-white border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all shadow-2xs cursor-pointer"
+                                    title="Website / Features"
+                                >
+                                    <Globe className="w-4 h-4" />
+                                </a>
+                                <a 
+                                    href="mailto:support@mentorlog.edu" 
+                                    className="w-9 h-9 rounded-full bg-white border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all shadow-2xs cursor-pointer"
+                                    title="Contact Email Support"
+                                >
+                                    <Mail className="w-4 h-4" />
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Links Columns (Right - 7 Cols) */}
+                        <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-8 text-xs">
+                            
+                            {/* Column 1: Platform Features */}
+                            <div className="space-y-3">
+                                <h4 className="font-extrabold text-slate-900 uppercase tracking-wider text-[11px]">PLATFORM FEATURES</h4>
+                                <ul className="space-y-2.5 text-slate-600 font-medium">
+                                    <li><a href="#features" className="hover:text-slate-900 transition-colors">Task Management</a></li>
+                                    <li><a href="#features" className="hover:text-slate-900 transition-colors">DTR & Attendance Log</a></li>
+                                    <li><a href="#metrics" className="hover:text-slate-900 transition-colors">Progress Tracker</a></li>
+                                    <li><a href="#features" className="hover:text-slate-900 transition-colors">Document Submissions</a></li>
+                                </ul>
+                            </div>
+
+                            {/* Column 2: Intern Services */}
+                            <div className="space-y-3">
+                                <h4 className="font-extrabold text-slate-900 uppercase tracking-wider text-[11px]">INTERN SERVICES</h4>
+                                <ul className="space-y-2.5 text-slate-600 font-medium">
+                                    <li><Link to="/login" className="hover:text-slate-900 transition-colors">Student Dashboard</Link></li>
+                                    <li><Link to="/login" className="hover:text-slate-900 transition-colors">Intern Q&A & Support</Link></li>
+                                    <li><Link to="/login" className="hover:text-slate-900 transition-colors">Feedback & Ratings</Link></li>
+                                    <li><Link to="/login" className="hover:text-slate-900 transition-colors">Weekly Activity Reports</Link></li>
+                                </ul>
+                            </div>
+
+                            {/* Column 3: MentorLog Organization */}
+                            <div className="space-y-3">
+                                <h4 className="font-extrabold text-slate-900 uppercase tracking-wider text-[11px]">MENTORLOG</h4>
+                                <ul className="space-y-2.5 text-slate-600 font-medium">
+                                    <li><a href="#workflow" className="hover:text-slate-900 transition-colors">About MentorLog OJT</a></li>
+                                    <li><a href="mailto:contact@mentorlog.ph" className="hover:text-slate-900 transition-colors">Office & Contact Info</a></li>
+                                    <li><Link to="/login" className="hover:text-slate-900 transition-colors">Terms & Conditions</Link></li>
+                                </ul>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {/* Bottom Copyright Bar */}
+                    <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500 font-medium">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p>© 2026 MentorLog OJT Platform. All rights reserved.</p>
+                            <p className="flex items-center justify-center sm:justify-start gap-1.5 text-slate-600 font-semibold">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                                Engineered & Maintained by <strong className="text-slate-800 font-bold">MentorLog Solutions</strong>
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-6 text-slate-500 font-semibold">
+                            <a href="#workflow" className="hover:text-slate-900 transition-colors">Terms</a>
+                            <a href="#workflow" className="hover:text-slate-900 transition-colors">Privacy</a>
+                        </div>
                     </div>
                 </div>
             </footer>
