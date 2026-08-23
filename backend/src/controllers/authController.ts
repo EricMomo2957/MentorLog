@@ -53,7 +53,29 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const register = async (req: Request, res: Response) => {
-    const { full_name, email, password, role, adminCode } = req.body;
+    const { 
+        full_name, 
+        member_title,
+        first_name,
+        middle_name,
+        last_name,
+        id_number,
+        email, 
+        phone,
+        date_of_birth,
+        age,
+        gender,
+        civil_status,
+        address,
+        school_name,
+        student_id,
+        course,
+        year_level,
+        it_position,
+        password, 
+        role, 
+        adminCode 
+    } = req.body;
 
     try {
         const [existingUser]: any = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -78,9 +100,42 @@ export const register = async (req: Request, res: Response) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        let computedFullName = full_name;
+        if (!computedFullName && (first_name || last_name)) {
+            computedFullName = `${first_name || ''} ${middle_name ? middle_name + ' ' : ''}${last_name || ''}`.trim();
+        }
+
+        const finalStudentId = student_id || id_number || null;
+        const finalIdNumber = id_number || student_id || null;
+
         const [result]: any = await pool.query(
-            'INSERT INTO users (full_name, email, password, role) VALUES (?, ?, ?, ?)',
-            [full_name, email, hashedPassword, role || 'student']
+            `INSERT INTO users (
+                member_title, first_name, middle_name, last_name, id_number,
+                full_name, email, phone, date_of_birth, age, gender, civil_status,
+                address, school_name, student_id, course, year_level, it_position, password, role
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                member_title || null,
+                first_name || null,
+                middle_name || null,
+                last_name || null,
+                finalIdNumber,
+                computedFullName || email,
+                email,
+                phone || null,
+                date_of_birth || null,
+                age || null,
+                gender || null,
+                civil_status || null,
+                address || null,
+                school_name || null,
+                finalStudentId,
+                course || null,
+                year_level || null,
+                it_position || null,
+                hashedPassword,
+                role || 'student'
+            ]
         );
 
         if (role === 'admin' && adminCode) {
@@ -90,7 +145,7 @@ export const register = async (req: Request, res: Response) => {
             );
         }
 
-        await logAction(result.insertId || null, 'CREATE', 'Authentication', `New account registered: ${full_name} (${role || 'student'})`);
+        await logAction(result.insertId || null, 'CREATE', 'Authentication', `New account registered: ${computedFullName || email} (${role || 'student'})`);
 
         res.status(201).json({ success: true, message: 'User registered successfully' });
     } catch (error) {
@@ -147,7 +202,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
     try {
         const [rows]: any = await pool.query(
-            'SELECT id, full_name, email, role, phone, student_id, course, year_level, profile_pic, ojt_hours_required, created_at FROM users WHERE id = ?',
+            'SELECT * FROM users WHERE id = ?',
             [userId]
         );
 
@@ -156,6 +211,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         }
 
         const user = rows[0];
+        delete user.password;
         res.status(200).json({
             success: true,
             user,
@@ -169,7 +225,28 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id || req.body.user_id || req.body.id;
-    const { full_name, email, phone, student_id, course, year_level, current_password, new_password } = req.body;
+    const { 
+        full_name, 
+        member_title,
+        first_name,
+        middle_name,
+        last_name,
+        id_number,
+        email, 
+        phone, 
+        date_of_birth,
+        age,
+        gender,
+        civil_status,
+        address,
+        school_name,
+        student_id, 
+        course, 
+        year_level, 
+        it_position,
+        current_password, 
+        new_password 
+    } = req.body;
 
     if (!userId) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -195,23 +272,52 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
             await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
         }
 
+        let computedFullName = full_name;
+        if (!computedFullName && (first_name || last_name)) {
+            computedFullName = `${first_name || ''} ${middle_name ? middle_name + ' ' : ''}${last_name || ''}`.trim();
+        }
+
         await pool.query(
             `UPDATE users 
              SET full_name = COALESCE(?, full_name), 
+                 member_title = COALESCE(?, member_title),
+                 first_name = COALESCE(?, first_name),
+                 middle_name = COALESCE(?, middle_name),
+                 last_name = COALESCE(?, last_name),
+                 id_number = COALESCE(?, id_number),
                  email = COALESCE(?, email), 
                  phone = COALESCE(?, phone), 
+                 date_of_birth = COALESCE(?, date_of_birth),
+                 age = COALESCE(?, age),
+                 gender = COALESCE(?, gender),
+                 civil_status = COALESCE(?, civil_status),
+                 address = COALESCE(?, address),
+                 school_name = COALESCE(?, school_name),
                  student_id = COALESCE(?, student_id), 
                  course = COALESCE(?, course), 
                  year_level = COALESCE(?, year_level),
+                 it_position = COALESCE(?, it_position),
                  profile_pic = COALESCE(?, profile_pic)
              WHERE id = ?`,
             [
-                full_name !== undefined ? full_name : null, 
+                computedFullName !== undefined ? computedFullName : null, 
+                member_title !== undefined ? member_title : null,
+                first_name !== undefined ? first_name : null,
+                middle_name !== undefined ? middle_name : null,
+                last_name !== undefined ? last_name : null,
+                id_number !== undefined ? id_number : null,
                 email !== undefined ? email : null, 
                 phone !== undefined ? phone : null, 
+                date_of_birth !== undefined ? date_of_birth : null,
+                age !== undefined ? age : null,
+                gender !== undefined ? gender : null,
+                civil_status !== undefined ? civil_status : null,
+                address !== undefined ? address : null,
+                school_name !== undefined ? school_name : null,
                 student_id !== undefined ? student_id : null, 
                 course !== undefined ? course : null, 
                 year_level !== undefined ? year_level : null, 
+                it_position !== undefined ? it_position : null,
                 profilePicUrl !== undefined ? profilePicUrl : null, 
                 userId
             ]
