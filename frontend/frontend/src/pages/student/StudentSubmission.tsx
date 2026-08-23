@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../../services/api';
+import { getAdminSettings } from '../admin/AdminSettings';
 import { 
     UploadCloud, FileText, ShieldCheck, 
     X, CheckCircle2, AlertTriangle, 
@@ -13,6 +14,12 @@ const StudentSubmission = () => {
 
     const handleSubmit = async () => {
         if (!file) return;
+
+        const currentSettings = getAdminSettings();
+        if (currentSettings.maintenanceMode) {
+            alert(currentSettings.maintenanceNotice || "System is currently under maintenance. Document submissions are temporarily restricted.");
+            return;
+        }
 
         setStatus('uploading');
 
