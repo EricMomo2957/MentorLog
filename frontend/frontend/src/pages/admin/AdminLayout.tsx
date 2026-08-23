@@ -69,7 +69,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     }, [fetchAdminProfile]);
 
     const confirmLogout = () => {
-        localStorage.clear();
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('user');
+        localStorage.removeItem('id');
         navigate('/login');
     };
 
