@@ -7,18 +7,31 @@ USE `mentorlog_db`;
 -- 1. users
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_title` varchar(20) DEFAULT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `id_number` varchar(50) DEFAULT NULL,
   `full_name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
+  `date_of_birth` date DEFAULT NULL,
+  `age` int(11) DEFAULT NULL,
+  `gender` varchar(20) DEFAULT NULL,
+  `civil_status` varchar(30) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `school_name` varchar(255) DEFAULT NULL,
   `student_id` varchar(50) DEFAULT NULL,
   `course` varchar(100) DEFAULT NULL,
   `year_level` varchar(10) DEFAULT NULL,
+  `it_position` varchar(100) DEFAULT NULL,
   `ojt_hours_required` int(11) DEFAULT 600,
   `password` varchar(255) NOT NULL,
   `role` enum('admin', 'student') DEFAULT 'student',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1,
   `required_hours` int(11) DEFAULT 600,
+  `profile_pic` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
