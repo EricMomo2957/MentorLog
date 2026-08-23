@@ -16,6 +16,37 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
 
     try {
         if (action === 'clock-in') {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            const dayOfWeek = now.getDay(); // 0 = Sun, 6 = Sat
+
+            const shiftStartStr = req.body.shiftStart || '08:00';
+            const shiftEndStr = req.body.shiftEnd || '17:00';
+            const gracePeriodMins = typeof req.body.gracePeriod === 'number' ? req.body.gracePeriod : 15;
+            const allowWeekend = req.body.allowWeekendAttendance !== undefined ? req.body.allowWeekendAttendance : false;
+
+            // Weekend restriction check
+            if (!allowWeekend && (dayOfWeek === 0 || dayOfWeek === 6)) {
+                return res.status(400).json({ 
+                    message: "It's weekend — spend your time with your family and get rest!" 
+                });
+            }
+
+            // Duty hours restriction calculation: 30 mins before shiftStart to latest boundary
+            const [startH, startM] = shiftStartStr.split(':').map(Number);
+            const [endH, endM] = shiftEndStr.split(':').map(Number);
+
+            const earliestMins = Math.max(0, (startH * 60 + (startM || 0)) - 30);
+            const latestMins = Math.max(18 * 60, (endH * 60 + (endM || 0)) + 60);
+
+            const currentMinutes = hour * 60 + minute;
+            if (currentMinutes < earliestMins || currentMinutes >= latestMins) {
+                return res.status(400).json({ 
+                    message: `Clock-in is restricted outside official duty hours (${shiftStartStr} - ${shiftEndStr}).` 
+                });
+            }
+
             // Check if ANY record exists for today (Active or Completed)
             const [rows]: any = await db.execute(
                 'SELECT id, clock_out FROM attendance WHERE user_id = ? AND date = CURDATE() LIMIT 1',
@@ -30,15 +61,11 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 return res.status(400).json({ message: "You are already clocked in." });
             }
 
-            // Logic for Late vs Present (Schedule: 8:00 AM - 5:00 PM)
-            // Present: 8:00 AM - 8:30 AM
-            // Late: After 8:30 AM
-            const now = new Date();
-            const hour = now.getHours();
-            const minute = now.getMinutes();
+            // Late threshold calculation: shiftStart + gracePeriod (e.g., 08:00 + 15m = 08:15 AM)
+            const lateThresholdMins = (startH * 60 + (startM || 0)) + gracePeriodMins;
             let status = 'Present';
 
-            if (hour > 8 || (hour === 8 && minute > 30)) {
+            if (currentMinutes > lateThresholdMins) {
                 status = 'Late';
             }
 
@@ -232,22 +259,93 @@ export const getWeeklyReport = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// Add this to your attendanceController.ts for the Student's personal history
 export const getMyAttendanceHistory = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
-
-    // Safety check: If userId is undefined, don't even try the database
     if (!userId) {
         return res.status(401).json({ message: "Not authorized" });
     }
 
     try {
-        // Wrap [userId] in an array to satisfy the 'ExecuteValues' type
-        const [rows] = await db.execute(
-            'SELECT * FROM attendance WHERE user_id = ? ORDER BY date DESC LIMIT 10',
-            [userId] 
+        // 1. Fetch student registration date
+        const [userRows]: any = await db.execute(
+            'SELECT created_at FROM users WHERE id = ?',
+            [userId]
         );
-        res.json(rows);
+        const userCreatedAt = userRows && userRows[0]?.created_at ? new Date(userRows[0].created_at) : new Date();
+
+        // 2. Fetch all real logs for this student
+        const [rows]: any = await db.execute(
+            `SELECT id, user_id, DATE_FORMAT(date, '%Y-%m-%d') as date, clock_in, clock_out, status, total_hours, is_active 
+             FROM attendance 
+             WHERE user_id = ? 
+             ORDER BY date DESC`,
+            [userId]
+        );
+
+        // Map existing dates logged
+        const loggedDates = new Set<string>();
+        rows.forEach((log: any) => {
+            if (log.date) {
+                const cleanDate = typeof log.date === 'string' ? log.date.split('T')[0] : String(log.date);
+                loggedDates.add(cleanDate);
+            }
+        });
+
+        // 3. Synthesize Absent records for past weekdays (Mon-Fri) from student account creation to today
+        const absentLogs: any[] = [];
+        const now = new Date();
+        const currentHour = now.getHours();
+
+        const startDate = new Date(userCreatedAt);
+        startDate.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(now);
+        endDate.setHours(0, 0, 0, 0);
+
+        let iterDate = new Date(startDate);
+        let synthId = -100;
+
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+        while (iterDate <= endDate) {
+            const dayOfWeek = iterDate.getDay(); // 0 = Sun, 6 = Sat
+            const year = iterDate.getFullYear();
+            const month = String(iterDate.getMonth() + 1).padStart(2, '0');
+            const day = String(iterDate.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+
+            const isToday = dateStr === todayStr;
+
+            // Exclude weekends (Sunday=0, Saturday=6)
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                // If today, only mark as Absent if past duty cutoff (6:00 PM / 18:00) and no clock-in occurred
+                const shouldMarkAbsent = !isToday || (isToday && currentHour >= 18);
+
+                if (shouldMarkAbsent && !loggedDates.has(dateStr)) {
+                    absentLogs.push({
+                        id: synthId--,
+                        user_id: userId,
+                        date: dateStr,
+                        clock_in: '---',
+                        clock_out: '---',
+                        status: 'Absent',
+                        total_hours: 0,
+                        is_active: 0
+                    });
+                }
+            }
+
+            iterDate.setDate(iterDate.getDate() + 1);
+        }
+
+        // Combine real logs and absent records, sorted DESC by date
+        const combined = [...rows, ...absentLogs].sort((a, b) => {
+            const dateA = typeof a.date === 'string' ? a.date.split('T')[0] : String(a.date);
+            const dateB = typeof b.date === 'string' ? b.date.split('T')[0] : String(b.date);
+            return dateB.localeCompare(dateA);
+        });
+
+        res.json(combined);
     } catch (error) {
         console.error("History Error:", error);
         res.status(500).json({ message: "Error fetching your history" });
