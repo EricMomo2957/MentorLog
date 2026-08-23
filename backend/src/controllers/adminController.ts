@@ -52,9 +52,14 @@ export const getStudentSummary = async (req: Request, res: Response) => {
 export const getAllStudents = async (req: Request, res: Response) => {
     try {
         const [rows]: any = await db.execute(
-            'SELECT id, full_name, email, phone, student_id, course, year_level, profile_pic, ojt_hours_required, role, created_at FROM users WHERE role = "student" ORDER BY created_at DESC'
+            'SELECT * FROM users WHERE role = "student" ORDER BY created_at DESC'
         );
-        res.status(200).json({ success: true, data: rows });
+        // Omit password hashes
+        const cleanedRows = rows.map((user: any) => {
+            delete user.password;
+            return user;
+        });
+        res.status(200).json({ success: true, data: cleanedRows });
     } catch (error) {
         console.error("Fetch Students Error:", error);
         res.status(500).json({ success: false, message: "Error fetching students" });
@@ -66,19 +71,85 @@ export const getAllStudents = async (req: Request, res: Response) => {
  */
 export const updateStudent = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { full_name, student_id, ojt_hours_required, phone, course, year_level } = req.body;
+    const { 
+        full_name, 
+        member_title,
+        first_name,
+        middle_name,
+        last_name,
+        id_number,
+        student_id, 
+        email,
+        phone, 
+        date_of_birth,
+        age,
+        gender,
+        civil_status,
+        address,
+        school_name,
+        course, 
+        year_level,
+        it_position,
+        ojt_hours_required 
+    } = req.body;
 
     try {
+        let computedFullName = full_name;
+        if (!computedFullName && (first_name || last_name)) {
+            computedFullName = `${first_name || ''} ${middle_name ? middle_name + ' ' : ''}${last_name || ''}`.trim();
+        }
+
         await db.execute(
-            'UPDATE users SET full_name = ?, student_id = ?, ojt_hours_required = ?, phone = COALESCE(?, phone), course = COALESCE(?, course), year_level = COALESCE(?, year_level) WHERE id = ? AND role = "student"',
-            [full_name, student_id, ojt_hours_required, phone || null, course || null, year_level || null, id]
+            `UPDATE users 
+             SET full_name = COALESCE(?, full_name), 
+                 member_title = COALESCE(?, member_title),
+                 first_name = COALESCE(?, first_name),
+                 middle_name = COALESCE(?, middle_name),
+                 last_name = COALESCE(?, last_name),
+                 id_number = COALESCE(?, id_number),
+                 student_id = COALESCE(?, student_id),
+                 email = COALESCE(?, email),
+                 phone = COALESCE(?, phone),
+                 date_of_birth = COALESCE(?, date_of_birth),
+                 age = COALESCE(?, age),
+                 gender = COALESCE(?, gender),
+                 civil_status = COALESCE(?, civil_status),
+                 address = COALESCE(?, address),
+                 school_name = COALESCE(?, school_name),
+                 course = COALESCE(?, course), 
+                 year_level = COALESCE(?, year_level),
+                 it_position = COALESCE(?, it_position),
+                 ojt_hours_required = COALESCE(?, ojt_hours_required)
+             WHERE id = ? AND role = "student"`,
+            [
+                computedFullName || null,
+                member_title || null,
+                first_name || null,
+                middle_name || null,
+                last_name || null,
+                id_number || student_id || null,
+                student_id || id_number || null,
+                email || null,
+                phone || null,
+                date_of_birth || null,
+                age || null,
+                gender || null,
+                civil_status || null,
+                address || null,
+                school_name || null,
+                course || null, 
+                year_level || null,
+                it_position || null,
+                ojt_hours_required !== undefined ? ojt_hours_required : null,
+                id
+            ]
         );
 
         await logAction(
             (req as any).user?.id || 0, 
             'UPDATE', 
             'Student Management', 
-            `Updated student: ${full_name} (ID: ${student_id})`
+            `Updated student record: ${computedFullName || id}`
         );
 
         res.status(200).json({ 
