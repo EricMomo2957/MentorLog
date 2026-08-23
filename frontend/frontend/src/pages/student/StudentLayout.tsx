@@ -5,8 +5,9 @@ import api from '../../services/api';
 import { NotificationDropdown } from '../../components/NotificationDropdown';
 import { 
     LayoutDashboard, CheckSquare, Calendar, MessageSquare, 
-    Inbox, Megaphone, User, HelpCircle, FileText, Settings, LogOut, Search
+    Inbox, Megaphone, User, HelpCircle, FileText, Settings, LogOut, Search, AlertTriangle
 } from 'lucide-react';
+import { getAdminSettings } from '../admin/AdminSettings';
 
 interface NavItem {
     path: string;
@@ -55,6 +56,8 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
         }
     }, []);
 
+    const [adminSettings, setAdminSettings] = useState(getAdminSettings);
+
     useEffect(() => {
         fetchUserProfile();
 
@@ -62,14 +65,32 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
             fetchUserProfile();
         };
 
+        const handleSettingsUpdate = (e?: Event) => {
+            if (e && (e as CustomEvent).detail) {
+                setAdminSettings((e as CustomEvent).detail);
+            } else {
+                setAdminSettings(getAdminSettings());
+            }
+        };
+
         window.addEventListener('profileUpdated', handleProfileUpdate);
+        window.addEventListener('mentorlog_settings_updated', handleSettingsUpdate);
+        window.addEventListener('storage', handleSettingsUpdate);
+
         return () => {
             window.removeEventListener('profileUpdated', handleProfileUpdate);
+            window.removeEventListener('mentorlog_settings_updated', handleSettingsUpdate);
+            window.removeEventListener('storage', handleSettingsUpdate);
         };
     }, [fetchUserProfile]);
 
     const confirmLogout = () => {
-        localStorage.clear(); 
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('user');
+        localStorage.removeItem('id');
         navigate('/login');
     };
 
@@ -236,6 +257,29 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                         </Link>
                     </div>
                 </header>
+
+                {/* Maintenance Mode Public Announcement Banner for Students */}
+                {adminSettings.maintenanceMode && (
+                    <div className="bg-amber-500 text-white px-8 py-3.5 border-b border-amber-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-in slide-in-from-top duration-300">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-600 rounded-xl shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-[11px] font-black uppercase tracking-wider text-amber-100 flex items-center gap-2">
+                                    <span>Maintenance Mode Active</span>
+                                    <span className="bg-amber-700/80 px-2 py-0.5 rounded text-[9px] font-bold">Public Announcement</span>
+                                </p>
+                                <p className="text-xs font-semibold text-white mt-0.5">
+                                    {adminSettings.maintenanceNotice || 'System is currently undergoing scheduled maintenance. Please check back later.'}
+                                </p>
+                            </div>
+                        </div>
+                        <span className="px-3 py-1 text-[10px] font-extrabold bg-amber-700 text-white rounded-full border border-amber-400/40 shrink-0 self-start sm:self-auto">
+                            Clock-ins Restricted
+                        </span>
+                    </div>
+                )}
 
                 {/* PAGE CONTENT */}
                 <main className="flex-1 bg-[#f8fafc] p-6 lg:p-8">
