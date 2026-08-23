@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
+import { getAdminSettings } from '../admin/AdminSettings';
 import { PrintableDTRModal } from '../../components/PrintableDTRModal';
 import { 
     Clock, Play, Square, CheckCircle2, ShieldCheck, AlertCircle, AlertTriangle, 
@@ -49,6 +50,10 @@ const StudentDashboard = () => {
     const [hasCompletedShift, setHasCompletedShift] = useState(false);
     const [activeLogItem, setActiveLogItem] = useState<AttendanceLog | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+    const [adminSettings, setAdminSettingsState] = useState(getAdminSettings);
+
+    const [showExtensionModal, setShowExtensionModal] = useState(false);
+    const [hasAcceptedExtension, setHasAcceptedExtension] = useState(false);
 
     const [allTasks, setAllTasks] = useState<TaskItem[]>([]);
     const [pendingTasks, setPendingTasks] = useState<TaskItem[]>([]);
@@ -142,9 +147,9 @@ const StudentDashboard = () => {
             const taskData = Array.isArray(taskRes.data) ? taskRes.data : (taskRes.data?.data || []);
             const annData = Array.isArray(annRes.data) ? annRes.data : (annRes.data?.data || []);
 
-            if (profileData && profileData.ojt_hours_required) {
-                setTotalTargetHours(Number(profileData.ojt_hours_required) || 600);
-            }
+            const currentSettings = getAdminSettings();
+            const targetHours = currentSettings.requiredOjtHours || (profileData && Number(profileData.ojt_hours_required)) || 600;
+            setTotalTargetHours(targetHours);
 
             if (Array.isArray(taskData)) {
                 setAllTasks(taskData);
@@ -187,13 +192,112 @@ const StudentDashboard = () => {
         refreshDashboardData();
 
         const clockInterval = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(clockInterval);
+
+        const handleSettingsUpdate = () => {
+            setAdminSettingsState(getAdminSettings());
+            refreshDashboardData();
+        };
+        window.addEventListener('mentorlog_settings_updated', handleSettingsUpdate);
+        window.addEventListener('storage', handleSettingsUpdate);
+
+        return () => {
+            clearInterval(clockInterval);
+            window.removeEventListener('mentorlog_settings_updated', handleSettingsUpdate);
+            window.removeEventListener('storage', handleSettingsUpdate);
+        };
     }, [refreshDashboardData]);
 
-    const handleClockToggle = async (actionOverride?: 'resume') => {
+    // Shift Extension & 6:30 PM Cutoff Monitor
+    useEffect(() => {
+        if (isClockedIn) {
+            const now = currentTime;
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+
+            // At or after 5:00 PM (1020 mins) up to 6:30 PM (1110 mins), prompt for shift extension if not yet accepted/dismissed
+            if (currentMins >= 1020 && currentMins < 1110 && !hasAcceptedExtension && !showExtensionModal) {
+                setShowExtensionModal(true);
+            }
+
+            // Automatic cutoff at 6:30 PM (1110 mins)
+            if (currentMins >= 1110) {
+                handleClockToggle('clock-out');
+                setShowExtensionModal(false);
+                setToast({
+                    message: "Shift automatically ended! Maximum overtime limit (6:30 PM) reached.",
+                    type: 'warning'
+                });
+            }
+        }
+    }, [currentTime, isClockedIn, hasAcceptedExtension, showExtensionModal]);
+
+const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allowed: boolean; reason?: string; isWeekendRest?: boolean } => {
+    const currentSettings = adminSettings;
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const dayOfWeek = now.getDay(); // 0 = Sun, 6 = Sat
+
+    // Check Weekend Attendance setting
+    if (!currentSettings.allowWeekendAttendance && (dayOfWeek === 0 || dayOfWeek === 6)) {
+        return {
+            allowed: false,
+            isWeekendRest: true,
+            reason: "It's weekend — spend your time with your family and get rest!"
+        };
+    }
+
+    const [startH, startM] = (shiftStartStr || '08:00').split(':').map(Number);
+    const shiftStartMinutes = startH * 60 + (startM || 0);
+
+    // Allow clock-in 30 mins before shiftStart
+    const earliestClockInMinutes = Math.max(0, shiftStartMinutes - 30);
+
+    const [endH, endM] = (shiftEndStr || '17:00').split(':').map(Number);
+    const shiftEndMinutes = endH * 60 + (endM || 0);
+
+    // Clock-in locks past 6:00 PM (18:00) or 1 hour past shiftEnd
+    const latestClockInMinutes = Math.max(18 * 60, shiftEndMinutes + 60);
+
+    if (currentMinutes < earliestClockInMinutes || currentMinutes >= latestClockInMinutes) {
+        return {
+            allowed: false,
+            reason: `Clock-in is restricted outside official duty hours (${shiftStartStr} - ${shiftEndStr}).`
+        };
+    }
+
+    return { allowed: true };
+};
+
+    const handleClockToggle = async (actionOverride?: 'clock-in' | 'clock-out' | 'resume') => {
+        const currentSettings = getAdminSettings();
         const action = actionOverride || (isClockedIn ? 'clock-out' : 'clock-in');
+
+        if (action === 'clock-in') {
+            if (currentSettings.maintenanceMode) {
+                setToast({
+                    message: currentSettings.maintenanceNotice || "System is under maintenance. Clock-ins are temporarily restricted.",
+                    type: 'warning'
+                });
+                return;
+            }
+
+            const shiftCheck = isWithinShiftHours(currentSettings.shiftStart, currentSettings.shiftEnd);
+            if (!shiftCheck.allowed) {
+                setToast({
+                    message: shiftCheck.reason || `Clock-in is restricted outside official duty hours (${currentSettings.shiftStart} - ${currentSettings.shiftEnd}).`,
+                    type: 'warning'
+                });
+                return;
+            }
+        }
+
         try {
-            const response = await api.post('/attendance/toggle', { action });
+            const response = await api.post('/attendance/toggle', { 
+                action,
+                shiftStart: currentSettings.shiftStart,
+                shiftEnd: currentSettings.shiftEnd,
+                gracePeriod: currentSettings.gracePeriod,
+                allowWeekendAttendance: currentSettings.allowWeekendAttendance
+            });
 
             if (response.data?.success) {
                 if (action === 'clock-out') {
@@ -202,7 +306,7 @@ const StudentDashboard = () => {
                     const isLate = response.data.status === 'Late';
                     setToast({ 
                         message: isLate 
-                            ? "Shift started! (Marked as Late Arrival — Clocked in after 8:30 AM)" 
+                            ? `Shift started! (Marked as Late Arrival — Clocked in after grace period of ${currentSettings.gracePeriod} mins)` 
                             : "Shift started! (On-Time Present)", 
                         type: isLate ? 'warning' : 'success' 
                     });
@@ -244,6 +348,7 @@ const StudentDashboard = () => {
     };
 
     const progressPercentage = Math.min((report.accumulated_hours / totalTargetHours) * 100, 100);
+    const remainingHours = Math.max(0, totalTargetHours - report.accumulated_hours);
 
     const presentCount = logs.filter(l => l.status === 'Present').length;
     const lateCount = logs.filter(l => l.status === 'Late').length;
@@ -283,16 +388,39 @@ const StudentDashboard = () => {
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <button
                         onClick={() => handleClockToggle()}
-                        disabled={!isClockedIn && hasCompletedShift}
+                        disabled={
+                            (!isClockedIn && hasCompletedShift) ||
+                            (!isClockedIn && adminSettings.maintenanceMode) ||
+                            (!isClockedIn && !isWithinShiftHours(adminSettings.shiftStart, adminSettings.shiftEnd).allowed)
+                        }
                         className={`px-6 py-2.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-2 ${
                             isClockedIn
                                 ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                                : hasCompletedShift
-                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                : (!isClockedIn && adminSettings.maintenanceMode)
+                                    ? 'bg-amber-100 text-amber-700 cursor-not-allowed border border-amber-300'
+                                    : (!isClockedIn && !isWithinShiftHours(adminSettings.shiftStart, adminSettings.shiftEnd).allowed)
+                                        ? 'bg-slate-100 text-slate-500 cursor-not-allowed border border-slate-200'
+                                        : hasCompletedShift
+                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                         }`}
                     >
-                        {!isClockedIn && hasCompletedShift ? (
+                        {!isClockedIn && adminSettings.maintenanceMode ? (
+                            <>
+                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                <span>Maintenance Locked</span>
+                            </>
+                        ) : !isClockedIn && isWithinShiftHours(adminSettings.shiftStart, adminSettings.shiftEnd).isWeekendRest ? (
+                            <>
+                                <Clock className="w-4 h-4 text-amber-500" />
+                                <span>It's weekend — spend your time with your family and get rest!</span>
+                            </>
+                        ) : !isClockedIn && !isWithinShiftHours(adminSettings.shiftStart, adminSettings.shiftEnd).allowed ? (
+                            <>
+                                <Clock className="w-4 h-4 text-slate-500" />
+                                <span>Duty Locked (6:00 PM - 7:30 AM)</span>
+                            </>
+                        ) : !isClockedIn && hasCompletedShift ? (
                             <>
                                 <CheckCircle2 className="w-4 h-4 text-slate-500" />
                                 <span>Shift Completed</span>
@@ -315,7 +443,11 @@ const StudentDashboard = () => {
             {/* Live Active Shift Banner Widget */}
             {isClockedIn && activeLogItem && (
                 <div className={`rounded-xl p-5 shadow-xs relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4 text-white ${
-                    activeLogItem.status === 'Late' ? 'bg-amber-500' : 'bg-emerald-600'
+                    hasAcceptedExtension 
+                        ? 'bg-amber-600 border border-amber-700'
+                        : activeLogItem.status === 'Late' 
+                            ? 'bg-amber-500' 
+                            : 'bg-emerald-600'
                 }`}>
                     <div className="flex items-center gap-3.5">
                         <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
@@ -325,7 +457,12 @@ const StudentDashboard = () => {
                             <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-white/90">
-                                    {activeLogItem.status === 'Late' ? 'Active Shift (Marked as Late Arrival)' : 'Active Shift (On-Time Present)'}
+                                    {hasAcceptedExtension 
+                                        ? 'Extended Shift (Overtime — Max 6:30 PM)'
+                                        : activeLogItem.status === 'Late' 
+                                            ? 'Active Shift (Marked as Late Arrival — Clocked in after 8:30 AM)' 
+                                            : 'Active Shift (On-Time Present — Grace period 7:30 AM - 8:30 AM)'
+                                    }
                                 </span>
                             </div>
                             <h2 className="text-lg font-bold tracking-tight mt-0.5">
@@ -334,9 +471,76 @@ const StudentDashboard = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white/10 px-6 py-2.5 rounded-lg border border-white/20 text-center font-mono">
-                        <span className="text-2xl font-black tracking-wider">{getElapsedTime().formatted}</span>
-                        <span className="text-[10px] uppercase block tracking-wider text-white/90 mt-0.5">Elapsed (HH : MM : SS)</span>
+                    <div className="flex items-center gap-3">
+                        {/* If past 5:00 PM and shift is active but not yet marked as extended, offer prompt trigger */}
+                        {currentTime.getHours() >= 17 && !hasAcceptedExtension && (
+                            <button
+                                onClick={() => setShowExtensionModal(true)}
+                                className="bg-white text-amber-900 hover:bg-amber-50 px-3.5 py-2 rounded-lg text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 border border-white/30"
+                            >
+                                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Extend Shift?</span>
+                            </button>
+                        )}
+
+                        <div className="bg-white/10 px-6 py-2.5 rounded-lg border border-white/20 text-center font-mono">
+                            <span className="text-2xl font-black tracking-wider">{getElapsedTime().formatted}</span>
+                            <span className="text-[10px] uppercase block tracking-wider text-white/90 mt-0.5">Elapsed (HH : MM : SS)</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Shift Extension / Urgent Work Modal Prompt */}
+            {showExtensionModal && (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 text-center">
+                        <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-xs">
+                            <Clock className="w-7 h-7 text-amber-600" />
+                        </div>
+
+                        <div>
+                            <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Do you want to extend your shift time?</h3>
+                            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed font-medium">
+                                Regular OJT shift ended at <span className="font-bold text-slate-700">5:00 PM</span>. You have an extension allowance of up to <span className="font-bold text-amber-600">1 hr 30 mins (until 6:30 PM max)</span> for urgent tasks or overtime.
+                            </p>
+                        </div>
+
+                        <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3.5 text-left text-xs space-y-1.5">
+                            <div className="font-bold text-amber-900 flex items-center gap-1.5">
+                                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                Shift Extension Rules:
+                            </div>
+                            <ul className="text-amber-800 text-[11px] list-disc list-inside space-y-0.5 pt-0.5">
+                                <li>Overtime extension is permitted up to <strong>6:30 PM maximum</strong>.</li>
+                                <li>Clock-in system completely locks from <strong>6:00 PM</strong> to <strong>7:30 AM</strong>.</li>
+                            </ul>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                            <button
+                                onClick={() => {
+                                    setHasAcceptedExtension(true);
+                                    setShowExtensionModal(false);
+                                    setToast({ message: "Shift extended! You may work until 6:30 PM max.", type: 'success' });
+                                }}
+                                className="w-full sm:w-1/2 py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5"
+                            >
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                <span>Extend Shift</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setShowExtensionModal(false);
+                                    handleClockToggle('clock-out');
+                                }}
+                                className="w-full sm:w-1/2 py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5"
+                            >
+                                <Square className="w-3.5 h-3.5 fill-current" />
+                                <span>End Shift Now</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -353,11 +557,19 @@ const StudentDashboard = () => {
                         </span>
                     </div>
 
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-extrabold text-slate-900 font-mono tracking-tight">
-                            {report.accumulated_hours.toFixed(1)}
-                        </span>
-                        <span className="text-sm font-semibold text-slate-400">/ {totalTargetHours} required hrs</span>
+                    <div className="flex items-baseline justify-between">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-4xl font-extrabold text-slate-900 font-mono tracking-tight">
+                                {report.accumulated_hours.toFixed(1)}
+                            </span>
+                            <span className="text-sm font-semibold text-slate-400">/ {totalTargetHours} required hrs</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Time</span>
+                            <span className="text-base font-extrabold font-mono text-amber-600">
+                                {remainingHours.toFixed(1)} <span className="text-xs font-semibold text-amber-600/80">hrs left</span>
+                            </span>
+                        </div>
                     </div>
 
                     {/* Progress Bar */}
@@ -366,6 +578,16 @@ const StudentDashboard = () => {
                             className="bg-blue-600 h-full rounded-full transition-all duration-700" 
                             style={{ width: `${progressPercentage}%` }}
                         ></div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                        <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            Time to Completion
+                        </span>
+                        <span className="font-mono font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/70">
+                            {remainingHours === 0 ? 'Target Reached! 🎉' : `${remainingHours.toFixed(1)} hours remaining`}
+                        </span>
                     </div>
                 </div>
 
