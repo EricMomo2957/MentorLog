@@ -2,7 +2,19 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { login, register, forgotPassword, getProfile, updateProfile } from '../controllers/authController';    
+import { 
+    login, 
+    register, 
+    sendRegistrationOTP, 
+    verifyRegistrationOTP, 
+    resendRegistrationOTP, 
+    sendPasswordResetOTP,
+    verifyPasswordResetOTP,
+    resetPasswordWithOTP,
+    forgotPassword, 
+    getProfile, 
+    updateProfile 
+} from '../controllers/authController';    
 import { 
     getForgotPasswordRequests, 
     resolvePasswordRequest 
@@ -38,6 +50,12 @@ const uploadProfile = multer({
 
 router.post('/login', login);
 router.post('/register', register);
+router.post('/send-otp', sendRegistrationOTP);
+router.post('/verify-otp', verifyRegistrationOTP);
+router.post('/resend-otp', resendRegistrationOTP);
+router.post('/forgot-password/send-otp', sendPasswordResetOTP);
+router.post('/forgot-password/verify-otp', verifyPasswordResetOTP);
+router.post('/forgot-password/reset', resetPasswordWithOTP);
 router.post('/forgot-password', forgotPassword);
 
 // GET & PUT profile with optional image upload
