@@ -5,7 +5,7 @@ import { createNotification, notifyAdmins } from './notificationController';
 export const getAllQuestions = async (req: Request, res: Response) => {
     try {
         const [rows] = await db.execute(`
-            SELECT q.*, u.full_name as student_name 
+            SELECT q.*, u.full_name as student_name, u.profile_pic 
             FROM intern_questions q
             JOIN users u ON q.student_id = u.id
             ORDER BY q.created_at DESC
@@ -20,7 +20,11 @@ export const getConversation = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         const [replies] = await db.execute(
-            `SELECT * FROM question_replies WHERE question_id = ? ORDER BY created_at ASC`,
+            `SELECT r.*, u.full_name as sender_name, u.profile_pic as sender_profile_pic 
+             FROM question_replies r 
+             LEFT JOIN users u ON r.sender_id = u.id 
+             WHERE r.question_id = ? 
+             ORDER BY r.created_at ASC`,
             [id]
         );
         res.status(200).json(replies);
@@ -104,7 +108,11 @@ export const getQuestionsByStudent = async (req: Request, res: Response) => {
     const { student_id } = req.params; 
     try {
         const [rows] = await db.execute(
-            `SELECT * FROM intern_questions WHERE student_id = ? ORDER BY created_at DESC`,
+            `SELECT q.*, u.full_name as student_name, u.profile_pic 
+             FROM intern_questions q
+             JOIN users u ON q.student_id = u.id
+             WHERE q.student_id = ? 
+             ORDER BY q.created_at DESC`,
             [student_id]
         );
         res.status(200).json(rows);
