@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import mentorLogLogo from '../assets/mentorlogOption.png';
 import api from '../services/api';
+import Footer from '../components/Footer';
 
 const ForgotPassword = () => {
     // Multi-Step State (1: Request Email, 2: Verify OTP, 3: New Password, 4: Complete)
@@ -567,13 +568,10 @@ const ForgotPassword = () => {
             </div>
 
             {/* ========================================================= */}
-            {/* 4. FOOTER SECURITY NOTICE                                 */}
+            {/* 4. FOOTER                                                 */}
             {/* ========================================================= */}
-            <div className="w-full max-w-2xl text-center z-20 pt-2 pb-2 space-y-1">
-                <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-500">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/80" />
-                    <span>Protected by MentorLog Automated Multi-Key Encryption protocol.</span>
-                </div>
+            <div className="w-full mt-10 z-20">
+                <Footer />
             </div>
 
         </div>

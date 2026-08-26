@@ -16,11 +16,11 @@ import {
     Award, 
     BookMarked,
     PenTool,
-    Sparkles,
-    ShieldCheck
+    Sparkles
 } from 'lucide-react';
 import mentorLogLogo from '../assets/mentorlogOption.png'; 
 import api from '../services/api';
+import Footer from '../components/Footer';
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
@@ -269,16 +269,10 @@ const Login = () => {
             </div>
 
             {/* ========================================================= */}
-            {/* 4. FOOTER CREDITS & SECURITY NOTICE                        */}
+            {/* 4. FOOTER                                                 */}
             {/* ========================================================= */}
-            <div className="w-full max-w-2xl text-center z-20 pt-3 pb-2 space-y-1">
-                <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-500">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/80" />
-                    <span>Protected by MentorLog Automated Multi-Key Encryption protocol.</span>
-                </div>
-                <p className="text-[10px] font-semibold text-slate-600">
-                    For support, contact <a href="mailto:support@mentorlog.edu" className="hover:text-slate-400 underline">support@mentorlog.edu</a>
-                </p>
+            <div className="w-full mt-10 z-20">
+                <Footer />
             </div>
 
         </div>

@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import logoPhoto from "../../assets/mentorlogOption.png"; 
 import api from '../../services/api';
 import { NotificationDropdown } from '../../components/NotificationDropdown';
+import Footer from '../../components/Footer';
 import { 
     LayoutDashboard, CheckSquare, Calendar, MessageSquare, 
     Inbox, Megaphone, User, HelpCircle, FileText, Settings, LogOut, Search, AlertTriangle,
@@ -339,6 +340,9 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
                 <main className="flex-1 bg-[#f8fafc] p-6 lg:p-8">
                     {children}
                 </main>
+
+                {/* FOOTER */}
+                <Footer />
             </div>
 
             {/* --- LOGOUT MODAL --- */}
