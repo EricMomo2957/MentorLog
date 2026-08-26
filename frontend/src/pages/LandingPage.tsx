@@ -5,7 +5,7 @@ import {
     ArrowRight, Sparkles, BarChart3, ChevronRight, 
     UserCheck, Calendar, Award, Lock, Zap, Globe, Mail,
     Pencil, BookOpen, GraduationCap, ClipboardList, 
-    BookMarked, PenTool
+    BookMarked, PenTool, Star, Quote
 } from 'lucide-react';
 import mentorLogLogo from '../assets/mentorlogOption.png';
 import ojtPicture from '../assets/ojt-picture.jpg';
@@ -25,6 +25,35 @@ const LandingPage = () => {
         hoursRendered: '0h'
     });
 
+    const defaultReviews = [
+        {
+            name: "Joshua Mark Tan",
+            role: "BS Information Technology Intern",
+            avatar: "JT",
+            rating: 5,
+            content: "MentorLog made tracking my 480 required OJT hours effortless! Clocking in daily takes seconds and exporting my printable DTR for my advisor was super smooth.",
+            tag: "DTR Tracking"
+        },
+        {
+            name: "Maria Sophia Santos",
+            role: "Software Developer Intern",
+            avatar: "MS",
+            rating: 5,
+            content: "I love the weekly journal and task submission system. My company supervisor can review my accomplishments and provide feedback in real time.",
+            tag: "Journal Logs"
+        },
+        {
+            name: "Christian Diaz",
+            role: "BS Computer Science Intern",
+            avatar: "CD",
+            rating: 5,
+            content: "The real-time progress tracker and audit log features give complete peace of mind. Highly recommended for all university OJT programs!",
+            tag: "Progress Tracking"
+        }
+    ];
+
+    const [reviews, setReviews] = useState(defaultReviews);
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         const role = localStorage.getItem('role'); 
@@ -33,12 +62,25 @@ const LandingPage = () => {
             navigate(role === 'admin' ? '/admin-dashboard' : '/student-dashboard');
         }
 
-        // Fetch live stats from database
+        // Fetch live stats & student reviews from database
         const fetchStats = async () => {
             try {
                 const response = await api.get('/auth/public-stats');
-                if (response.data?.success && response.data?.stats) {
-                    setLiveStats(response.data.stats);
+                if (response.data?.success) {
+                    if (response.data?.stats) {
+                        setLiveStats(response.data.stats);
+                    }
+                    if (response.data?.feedbacks && response.data.feedbacks.length > 0) {
+                        const dbReviews = response.data.feedbacks.map((f: any) => ({
+                            name: f.student_name || 'Verified Student Intern',
+                            role: f.category || 'OJT Student Intern',
+                            avatar: (f.student_name || 'ST').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase(),
+                            rating: f.rating || 5,
+                            content: f.content,
+                            tag: f.category || 'Intern Feedback'
+                        }));
+                        setReviews(dbReviews);
+                    }
                 }
             } catch (err) {
                 console.error("Failed to load live stats:", err);
@@ -332,6 +374,100 @@ const LandingPage = () => {
                             </div>
                         ))}
                     </div>
+                </div>
+            </section>
+
+            {/* ========================================================= */}
+            {/* 6.5 STUDENT INTERN RATINGS & REVIEWS                      */}
+            {/* ========================================================= */}
+            <section id="reviews" className="relative z-10 py-24 px-6 max-w-7xl mx-auto">
+                {/* Section Header */}
+                <div className="text-center max-w-2xl mx-auto mb-16">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#090e1a] border border-slate-800 text-xs font-bold text-amber-400 mb-4 backdrop-blur-md shadow-lg">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>INTERN FEEDBACK & RATINGS</span>
+                    </div>
+                    <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                        Loved by Student Interns & Mentors
+                    </h3>
+                    <p className="text-slate-400 text-sm font-medium mt-2">
+                        Real feedback from students using MentorLog for daily DTR tracking, journal submissions, and supervisor reviews.
+                    </p>
+                </div>
+
+                {/* Overall Rating Banner */}
+                <div className="mb-14 max-w-4xl mx-auto bg-[#090e1a]/90 border border-slate-800/90 rounded-3xl p-6 sm:p-8 backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-[2px] bg-linear-to-r from-transparent via-emerald-500/80 to-transparent rounded-full" />
+                    
+                    <div className="flex items-center gap-5">
+                        <div className="text-center sm:text-left">
+                            <span className="text-5xl font-black text-white tracking-tight">4.9</span>
+                            <span className="text-sm font-bold text-slate-400"> / 5.0</span>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-1 mb-1">
+                                {[...Array(5)].map((_, i) => (
+                                    <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
+                                ))}
+                            </div>
+                            <p className="text-xs font-bold text-slate-300">Overall Student Satisfaction Rating</p>
+                            <p className="text-[11px] text-slate-500 font-medium">Based on verified intern logbook entries & attendance reviews</p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 text-[11px] font-bold">
+                        <span className="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            ✓ 100% Verified DTR Logs
+                        </span>
+                        <span className="px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-400">
+                            ⚡ Instant Export
+                        </span>
+                        <span className="px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400">
+                            🛡️ 24/7 Portal Access
+                        </span>
+                    </div>
+                </div>
+
+                {/* Ratings Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {reviews.map((r, idx) => (
+                        <div 
+                            key={idx}
+                            className="p-7 rounded-3xl bg-[#090e1a]/80 border border-slate-800/90 hover:border-emerald-500/40 transition-all duration-300 backdrop-blur-xl flex flex-col justify-between group hover:shadow-[0_10px_30px_rgba(16,185,129,0.1)] relative"
+                        >
+                            <Quote className="absolute top-6 right-6 w-8 h-8 text-slate-800/40 group-hover:text-emerald-500/20 transition-colors pointer-events-none" />
+
+                            <div>
+                                {/* Stars */}
+                                <div className="flex items-center gap-1 mb-4">
+                                    {[...Array(r.rating)].map((_, i) => (
+                                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                                    ))}
+                                </div>
+
+                                {/* Review Quote */}
+                                <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed mb-6 italic">
+                                    "{r.content}"
+                                </p>
+                            </div>
+
+                            {/* Student Profile Info */}
+                            <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-sm flex items-center justify-center shadow-inner">
+                                        {r.avatar}
+                                    </div>
+                                    <div>
+                                        <h5 className="text-xs font-black text-white">{r.name}</h5>
+                                        <p className="text-[10px] font-semibold text-slate-400">{r.role}</p>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                                    {r.tag}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </section>
 

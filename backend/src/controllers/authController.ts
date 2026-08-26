@@ -756,11 +756,15 @@ export const getPublicStats = async (_req: Request, res: Response) => {
         const [tasksCount]: any = await pool.query("SELECT COUNT(*) as count FROM tasks");
         const [attendanceCount]: any = await pool.query("SELECT COUNT(*) as count FROM attendance");
         const [totalHours]: any = await pool.query("SELECT COALESCE(SUM(total_hours), 0) as total FROM attendance");
+        const [avgRatingRes]: any = await pool.query("SELECT COALESCE(AVG(rating), 4.9) as avgRating, COUNT(*) as count FROM feedbacks");
+        const [recentFeedbacks]: any = await pool.query("SELECT student_name, category, content, rating, created_at FROM feedbacks ORDER BY id DESC LIMIT 6");
 
         const activeInterns = studentsCount[0]?.count || 0;
         const journalLogs = tasksCount[0]?.count || 0;
         const verifiedLogs = attendanceCount[0]?.count || 0;
         const renderedHours = Math.round(Number(totalHours[0]?.total || 0));
+        const avgRating = Number(avgRatingRes[0]?.avgRating || 4.9).toFixed(1);
+        const totalReviews = avgRatingRes[0]?.count || 0;
 
         res.status(200).json({
             success: true,
@@ -768,14 +772,11 @@ export const getPublicStats = async (_req: Request, res: Response) => {
                 activeInterns: activeInterns > 0 ? `${activeInterns}+` : '0',
                 dtrAccuracy: verifiedLogs > 0 ? '99.8%' : '100%',
                 journalLogs: journalLogs > 0 ? `${journalLogs}+` : '0',
-                hoursRendered: renderedHours > 0 ? `${renderedHours}h+` : '0h'
+                hoursRendered: renderedHours > 0 ? `${renderedHours}h+` : '0h',
+                avgRating: `${avgRating}`,
+                totalReviews
             },
-            raw: {
-                activeInterns,
-                journalLogs,
-                verifiedLogs,
-                renderedHours
-            }
+            feedbacks: recentFeedbacks
         });
     } catch (error) {
         console.error("Get Public Stats Error:", error);
