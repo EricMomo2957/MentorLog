@@ -1,10 +1,42 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Globe, Mail, ShieldCheck, FileText, Info, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Globe, Mail, ShieldCheck, FileText, Info, X, CheckCircle2, Lock, Sparkles, UserCheck } from 'lucide-react';
 import mentorLogLogo from '../assets/mentorlogOption.png';
 
+interface FeatureModalInfo {
+    title: string;
+    description: string;
+    targetRoute: {
+        student: string;
+        admin: string;
+    };
+    icon: React.ReactNode;
+}
+
 const Footer: React.FC = () => {
+    const navigate = useNavigate();
     const [activeModal, setActiveModal] = useState<'terms' | 'privacy' | 'about' | null>(null);
+    const [featureInfo, setFeatureInfo] = useState<FeatureModalInfo | null>(null);
+
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    const isLoggedIn = Boolean(token && role);
+
+    const handleFeatureClick = (info: FeatureModalInfo) => {
+        if (isLoggedIn) {
+            // Smart navigation depending on role - NEVER logs the user out!
+            if (role === 'student') {
+                navigate(info.targetRoute.student);
+            } else if (role === 'admin') {
+                navigate(info.targetRoute.admin);
+            } else {
+                navigate('/login');
+            }
+        } else {
+            // Show informative modal for unauthenticated visitors
+            setFeatureInfo(info);
+        }
+    };
 
     return (
         <>
@@ -29,13 +61,13 @@ const Footer: React.FC = () => {
 
                             {/* Social & Contact Circular Buttons */}
                             <div className="flex items-center gap-3 pt-2">
-                                <a 
-                                    href="#features" 
+                                <button 
+                                    onClick={() => setActiveModal('about')}
                                     className="w-9 h-9 rounded-full bg-[#090e1a] border border-slate-800 hover:border-emerald-500/50 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-md"
-                                    title="Website & Features"
+                                    title="About MentorLog OJT"
                                 >
                                     <Globe className="w-4 h-4" />
-                                </a>
+                                </button>
                                 <a 
                                     href="mailto:support@mentorlog.edu" 
                                     className="w-9 h-9 rounded-full bg-[#090e1a] border border-slate-800 hover:border-emerald-500/50 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-md"
@@ -53,10 +85,58 @@ const Footer: React.FC = () => {
                             <div className="space-y-3">
                                 <h4 className="font-black text-white uppercase tracking-wider text-[11px]">PLATFORM FEATURES</h4>
                                 <ul className="space-y-2.5 text-slate-400 font-medium">
-                                    <li><Link to="/login" className="hover:text-emerald-400 transition-colors">Task Management</Link></li>
-                                    <li><Link to="/login" className="hover:text-emerald-400 transition-colors">DTR & Attendance Log</Link></li>
-                                    <li><Link to="/login" className="hover:text-emerald-400 transition-colors">Progress Tracker</Link></li>
-                                    <li><Link to="/login" className="hover:text-emerald-400 transition-colors">Document Submissions</Link></li>
+                                    <li>
+                                        <button 
+                                            onClick={() => handleFeatureClick({
+                                                title: "Task Management Directive",
+                                                description: "View, organize, and complete assigned OJT tasks with real-time status updates and attachment submissions.",
+                                                targetRoute: { student: '/tasks', admin: '/manage-tasks' },
+                                                icon: <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                                            })}
+                                            className="hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                                        >
+                                            Task Management
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button 
+                                            onClick={() => handleFeatureClick({
+                                                title: "DTR & Attendance Log",
+                                                description: "Automated daily clock-in/out records with hour computation and printable DTR report export.",
+                                                targetRoute: { student: '/student-dashboard', admin: '/manage-attendance' },
+                                                icon: <UserCheck className="w-6 h-6 text-emerald-400" />
+                                            })}
+                                            className="hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                                        >
+                                            DTR & Attendance Log
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button 
+                                            onClick={() => handleFeatureClick({
+                                                title: "Progress Tracker",
+                                                description: "Monitor total rendered OJT hours, verified accomplishments, and remaining quota required by your university.",
+                                                targetRoute: { student: '/student-dashboard', admin: '/admin-dashboard' },
+                                                icon: <Sparkles className="w-6 h-6 text-emerald-400" />
+                                            })}
+                                            className="hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                                        >
+                                            Progress Tracker
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button 
+                                            onClick={() => handleFeatureClick({
+                                                title: "Document Submissions",
+                                                description: "Upload and archive weekly logbooks, accomplishment reports, and internship paper submissions.",
+                                                targetRoute: { student: '/submissions', admin: '/manage-submissions' },
+                                                icon: <FileText className="w-6 h-6 text-emerald-400" />
+                                            })}
+                                            className="hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                                        >
+                                            Document Submissions
+                                        </button>
+                                    </li>
                                 </ul>
                             </div>
 
@@ -64,10 +144,58 @@ const Footer: React.FC = () => {
                             <div className="space-y-3">
                                 <h4 className="font-black text-white uppercase tracking-wider text-[11px]">INTERN SERVICES</h4>
                                 <ul className="space-y-2.5 text-slate-400 font-medium">
-                                    <li><Link to="/login" className="hover:text-emerald-400 transition-colors">Student Dashboard</Link></li>
-                                    <li><Link to="/login" className="hover:text-emerald-400 transition-colors">Intern Q&A & Support</Link></li>
-                                    <li><Link to="/login" className="hover:text-emerald-400 transition-colors">Feedback & Ratings</Link></li>
-                                    <li><Link to="/login" className="hover:text-emerald-400 transition-colors">Weekly Activity Reports</Link></li>
+                                    <li>
+                                        <button 
+                                            onClick={() => handleFeatureClick({
+                                                title: "Student Portal Dashboard",
+                                                description: "Central command center for student interns to clock in, view announcements, and track progress.",
+                                                targetRoute: { student: '/student-dashboard', admin: '/admin-dashboard' },
+                                                icon: <UserCheck className="w-6 h-6 text-teal-400" />
+                                            })}
+                                            className="hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                                        >
+                                            Student Dashboard
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button 
+                                            onClick={() => handleFeatureClick({
+                                                title: "Intern Q&A & Support Desk",
+                                                description: "Direct 1-on-1 thread communication desk to send inquiries to your OJT advisor or company supervisor.",
+                                                targetRoute: { student: '/StudentAsk', admin: '/admin/ask-question' },
+                                                icon: <Info className="w-6 h-6 text-teal-400" />
+                                            })}
+                                            className="hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                                        >
+                                            Intern Q&A & Support
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button 
+                                            onClick={() => handleFeatureClick({
+                                                title: "Feedback & Ratings",
+                                                description: "Share feedback regarding your internship deployment, company environment, and mentor guidance.",
+                                                targetRoute: { student: '/submit-feedback', admin: '/manage-feedback' },
+                                                icon: <Sparkles className="w-6 h-6 text-teal-400" />
+                                            })}
+                                            className="hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                                        >
+                                            Feedback & Ratings
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button 
+                                            onClick={() => handleFeatureClick({
+                                                title: "Weekly Activity Reports",
+                                                description: "Compile and summarize weekly OJT accomplishments for advisor verification.",
+                                                targetRoute: { student: '/student-dashboard', admin: '/weekly-reports' },
+                                                icon: <FileText className="w-6 h-6 text-teal-400" />
+                                            })}
+                                            className="hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                                        >
+                                            Weekly Activity Reports
+                                        </button>
+                                    </li>
                                 </ul>
                             </div>
 
@@ -130,6 +258,61 @@ const Footer: React.FC = () => {
                     </div>
                 </div>
             </footer>
+
+            {/* ========================================================= */}
+            {/* FEATURE INFORMATION MODAL (FOR VISITORS)                   */}
+            {/* ========================================================= */}
+            {featureInfo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#090e1a] border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+                        <button 
+                            onClick={() => setFeatureInfo(null)}
+                            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800">
+                                {featureInfo.icon}
+                            </div>
+                            <div>
+                                <h3 className="text-base font-black text-white">{featureInfo.title}</h3>
+                                <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                    Feature Overview
+                                </span>
+                            </div>
+                        </div>
+
+                        <p className="text-slate-300 text-xs leading-relaxed font-medium mb-6">
+                            {featureInfo.description}
+                        </p>
+
+                        <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-[11px] text-slate-400 mb-6 flex items-center gap-2">
+                            <Lock className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>Sign in to your student or mentor portal account to access live data.</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={() => setFeatureInfo(null)}
+                                className="w-1/2 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                            >
+                                Close
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setFeatureInfo(null);
+                                    navigate('/login');
+                                }}
+                                className="w-1/2 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-black text-xs transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+                            >
+                                Sign In →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ========================================================= */}
             {/* POLICY & TERMS & ABOUT MODALS                             */}
