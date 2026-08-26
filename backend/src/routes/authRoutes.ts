@@ -13,7 +13,8 @@ import {
     resetPasswordWithOTP,
     forgotPassword, 
     getProfile, 
-    updateProfile 
+    updateProfile,
+    getPublicStats
 } from '../controllers/authController';    
 import { 
     getForgotPasswordRequests, 
@@ -48,6 +49,7 @@ const uploadProfile = multer({
 // STUDENT / PUBLIC ROUTES
 // ==========================================
 
+router.get('/public-stats', getPublicStats);
 router.post('/login', login);
 router.post('/register', register);
 router.post('/send-otp', sendRegistrationOTP);

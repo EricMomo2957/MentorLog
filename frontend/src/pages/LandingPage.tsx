@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
     Clock, CheckCircle2, ShieldCheck, FileText, 
@@ -9,9 +9,21 @@ import {
 } from 'lucide-react';
 import mentorLogLogo from '../assets/mentorlogOption.png';
 import ojtPicture from '../assets/ojt-picture.jpg';
+import api from '../services/api';
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const [liveStats, setLiveStats] = useState<{
+        activeInterns: string;
+        dtrAccuracy: string;
+        journalLogs: string;
+        hoursRendered: string;
+    }>({
+        activeInterns: '0+',
+        dtrAccuracy: '100%',
+        journalLogs: '0+',
+        hoursRendered: '0h'
+    });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -20,13 +32,26 @@ const LandingPage = () => {
         if (token && role) {
             navigate(role === 'admin' ? '/admin-dashboard' : '/student-dashboard');
         }
+
+        // Fetch live stats from database
+        const fetchStats = async () => {
+            try {
+                const response = await api.get('/auth/public-stats');
+                if (response.data?.success && response.data?.stats) {
+                    setLiveStats(response.data.stats);
+                }
+            } catch (err) {
+                console.error("Failed to load live stats:", err);
+            }
+        };
+        fetchStats();
     }, [navigate]);
 
     const stats = [
-        { value: '500+', label: 'Active Interns Tracked', sub: 'Across top partner organizations' },
-        { value: '99.8%', label: 'DTR Accuracy', sub: 'Automated time calculations' },
-        { value: '15k+', label: 'Journal Logs Created', sub: 'Verified accomplishment entries' },
-        { value: 'Instant', label: 'Report Generation', sub: 'Exportable printable DTRs' },
+        { value: liveStats.activeInterns, label: 'Active Interns Tracked', sub: 'Registered student accounts' },
+        { value: liveStats.dtrAccuracy, label: 'DTR Accuracy', sub: 'Automated time calculations' },
+        { value: liveStats.journalLogs, label: 'Journal Logs Created', sub: 'Verified accomplishment entries' },
+        { value: liveStats.hoursRendered, label: 'Hours Rendered', sub: 'Total internship hours logged' },
     ];
 
     const features = [
