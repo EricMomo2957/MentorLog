@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
-    Clock, CheckCircle2, ShieldCheck, FileText, 
-    ArrowRight, Sparkles, BarChart3, ChevronRight, 
+    Clock, ShieldCheck, FileText, 
+    ArrowRight, Sparkles, BarChart3, ChevronRight, ChevronLeft,
     UserCheck, Calendar, Award, Lock, Zap,
     Pencil, BookOpen, GraduationCap, ClipboardList, 
     BookMarked, PenTool, Star, Quote
 } from 'lucide-react';
 import mentorLogLogo from '../assets/mentorlogOption.png';
-import ojtPicture from '../assets/ojt-picture.jpg';
+import slideSettings from '../assets/slide_settings.png';
+import slideProfile from '../assets/slide_profile.png';
+import slideRequests from '../assets/slide_requests.png';
+import slideAsk from '../assets/slide_ask.png';
+import slideTasks from '../assets/slide_tasks.png';
 import api from '../services/api';
 import Footer from '../components/Footer';
 
@@ -54,6 +58,60 @@ const LandingPage = () => {
     ];
 
     const [reviews, setReviews] = useState(defaultReviews);
+
+    // 5-Photo Hero Showcase Carousel Data
+    const heroSlides = [
+        {
+            image: slideTasks,
+            title: "My Assigned OJT Tasks & Directives",
+            subtitle: "Track, view attachments, and update task progress in real-time.",
+            badge: "Task Management"
+        },
+        {
+            image: slideAsk,
+            title: "Ask a Question & Inquiry Desk",
+            subtitle: "1-on-1 thread communication with assigned OJT coordinators & advisors.",
+            badge: "Inquiry Desk"
+        },
+        {
+            image: slideRequests,
+            title: "Service Requests & Applications",
+            subtitle: "Lodge document applications, schedule adjustments, or endorsement requests.",
+            badge: "Service Requests"
+        },
+        {
+            image: slideProfile,
+            title: "Verified Student Account Profile",
+            subtitle: "Comprehensive identification, degree track, and IT specialization details.",
+            badge: "Student Profile"
+        },
+        {
+            image: slideSettings,
+            title: "Student Portal Configuration & Security",
+            subtitle: "Manage profile preferences, contact info, and notification alerts.",
+            badge: "Portal Settings"
+        }
+    ];
+
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+
+    // Auto-advance slide every 4.5 seconds unless paused on hover
+    useEffect(() => {
+        if (isPaused) return;
+        const interval = setInterval(() => {
+            setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+        }, 4500);
+        return () => clearInterval(interval);
+    }, [isPaused, heroSlides.length]);
+
+    const handlePrevSlide = () => {
+        setCurrentSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1));
+    };
+
+    const handleNextSlide = () => {
+        setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    };
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -274,35 +332,91 @@ const LandingPage = () => {
                     </div>
                 </div>
 
-                {/* Hero Mockup Showcase */}
-                <div className="relative max-w-5xl mx-auto">
+                {/* Hero Mockup Carousel Showcase */}
+                <div 
+                    className="relative max-w-5xl mx-auto"
+                    onMouseEnter={() => setIsPaused(true)}
+                    onMouseLeave={() => setIsPaused(false)}
+                >
                     <div className="absolute inset-0 bg-linear-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 blur-3xl rounded-3xl -z-10" />
 
                     <div className="relative rounded-3xl overflow-hidden border border-slate-800/90 bg-[#090e1a]/90 p-3 shadow-2xl backdrop-blur-2xl">
-                        <div className="relative rounded-2xl overflow-hidden aspect-16/9 sm:aspect-21/9 border border-slate-800">
-                            <img 
-                                src={ojtPicture} 
-                                alt="MentorLog Dashboard Preview" 
-                                className="w-full h-full object-cover object-center brightness-90 hover:brightness-100 transition-all duration-700"
-                            />
-                            <div className="absolute inset-0 bg-linear-to-t from-[#040812] via-transparent to-[#040812]/40 pointer-events-none" />
+                        <div className="relative rounded-2xl overflow-hidden aspect-16/9 sm:aspect-21/9 border border-slate-800 bg-slate-950">
+                            
+                            {/* Slide Images with Smooth Fade Transition */}
+                            {heroSlides.map((slide, idx) => (
+                                <div 
+                                    key={idx}
+                                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                                        idx === currentSlide ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
+                                    }`}
+                                >
+                                    <img 
+                                        src={slide.image} 
+                                        alt={slide.title} 
+                                        className="w-full h-full object-cover object-top brightness-95 hover:brightness-100 transition-all duration-700"
+                                    />
+                                    <div className="absolute inset-0 bg-linear-to-t from-[#040812] via-transparent to-[#040812]/30 pointer-events-none" />
+                                </div>
+                            ))}
 
-                            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 px-4 py-2.5 rounded-2xl bg-[#040812]/90 border border-slate-800 backdrop-blur-md flex items-center gap-3 shadow-xl">
+                            {/* Top Left Badge - Current Module Info */}
+                            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 px-4 py-2.5 rounded-2xl bg-[#040812]/90 border border-slate-800 backdrop-blur-md flex items-center gap-3 shadow-xl">
                                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                                 <div>
-                                    <p className="text-[10px] uppercase font-black tracking-wider text-slate-400">Live Status</p>
-                                    <p className="text-xs font-bold text-white">Daily DTR Active</p>
+                                    <p className="text-[10px] uppercase font-black tracking-wider text-slate-400">PORTAL MODULE</p>
+                                    <p className="text-xs font-bold text-white">{heroSlides[currentSlide].badge}</p>
                                 </div>
                             </div>
 
-                            <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 px-4 py-2.5 rounded-2xl bg-[#040812]/90 border border-slate-800 backdrop-blur-md flex items-center gap-3 shadow-xl">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                                <div>
-                                    <p className="text-[10px] uppercase font-black tracking-wider text-slate-400">Logs Verified</p>
-                                    <p className="text-xs font-bold text-white">480 / 500 Hours Completed</p>
-                                </div>
+                            {/* Top Right Counter Badge */}
+                            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 px-3.5 py-1.5 rounded-xl bg-[#040812]/90 border border-slate-800 backdrop-blur-md text-[11px] font-black text-emerald-400 shadow-xl">
+                                Slide {currentSlide + 1} / {heroSlides.length}
                             </div>
+
+                            {/* Bottom Left Slide Caption */}
+                            <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 right-20 sm:right-24 z-20 px-4 py-3 rounded-2xl bg-[#040812]/90 border border-slate-800/90 backdrop-blur-md shadow-xl text-left hidden sm:block">
+                                <h4 className="text-xs font-black text-white">{heroSlides[currentSlide].title}</h4>
+                                <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">{heroSlides[currentSlide].subtitle}</p>
+                            </div>
+
+                            {/* Prev / Next Navigation Arrow Buttons */}
+                            <button
+                                onClick={handlePrevSlide}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[#040812]/80 border border-slate-800 text-slate-300 hover:text-white hover:bg-emerald-500 hover:border-emerald-400 hover:text-slate-950 flex items-center justify-center transition-all cursor-pointer shadow-2xl backdrop-blur-md"
+                                title="Previous Slide"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+
+                            <button
+                                onClick={handleNextSlide}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[#040812]/80 border border-slate-800 text-slate-300 hover:text-white hover:bg-emerald-500 hover:border-emerald-400 hover:text-slate-950 flex items-center justify-center transition-all cursor-pointer shadow-2xl backdrop-blur-md"
+                                title="Next Slide"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+
                         </div>
+
+                        {/* Bottom Slide Indicator Tabs */}
+                        <div className="mt-3 flex items-center justify-center gap-2 overflow-x-auto py-1">
+                            {heroSlides.map((slide, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setCurrentSlide(idx)}
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 border ${
+                                        idx === currentSlide
+                                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20'
+                                            : 'bg-[#040812] text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
+                                    }`}
+                                >
+                                    <span className={`w-1.5 h-1.5 rounded-full ${idx === currentSlide ? 'bg-slate-950' : 'bg-slate-600'}`} />
+                                    <span>{slide.badge}</span>
+                                </button>
+                            ))}
+                        </div>
+
                     </div>
                 </div>
             </section>
