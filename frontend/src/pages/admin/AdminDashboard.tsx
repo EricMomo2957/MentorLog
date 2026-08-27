@@ -477,16 +477,30 @@ const AdminDashboard = () => {
                                             </td>
 
                                             {/* Completion Progress Bar */}
-                                            <td className="py-3.5 px-4 min-w-[160px]">
-                                                <div className="space-y-1">
-                                                    <div className="flex justify-between items-center text-[10px] font-semibold text-slate-500">
-                                                        <span>{progressPct.toFixed(1)}%</span>
-                                                        <span>{renderedHours.toFixed(0)}/{requiredHours}h</span>
+                                            <td className="py-3.5 px-4 min-w-[180px]">
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between items-center text-[10px] font-semibold">
+                                                        <span className="flex items-center gap-1.5 font-bold">
+                                                            {progressPct >= 90 ? (
+                                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
+                                                                    Near Completion ({progressPct.toFixed(0)}%)
+                                                                </span>
+                                                            ) : progressPct >= 50 ? (
+                                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                                                                    On Track ({progressPct.toFixed(0)}%)
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                                                                    In Progress ({progressPct.toFixed(0)}%)
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                        <span className="font-mono text-slate-600 font-bold">{renderedHours.toFixed(0)} / {requiredHours} hrs</span>
                                                     </div>
-                                                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-200">
                                                         <div 
                                                             className={`h-full rounded-full transition-all duration-500 ${
-                                                                progressPct >= 100 ? 'bg-emerald-500' : 'bg-blue-600'
+                                                                progressPct >= 90 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : progressPct >= 50 ? 'bg-gradient-to-r from-blue-600 to-indigo-500' : 'bg-slate-500'
                                                             }`} 
                                                             style={{ width: `${progressPct}%` }}
                                                         />
