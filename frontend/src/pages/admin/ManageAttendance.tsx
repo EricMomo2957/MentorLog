@@ -203,6 +203,22 @@ const ManageAttendance = () => {
     const absentCount = dateScopedRecords.filter(r => r.status === 'Absent').length;
     const totalCount = dateScopedRecords.length;
 
+    const handleBulkApprove = async () => {
+        if (!selectedRecords.length) return;
+        try {
+            const response = await api.post('/attendance/bulk-approve', {
+                ids: selectedRecords,
+                status: 'Present'
+            });
+            if (response.data?.success) {
+                setSelectedRecords([]);
+                fetchAllAttendance();
+            }
+        } catch (err) {
+            console.error("Bulk approve error:", err);
+        }
+    };
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             
@@ -214,6 +230,16 @@ const ManageAttendance = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {selectedRecords.length > 0 && (
+                        <button 
+                            onClick={handleBulkApprove}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 active:scale-98 animate-pulse"
+                        >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Approve Selected ({selectedRecords.length})</span>
+                        </button>
+                    )}
+
                     <button 
                         onClick={() => setIsDTRModalOpen(true)}
                         className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 active:scale-98"
