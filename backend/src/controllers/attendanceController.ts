@@ -75,9 +75,11 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 minute: '2-digit' 
             });
 
+            const notes = req.body.notes || req.body.reason || null;
+
             await db.execute(
-                'INSERT INTO attendance (user_id, date, clock_in, status, is_active) VALUES (?, CURDATE(), NOW(), ?, 1)',
-                [userId, status]
+                'INSERT INTO attendance (user_id, date, clock_in, status, notes, is_active) VALUES (?, CURDATE(), NOW(), ?, ?, 1)',
+                [userId, status, notes]
             );
 
             // Audit Log
@@ -96,29 +98,75 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
         } 
         
         if (action === 'clock-out') {
-            const [result]: any = await db.execute(`
-                UPDATE attendance 
-                SET clock_out = NOW(), 
-                    is_active = 0,
-                    total_hours = GREATEST(0, ROUND(TIMESTAMPDIFF(SECOND, CONCAT(date, ' ', clock_in), NOW()) / 3600, 2)) 
+            // Find active attendance session for this user
+            const [activeRows]: any = await db.execute(`
+                SELECT id, date, clock_in 
+                FROM attendance 
                 WHERE user_id = ? AND (is_active = 1 OR clock_out IS NULL)
-                ORDER BY id DESC
-                LIMIT 1
+                ORDER BY id DESC LIMIT 1
             `, [userId]);
 
-            if (result.affectedRows === 0) {
+            if (!activeRows || activeRows.length === 0) {
                 return res.status(404).json({ message: "No active session found to clock out." });
             }
 
+            const activeRecord = activeRows[0];
+            const recordDateStr = typeof activeRecord.date === 'string' 
+                ? activeRecord.date.split('T')[0] 
+                : new Date(activeRecord.date).toISOString().split('T')[0];
+
+            // Company Closing Cutoff calculation (shiftEnd + 90 mins allowance, default 17:00 + 90m = 18:30 / 6:30 PM)
+            const shiftEndStr = req.body.shiftEnd || '17:00';
+            const [endH, endM] = shiftEndStr.split(':').map(Number);
+            const extensionMins = 90; // 1 hour 30 mins extension limit
+            const cutoffTotalMins = (endH * 60 + (endM || 0)) + extensionMins;
+            const cutoffH = String(Math.floor(cutoffTotalMins / 60)).padStart(2, '0');
+            const cutoffM = String(cutoffTotalMins % 60).padStart(2, '0');
+            const closingCutoffStr = `${recordDateStr} ${cutoffH}:${cutoffM}:00`;
+
+            const now = new Date();
+            const closingCutoffDate = new Date(closingCutoffStr);
+
+            // If actual clock-out happens after company closing time (e.g., 8:23 PM), cap at company closing cutoff (6:30 PM)
+            let effectiveClockOutStr: string;
+            let effectiveClockOutDate: Date;
+
+            if (now > closingCutoffDate) {
+                effectiveClockOutStr = closingCutoffStr;
+                effectiveClockOutDate = closingCutoffDate;
+            } else {
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const mins = String(now.getMinutes()).padStart(2, '0');
+                const secs = String(now.getSeconds()).padStart(2, '0');
+                effectiveClockOutStr = `${year}-${month}-${day} ${hours}:${mins}:${secs}`;
+                effectiveClockOutDate = now;
+            }
+
+            // Calculate total hours up to effective clock-out date
+            const clockInDate = new Date(activeRecord.clock_in.includes('T') ? activeRecord.clock_in : `${recordDateStr} ${activeRecord.clock_in}`);
+            const diffMs = effectiveClockOutDate.getTime() - (isNaN(clockInDate.getTime()) ? new Date().getTime() : clockInDate.getTime());
+            const totalHours = Math.max(0, parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)));
+
+            await db.execute(`
+                UPDATE attendance 
+                SET clock_out = ?, 
+                    is_active = 0,
+                    total_hours = ?
+                WHERE id = ?
+            `, [effectiveClockOutStr, totalHours, activeRecord.id]);
+
             // Audit Log
-            await logAction(userId, 'UPDATE', 'Attendance', `Clocked out of shift`);
+            await logAction(userId, 'UPDATE', 'Attendance', `Clocked out of shift (Hours: ${totalHours})`);
 
             // Notify Admins
             const [uRows]: any = await db.execute('SELECT full_name FROM users WHERE id = ?', [userId]);
             const studentName = (uRows && uRows[0]?.full_name) || 'An OJT Student';
-            await notifyAdmins('Student Clocked Out', `${studentName} clocked out of shift.`, 'info');
+            await notifyAdmins('Student Clocked Out', `${studentName} clocked out of shift (${totalHours} hrs logged).`, 'info');
 
-            return res.json({ success: true, message: "Clocked out successfully" });
+            return res.json({ success: true, message: "Clocked out successfully", total_hours: totalHours });
         }
     } catch (error) {
         console.error("Database Error:", error);
@@ -126,8 +174,34 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
     }
 };
 
+const autoCapOvertimeAttendanceLogs = async () => {
+    try {
+        // 1. Auto-cap any record where clock_out > '18:30:00' to 6:30 PM (18:30:00) and recalculate hours
+        await db.execute(`
+            UPDATE attendance 
+            SET clock_out = CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' 18:30:00'),
+                total_hours = GREATEST(0, ROUND(TIMESTAMPDIFF(SECOND, CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' ', DATE_FORMAT(clock_in, '%H:%i:%s')), CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' 18:30:00')) / 3600, 2))
+            WHERE TIME(clock_out) > '18:30:00' AND clock_in IS NOT NULL
+        `);
+
+        // 2. Auto-close any unclosed active record from previous days at 18:30:00
+        await db.execute(`
+            UPDATE attendance 
+            SET clock_out = CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' 18:30:00'),
+                is_active = 0,
+                total_hours = GREATEST(0, ROUND(TIMESTAMPDIFF(SECOND, CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' ', DATE_FORMAT(clock_in, '%H:%i:%s')), CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' 18:30:00')) / 3600, 2))
+            WHERE date < CURDATE() AND (is_active = 1 OR clock_out IS NULL) AND clock_in IS NOT NULL
+        `);
+    } catch (err) {
+        console.error("autoCapOvertimeAttendanceLogs Error:", err);
+    }
+};
+
 export const getAllAttendance = async (_req: Request, res: Response) => {
     try {
+        // Auto-fix any historical logs that exceed company closing time (6:30 PM)
+        await autoCapOvertimeAttendanceLogs();
+
         // 1. Fetch real attendance logs with DATE_FORMAT to avoid UTC timezone shifts
         const sqlLogs = `
             SELECT a.id, a.user_id, DATE_FORMAT(a.date, '%Y-%m-%d') as date, a.clock_in, a.clock_out, a.status, a.total_hours, a.is_active,
@@ -266,6 +340,9 @@ export const getMyAttendanceHistory = async (req: AuthRequest, res: Response) =>
     }
 
     try {
+        // Auto-fix any historical logs that exceed company closing time (6:30 PM)
+        await autoCapOvertimeAttendanceLogs();
+
         // 1. Fetch student registration date
         const [userRows]: any = await db.execute(
             'SELECT created_at FROM users WHERE id = ?',
@@ -424,5 +501,27 @@ export const manualAttendanceLog = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error("Manual Log Error:", error);
         res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+export const bulkApproveAttendance = async (req: AuthRequest, res: Response) => {
+    const { ids, status } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "No attendance record IDs provided for bulk approval." });
+    }
+
+    const targetStatus = status || 'Present';
+    try {
+        const placeholders = ids.map(() => '?').join(',');
+        await db.execute(
+            `UPDATE attendance SET status = ? WHERE id IN (${placeholders})`,
+            [targetStatus, ...ids]
+        );
+
+        await logAction(req.user?.id || 0, 'UPDATE', 'Attendance', `Bulk updated ${ids.length} attendance records to status: ${targetStatus}`);
+        return res.json({ success: true, message: `Successfully updated ${ids.length} attendance records to "${targetStatus}".` });
+    } catch (error) {
+        console.error("Bulk Approve Error:", error);
+        return res.status(500).json({ message: "Failed to update attendance status in bulk." });
     }
 };
