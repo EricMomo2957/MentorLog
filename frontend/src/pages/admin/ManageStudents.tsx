@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
+import { exportToCSV } from '../../utils/exportCsv';
 import { 
     Search, Filter, Download, Edit2, Trash2, CheckCircle2, 
     XCircle, ChevronLeft, ChevronRight, X, UserPlus,
@@ -197,11 +198,24 @@ const ManageStudents = () => {
                     </button>
 
                     <button 
-                        onClick={() => alert("Exporting student directory...")} 
-                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 p-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
-                        title="Export Directory"
+                        onClick={() => {
+                            if (!students.length) return;
+                            const exportData = students.map(s => ({
+                                ID: s.id,
+                                Name: s.full_name,
+                                'Student ID': s.student_id,
+                                Email: s.email,
+                                Course: s.course || 'N/A',
+                                Position: s.it_position || 'N/A',
+                                Status: s.is_active ? 'Active' : 'Inactive'
+                            }));
+                            exportToCSV('student_roster', exportData);
+                        }} 
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-2 text-xs font-semibold"
+                        title="Export Directory to CSV"
                     >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-4 h-4 text-blue-600" />
+                        <span>Export CSV</span>
                     </button>
                 </div>
             </div>
