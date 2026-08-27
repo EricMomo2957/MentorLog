@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { exportToCSV } from '../../utils/exportCsv';
 import { 
     Search, RefreshCw, Clock, HardDrive, 
     Filter, Download, ChevronLeft, ChevronRight, ShieldAlert
@@ -121,11 +122,23 @@ const ManageAuditLog = () => {
                     </button>
 
                     <button 
-                        onClick={() => alert("Exporting audit logs...")} 
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
+                        onClick={() => {
+                            if (!logs.length) return;
+                            const exportData = logs.map(l => ({
+                                ID: l.id,
+                                Admin: l.admin_name,
+                                Action: l.action,
+                                Module: l.module,
+                                Details: l.details,
+                                'IP Address': l.ip_address,
+                                Timestamp: l.created_at
+                            }));
+                            exportToCSV('audit_logs', exportData);
+                        }} 
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 cursor-pointer"
                     >
                         <Download className="w-4 h-4" />
-                        <span>Export Logs</span>
+                        <span>Export CSV</span>
                     </button>
                 </div>
             </div>
