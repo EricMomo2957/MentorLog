@@ -35,8 +35,21 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// 2. CORS & Body Parser
-app.use(cors());
+// 2. Dynamic CORS & Body Parser
+const allowedOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+            callback(null, true);
+        } else {
+            callback(new Error(`CORS policy violation: ${origin} is not allowed`));
+        }
+    },
+    credentials: true
+}));
 app.use(express.json());
 
 // 3. Brute-Force Rate Limiter for Auth Routes (30 requests / 15 mins)
