@@ -59,10 +59,16 @@ const initDb = async () => {
                 clock_out DATETIME NULL,
                 total_hours DECIMAL(5,2) DEFAULT 0,
                 status VARCHAR(50) DEFAULT 'Present',
+                notes VARCHAR(255) NULL,
                 is_active TINYINT(1) DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Ensure attendance columns if altered
+        try {
+            await pool.query(`ALTER TABLE attendance ADD COLUMN IF NOT EXISTS notes VARCHAR(255) NULL`);
+        } catch (_) {}
 
         // 3. Tasks Table
         await pool.query(`
