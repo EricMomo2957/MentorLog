@@ -23,13 +23,22 @@ const storage = multer.diskStorage({
     }
 });
 
+const ALLOWED_MIME_TYPES = [
+    'image/jpeg', 'image/png', 'image/webp',
+    'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
+];
+
 const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-    const allowedTypes = /jpeg|jpg|png|webp|pdf|doc|docx|txt/;
-    const extName = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    if (extName) {
+    const allowedExtensions = /jpeg|jpg|png|webp|pdf|doc|docx|txt/;
+    const isExtValid = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
+    const isMimeValid = ALLOWED_MIME_TYPES.includes(file.mimetype);
+
+    if (isExtValid && isMimeValid) {
         cb(null, true);
     } else {
-        cb(new Error("Only valid document and image files are allowed!"));
+        cb(new Error("Security Error: Uploaded file type is not allowed. Only JPG, PNG, WEBP, PDF, DOC, DOCX, and TXT files are permitted."));
     }
 };
 
