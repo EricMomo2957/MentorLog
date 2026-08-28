@@ -61,8 +61,18 @@ const authLimiter = rateLimit({
     message: { message: "Too many attempts from this IP. Please try again in 15 minutes." }
 });
 
+// 4. Global API Rate Limiter for General Endpoints (400 requests / 15 mins)
+const globalApiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 400, // Limit each IP to 400 requests per 15-minute window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "System Busy: Too many requests sent from your IP address. Please wait a few minutes." }
+});
+
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/', globalApiLimiter);
 
 // Serve static files for uploads (OCR Schedules, User Avatars, etc.)
 // Using path.resolve ensures it works regardless of where you start the process
