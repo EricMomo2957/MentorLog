@@ -26,6 +26,7 @@ const ManageAskQuestion = lazy(() => import('./pages/admin/ManageAskQuestion'));
 const ManageSubmission = lazy(() => import('./pages/admin/ManageSubmission'));
 const AdminCode = lazy(() => import('./pages/admin/AdminCode'));
 const ManageAuditLog = lazy(() => import('./pages/admin/ManageAuditLog'));
+const ManageEvaluations = lazy(() => import('./pages/admin/ManageEvaluations'));
 
 // Student Pages
 const StudentLayout = lazy(() => import('./pages/student/StudentLayout'));
@@ -39,6 +40,7 @@ const StudentFeedback = lazy(() => import('./pages/student/StudentFeedback'));
 const StudentAnnouncements = lazy(() => import('./pages/student/StudentAnnouncements'));
 const StudentAsk = lazy(() => import('./pages/student/StudentAskQuestion'));
 const StudentSubmission = lazy(() => import('./pages/student/StudentSubmission'));
+const MyEvaluations = lazy(() => import('./pages/student/MyEvaluations'));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
@@ -80,6 +82,7 @@ function App() {
             { path: "/manage-submissions", element: <ManageSubmission /> },
             { path: "/admin/manage-submissions", element: <ManageSubmission /> },
             { path: "/manage-audit-logs", element: <ManageAuditLog /> },
+            { path: "/manage-evaluations", element: <ManageEvaluations /> },
             { path: "/admin/manage-codes", element: <AdminCode /> }
           ].map((route) => (
             <Route 
@@ -107,6 +110,7 @@ function App() {
             { path: "/announcements", element: <StudentAnnouncements /> },
             { path: "/StudentAsk", element: <StudentAsk /> },
             { path: "/submissions", element: <StudentSubmission /> },
+            { path: "/my-evaluations", element: <MyEvaluations /> },
           ].map((route) => (
             <Route 
               key={route.path}
