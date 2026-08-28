@@ -30,8 +30,28 @@ const storage = multer.diskStorage({
     }
 });
 
+const ALLOWED_TASK_MIME_TYPES = [
+    'image/jpeg', 'image/png', 'image/webp',
+    'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
+];
+
+const fileFilter = (_req: any, file: any, cb: any) => {
+    const allowedExts = /jpeg|jpg|png|webp|pdf|doc|docx|txt/;
+    const isExtValid = allowedExts.test(path.extname(file.originalname).toLowerCase());
+    const isMimeValid = ALLOWED_TASK_MIME_TYPES.includes(file.mimetype);
+
+    if (isExtValid && isMimeValid) {
+        cb(null, true);
+    } else {
+        cb(new Error('Security Block: Invalid file type for task attachment. Only images and document files are allowed.'));
+    }
+};
+
 const upload = multer({ 
     storage: storage,
+    fileFilter: fileFilter,
     limits: { fileSize: 20 * 1024 * 1024 } // 20MB limit for docs and images
 });
 
