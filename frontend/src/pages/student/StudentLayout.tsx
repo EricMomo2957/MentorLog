@@ -7,7 +7,7 @@ import Footer from '../../components/Footer';
 import { 
     LayoutDashboard, CheckSquare, Calendar, MessageSquare, 
     Inbox, Megaphone, User, HelpCircle, FileText, Settings, LogOut, Search, AlertTriangle,
-    ChevronLeft, ChevronRight
+    ChevronLeft, ChevronRight, Award
 } from 'lucide-react';
 import { getAdminSettings } from '../admin/AdminSettings';
 
@@ -122,6 +122,7 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
             title: "COMMUNICATION",
             items: [
                 { path: '/StudentAsk', label: 'Ask a Question', icon: HelpCircle },
+                { path: '/my-evaluations', label: 'My Evaluations', icon: Award },
                 { path: '/submit-feedback', label: 'Student Feedback', icon: MessageSquare },
                 { path: '/student-request', label: 'Request Paper', icon: Inbox },
                 { path: '/submissions', label: 'Submissions', icon: FileText },
