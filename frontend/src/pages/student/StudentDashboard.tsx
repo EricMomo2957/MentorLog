@@ -378,11 +378,13 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
             )}
 
             {/* Header Action Banner Card */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="bg-[#f0f4fe] p-6 rounded-2xl border border-indigo-200/90 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block">OJT Time Tracking Portal</span>
-                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Student Dashboard</h1>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                    <span className="text-[10px] font-bold text-white bg-indigo-600 px-2.5 py-0.5 rounded-md uppercase tracking-wider inline-block mb-1 shadow-2xs">
+                        OJT Time Tracking Portal
+                    </span>
+                    <h1 className="text-2xl font-extrabold text-indigo-950 tracking-tight">Student Dashboard</h1>
+                    <p className="text-xs text-indigo-800/80 mt-0.5 font-medium">
                         {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                 </div>
@@ -396,7 +398,7 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                             (!isClockedIn && adminSettings.maintenanceMode) ||
                             (!isClockedIn && !isWithinShiftHours(adminSettings.shiftStart, adminSettings.shiftEnd).allowed)
                         }
-                        className={`px-6 py-2.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-2 ${
+                        className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer ${
                             isClockedIn
                                 ? 'bg-rose-600 hover:bg-rose-700 text-white'
                                 : (!isClockedIn && adminSettings.maintenanceMode)
@@ -548,82 +550,82 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                 </div>
             )}
 
-            {/* Metric Cards Grid (Clean Automoor White Cards) */}
+            {/* Metric Cards Grid - Distinct Colors */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* OJT Target Progress */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                {/* OJT Target Progress Card (Sky Blue Theme) */}
+                <div className="bg-[#e0f2fe] p-6 rounded-2xl border border-sky-200/90 shadow-xs space-y-4">
                     <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total OJT Progress</span>
-                        <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                        <span className="text-xs font-extrabold text-sky-900 uppercase tracking-wider">Total OJT Progress</span>
+                        <span className="text-xs font-mono font-extrabold text-sky-800 bg-white px-2.5 py-1 rounded-md border border-sky-300 shadow-2xs">
                             {progressPercentage.toFixed(1)}% Complete
                         </span>
                     </div>
 
                     <div className="flex items-baseline justify-between">
                         <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-extrabold text-slate-900 font-mono tracking-tight">
+                            <span className="text-4xl font-extrabold text-sky-950 font-mono tracking-tight">
                                 {report.accumulated_hours.toFixed(1)}
                             </span>
-                            <span className="text-sm font-semibold text-slate-400">/ {totalTargetHours} required hrs</span>
+                            <span className="text-xs font-bold text-sky-700/90">/ {totalTargetHours} required hrs</span>
                         </div>
                         <div className="text-right">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Time</span>
-                            <span className="text-base font-extrabold font-mono text-amber-600">
-                                {remainingHours.toFixed(1)} <span className="text-xs font-semibold text-amber-600/80">hrs left</span>
+                            <span className="text-[10px] font-extrabold text-sky-800 uppercase tracking-wider block">Remaining Time</span>
+                            <span className="text-base font-extrabold font-mono text-sky-900">
+                                {remainingHours.toFixed(1)} <span className="text-xs font-semibold text-sky-700">hrs left</span>
                             </span>
                         </div>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-sky-200/80 h-3 rounded-full overflow-hidden p-0.5">
                         <div 
-                            className="bg-blue-600 h-full rounded-full transition-all duration-700" 
+                            className="bg-sky-600 h-full rounded-full transition-all duration-700" 
                             style={{ width: `${progressPercentage}%` }}
                         ></div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-                        <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-sky-200/70">
+                        <span className="text-sky-800 font-bold flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-sky-600" />
                             Time to Completion
                         </span>
-                        <span className="font-mono font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/70">
+                        <span className="font-mono font-extrabold text-sky-800 bg-white px-3 py-1 rounded-full border border-sky-300 shadow-2xs">
                             {remainingHours === 0 ? 'Target Reached! 🎉' : `${remainingHours.toFixed(1)} hours remaining`}
                         </span>
                     </div>
                 </div>
 
-                {/* Attendance Summary */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-3">
+                {/* Attendance Summary Card (Emerald Green Theme) */}
+                <div className="bg-[#e6f4ea] p-6 rounded-2xl border border-emerald-200/90 shadow-xs space-y-3">
                     <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Attendance Verification</span>
-                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">
-                            <ShieldCheck className="w-3.5 h-3.5" /> Verified
+                        <span className="text-xs font-extrabold text-emerald-900 uppercase tracking-wider">Attendance Verification</span>
+                        <span className="text-xs font-extrabold text-emerald-800 bg-white px-2.5 py-1 rounded-md border border-emerald-300 shadow-2xs flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified
                         </span>
                     </div>
 
                     {/* Present, Late, and Absent Breakdown Counters */}
                     <div className="grid grid-cols-3 gap-2.5 text-center pt-1">
-                        <div className="bg-emerald-50/80 border border-emerald-200/80 p-3 rounded-xl">
-                            <span className="text-2xl font-extrabold text-emerald-700 font-mono block">
+                        <div className="bg-white border border-emerald-200/90 p-3.5 rounded-xl shadow-2xs">
+                            <span className="text-2xl font-black text-emerald-700 font-mono block">
                                 {presentCount}
                             </span>
-                            <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block mt-0.5">Present</span>
+                            <span className="text-[11px] font-extrabold text-emerald-800 uppercase tracking-wider block mt-0.5">Present</span>
                         </div>
 
-                        <div className="bg-amber-50/80 border border-amber-200/80 p-3 rounded-xl">
-                            <span className="text-2xl font-extrabold text-amber-700 font-mono block">
+                        <div className="bg-white border border-amber-200/90 p-3.5 rounded-xl shadow-2xs">
+                            <span className="text-2xl font-black text-amber-600 font-mono block">
                                 {lateCount}
                             </span>
-                            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block mt-0.5">Late</span>
+                            <span className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider block mt-0.5">Late</span>
                         </div>
 
-                        <div className="bg-rose-50/80 border border-rose-200/80 p-3 rounded-xl">
-                            <span className="text-2xl font-extrabold text-rose-700 font-mono block">
+                        <div className="bg-white border border-rose-200/90 p-3.5 rounded-xl shadow-2xs">
+                            <span className="text-2xl font-black text-rose-600 font-mono block">
                                 {absentCount}
                             </span>
-                            <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider block mt-0.5">Absent</span>
+                            <span className="text-[11px] font-extrabold text-rose-800 uppercase tracking-wider block mt-0.5">Absent</span>
                         </div>
                     </div>
                 </div>
@@ -632,23 +634,23 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
             {/* Overview Grid: Pending Tasks & Office Bulletin */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Task Directives Overview Widget with Breakdown */}
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                {/* Task Directives Overview Widget (Soft Purple Theme) */}
+                <div className="bg-[#f5f0ff] p-5.5 rounded-2xl border border-purple-200/90 shadow-xs flex flex-col justify-between">
                     <div>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-100">
-                            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2.5 border-b border-purple-200/70">
+                            <h4 className="text-xs font-extrabold text-purple-950 uppercase tracking-wider flex items-center gap-1.5">
                                 📌 Assigned Directives & Status
                             </h4>
 
                             {/* Task Breakdown Badges: Pending, In-Progress, Completed */}
                             <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
                                     {pendingTasksCount} Pending
                                 </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
                                     {inProgressTasksCount} In-Progress
                                 </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                                     {completedTasksCount} Completed
                                 </span>
                             </div>
@@ -657,52 +659,52 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                         {pendingTasks.length > 0 ? (
                             <div className="space-y-2">
                                 {pendingTasks.slice(0, 3).map((task) => (
-                                    <div key={task.id} className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 flex items-center justify-between">
+                                    <div key={task.id} className="bg-white p-3 rounded-xl border border-purple-100/90 shadow-2xs flex items-center justify-between">
                                         <div className="space-y-0.5 max-w-[65%]">
                                             <div className="flex items-center gap-2">
-                                                <span className={`inline-block px-1.5 py-0.2 text-[9px] font-bold border rounded ${
+                                                <span className={`inline-block px-1.5 py-0.2 text-[9px] font-extrabold border rounded ${
                                                     task.status === 'In-Progress' || task.status === 'In-Process'
                                                         ? 'bg-blue-50 text-blue-700 border-blue-200'
                                                         : 'bg-amber-50 text-amber-700 border-amber-200'
                                                 }`}>
                                                     {task.status}
                                                 </span>
-                                                <p className="text-xs font-bold text-slate-900 truncate">{task.title}</p>
+                                                <p className="text-xs font-bold text-purple-950 truncate">{task.title}</p>
                                             </div>
-                                            <p className="text-[11px] text-slate-500 truncate">{task.task_description || 'No description'}</p>
+                                            <p className="text-[11px] text-purple-700/80 truncate">{task.task_description || 'No description'}</p>
                                         </div>
-                                        <span className="text-[10px] font-mono font-semibold text-slate-600 bg-white px-2 py-1 rounded border border-slate-200">
+                                        <span className="text-[10px] font-mono font-bold text-purple-800 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200">
                                             Due {task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
                                         </span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-slate-400 text-xs italic py-6 text-center">No active task directives assigned.</p>
+                            <p className="text-purple-600/70 text-xs italic py-6 text-center">No active task directives assigned.</p>
                         )}
                     </div>
                 </div>
 
-                {/* Latest Office Bulletin Widget */}
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                {/* Latest Office Bulletin Widget (Soft Warm Amber Theme) */}
+                <div className="bg-[#fffbeb] p-5.5 rounded-2xl border border-amber-200/90 shadow-xs flex flex-col justify-between">
                     <div>
-                        <div className="flex justify-between items-center mb-3 pb-2.5 border-b border-slate-100">
-                            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <div className="flex justify-between items-center mb-3 pb-2.5 border-b border-amber-200/70">
+                            <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
                                 📢 Office Bulletin
                             </h4>
-                            <span className="text-[10px] font-semibold text-blue-600">Latest Announcement</span>
+                            <span className="text-[10px] font-bold text-amber-800 bg-white px-2 py-0.5 rounded-full border border-amber-300">Latest Announcement</span>
                         </div>
 
                         {latestAnnouncement ? (
-                            <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200/80 space-y-1.5">
-                                <h5 className="text-xs font-bold text-slate-900">{latestAnnouncement.title}</h5>
-                                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{latestAnnouncement.content}</p>
-                                <p className="text-[10px] font-mono text-slate-400 text-right pt-1">
+                            <div className="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-2xs space-y-1.5">
+                                <h5 className="text-xs font-bold text-amber-950">{latestAnnouncement.title}</h5>
+                                <p className="text-xs text-amber-800/90 line-clamp-2 leading-relaxed">{latestAnnouncement.content}</p>
+                                <p className="text-[10px] font-mono text-amber-700 font-semibold text-right pt-1">
                                     Posted {new Date(latestAnnouncement.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </p>
                             </div>
                         ) : (
-                            <p className="text-slate-400 text-xs italic py-6 text-center">No announcements posted yet.</p>
+                            <p className="text-amber-700/70 text-xs italic py-6 text-center">No announcements posted yet.</p>
                         )}
                     </div>
                 </div>

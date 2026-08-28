@@ -87,6 +87,11 @@ interface CategoryTab {
     label: string;
     description: string;
     icon: React.ElementType;
+    activeTabBg: string;
+    inactiveTabBg: string;
+    iconBgActive: string;
+    iconBgInactive: string;
+    dotColor: string;
 }
 
 const CATEGORIES: CategoryTab[] = [
@@ -95,24 +100,44 @@ const CATEGORIES: CategoryTab[] = [
         label: 'Profile & Identity',
         description: 'Personal details, contact info & course track',
         icon: User,
+        activeTabBg: 'bg-[#e0e7ff] border-2 border-indigo-600 ring-2 ring-indigo-200/60 shadow-xs text-indigo-950',
+        inactiveTabBg: 'bg-[#f0f4fe]/70 border-indigo-200/80 hover:bg-[#f0f4fe] hover:border-indigo-300 text-indigo-900',
+        iconBgActive: 'bg-indigo-600 text-white',
+        iconBgInactive: 'bg-indigo-200/80 text-indigo-800',
+        dotColor: 'bg-indigo-600',
     },
     {
         id: 'security',
         label: 'Security & Credentials',
         description: 'Password updates & account protection',
         icon: Lock,
+        activeTabBg: 'bg-[#dcfce7] border-2 border-emerald-600 ring-2 ring-emerald-200/60 shadow-xs text-emerald-950',
+        inactiveTabBg: 'bg-[#e6f4ea]/70 border-emerald-200/80 hover:bg-[#e6f4ea] hover:border-emerald-300 text-emerald-900',
+        iconBgActive: 'bg-emerald-600 text-white',
+        iconBgInactive: 'bg-emerald-200/80 text-emerald-800',
+        dotColor: 'bg-emerald-600',
     },
     {
         id: 'notifications',
         label: 'Alerts & Notifications',
         description: 'Task updates, announcements & shift alerts',
         icon: Bell,
+        activeTabBg: 'bg-[#f3e8ff] border-2 border-purple-600 ring-2 ring-purple-200/60 shadow-xs text-purple-950',
+        inactiveTabBg: 'bg-[#f5f0ff]/70 border-purple-200/80 hover:bg-[#f5f0ff] hover:border-purple-300 text-purple-900',
+        iconBgActive: 'bg-purple-600 text-white',
+        iconBgInactive: 'bg-purple-200/80 text-purple-800',
+        dotColor: 'bg-purple-600',
     },
     {
         id: 'preferences',
         label: 'Portal Preferences',
         description: 'Auto-save drafts, compact layout & sound FX',
         icon: Sliders,
+        activeTabBg: 'bg-[#fef3c7] border-2 border-amber-500 ring-2 ring-amber-200/60 shadow-xs text-amber-950',
+        inactiveTabBg: 'bg-[#fffbeb]/70 border-amber-200/80 hover:bg-[#fffbeb] hover:border-amber-300 text-amber-900',
+        iconBgActive: 'bg-amber-500 text-white',
+        iconBgInactive: 'bg-amber-200/80 text-amber-800',
+        dotColor: 'bg-amber-500',
     }
 ];
 
@@ -239,14 +264,18 @@ const StudentSettings: React.FC = () => {
         checked,
         onChange,
         label,
-        desc
+        desc,
+        colorClass = 'bg-blue-600',
+        borderColor = 'border-slate-200'
     }: {
         checked: boolean;
         onChange: () => void;
         label: string;
         desc: string;
+        colorClass?: string;
+        borderColor?: string;
     }) => (
-        <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-all">
+        <div className={`flex items-center justify-between p-4 bg-white border ${borderColor} rounded-xl hover:shadow-xs transition-all`}>
             <div className="space-y-0.5 pr-4">
                 <p className="text-xs font-bold text-slate-800">{label}</p>
                 <p className="text-[11px] text-slate-500">{desc}</p>
@@ -255,7 +284,7 @@ const StudentSettings: React.FC = () => {
                 type="button"
                 onClick={onChange}
                 className={`w-11 h-6 rounded-full relative transition-colors duration-200 flex-shrink-0 cursor-pointer focus:outline-none ${
-                    checked ? 'bg-blue-600' : 'bg-slate-200'
+                    checked ? colorClass : 'bg-slate-200'
                 }`}
             >
                 <div
@@ -388,21 +417,21 @@ const StudentSettings: React.FC = () => {
                                 key={cat.id}
                                 type="button"
                                 onClick={() => setActiveTab(cat.id)}
-                                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer bg-white shadow-sm flex flex-col justify-between space-y-3 ${
+                                className={`p-4.5 rounded-2xl border text-left transition-all cursor-pointer shadow-xs flex flex-col justify-between space-y-3 ${
                                     isActive
-                                        ? 'border-2 border-blue-600 ring-2 ring-blue-50'
-                                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                                        ? cat.activeTabBg
+                                        : `${cat.inactiveTabBg}`
                                 }`}
                             >
                                 <div className="flex items-center justify-between">
-                                    <div className={`p-2 rounded-xl ${isActive ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-600'}`}>
+                                    <div className={`p-2 rounded-xl transition-colors ${isActive ? cat.iconBgActive : cat.iconBgInactive}`}>
                                         <IconComponent className="w-4 h-4" />
                                     </div>
-                                    {isActive && <span className="w-2 h-2 rounded-full bg-blue-600" />}
+                                    {isActive && <span className={`w-2.5 h-2.5 rounded-full ${cat.dotColor}`} />}
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold text-slate-900">{cat.label}</p>
-                                    <p className="text-[11px] text-slate-500 mt-0.5">{cat.description}</p>
+                                    <p className="text-xs font-extrabold tracking-tight">{cat.label}</p>
+                                    <p className="text-[11px] opacity-80 mt-0.5 leading-snug">{cat.description}</p>
                                 </div>
                             </button>
                         );
@@ -410,25 +439,25 @@ const StudentSettings: React.FC = () => {
                 </div>
             )}
 
-            {/* Main Section Content - White Grid Box */}
+            {/* Main Section Content - Distinct Themed Grid Boxes */}
             <div className="space-y-6">
                 
                 {/* 1. PROFILE & IDENTITY */}
                 {(activeTab === 'profile' || searchQuery) && (
-                    <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+                    <div className="bg-[#f0f4fe] border border-indigo-200/90 rounded-3xl p-6 md:p-8 shadow-xs space-y-6">
+                        <div className="flex items-center gap-3 pb-4 border-b border-indigo-200/70">
+                            <div className="p-2.5 rounded-xl bg-indigo-600 text-white shadow-xs">
                                 <User className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Profile & Identity Details</h3>
-                                <p className="text-xs text-slate-500">Update your account name, contact details, and academic track information.</p>
+                                <h3 className="text-base font-extrabold text-indigo-950">Profile & Identity Details</h3>
+                                <p className="text-xs text-indigo-700/90">Update your account name, contact details, and academic track information.</p>
                             </div>
                         </div>
 
                         {/* Informative Status Banner for Profile */}
-                        <div className="flex items-center gap-2 p-3.5 bg-blue-50/80 border border-blue-100 rounded-xl text-xs text-blue-800">
-                            <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <div className="flex items-center gap-2 p-3.5 bg-white/90 border border-indigo-200 rounded-xl text-xs text-indigo-900 shadow-2xs">
+                            <Info className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                             <span>
                                 <strong>Academic Record Verification:</strong> Your Email Address and Student ID are linked to your official OJT internship records. Contact your mentor for structural changes.
                             </span>
@@ -436,25 +465,25 @@ const StudentSettings: React.FC = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Personal Details */}
-                            <div className="space-y-4 bg-slate-50/60 p-5 rounded-2xl border border-slate-200/80">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                                    <User className="w-4 h-4 text-blue-600" />
+                            <div className="space-y-4 bg-white p-5 rounded-2xl border border-indigo-100/90 shadow-2xs">
+                                <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
+                                    <User className="w-4 h-4 text-indigo-600" />
                                     <span>Personal Information</span>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">Full Name</label>
+                                    <label className="text-[11px] font-bold text-slate-700">Full Name</label>
                                     <input
                                         type="text"
                                         value={settings.full_name}
                                         onChange={(e) => setSettings({ ...settings, full_name: e.target.value })}
-                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-blue-600 outline-none"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-600 outline-none transition-all"
                                         placeholder="Enter your full name"
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">Email Address (Read-only)</label>
+                                    <label className="text-[11px] font-bold text-slate-700">Email Address (Read-only)</label>
                                     <div className="relative">
                                         <Mail className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
@@ -467,14 +496,14 @@ const StudentSettings: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">Phone Number</label>
+                                    <label className="text-[11px] font-bold text-slate-700">Phone Number</label>
                                     <div className="relative">
                                         <Phone className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
                                             type="text"
                                             value={settings.phone}
                                             onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-800 focus:border-blue-600 outline-none"
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-600 outline-none transition-all"
                                             placeholder="+63 900 000 0000"
                                         />
                                     </div>
@@ -482,44 +511,44 @@ const StudentSettings: React.FC = () => {
                             </div>
 
                             {/* Academic & OJT Track Information */}
-                            <div className="space-y-4 bg-slate-50/60 p-5 rounded-2xl border border-slate-200/80">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                                    <BookOpen className="w-4 h-4 text-emerald-600" />
+                            <div className="space-y-4 bg-white p-5 rounded-2xl border border-indigo-100/90 shadow-2xs">
+                                <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
+                                    <BookOpen className="w-4 h-4 text-indigo-600" />
                                     <span>Academic & Internship Details</span>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">Student ID Number</label>
+                                    <label className="text-[11px] font-bold text-slate-700">Student ID Number</label>
                                     <div className="relative">
                                         <Hash className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
                                             type="text"
                                             value={settings.student_id}
                                             onChange={(e) => setSettings({ ...settings, student_id: e.target.value })}
-                                            className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-800 focus:border-blue-600 outline-none font-mono"
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-600 outline-none font-mono transition-all"
                                             placeholder="e.g. 2024-00123"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">Course / Degree Program</label>
+                                    <label className="text-[11px] font-bold text-slate-700">Course / Degree Program</label>
                                     <input
                                         type="text"
                                         value={settings.course}
                                         onChange={(e) => setSettings({ ...settings, course: e.target.value })}
-                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-blue-600 outline-none"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-600 outline-none transition-all"
                                         placeholder="e.g. BS Information Technology"
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">Year Level / Batch</label>
+                                    <label className="text-[11px] font-bold text-slate-700">Year Level / Batch</label>
                                     <input
                                         type="text"
                                         value={settings.year_level}
                                         onChange={(e) => setSettings({ ...settings, year_level: e.target.value })}
-                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-blue-600 outline-none"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-indigo-600 outline-none transition-all"
                                         placeholder="e.g. 4th Year - Senior"
                                     />
                                 </div>
@@ -530,19 +559,19 @@ const StudentSettings: React.FC = () => {
 
                 {/* 2. SECURITY & CREDENTIALS */}
                 {(activeTab === 'security' || searchQuery) && (
-                    <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+                    <div className="bg-[#e6f4ea] border border-emerald-200/90 rounded-3xl p-6 md:p-8 shadow-xs space-y-6">
+                        <div className="flex items-center gap-3 pb-4 border-b border-emerald-200/70">
+                            <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs">
                                 <ShieldCheck className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Security & Account Credentials</h3>
-                                <p className="text-xs text-slate-500">Update account password and manage device login notifications.</p>
+                                <h3 className="text-base font-extrabold text-emerald-950">Security & Account Credentials</h3>
+                                <p className="text-xs text-emerald-800/90">Update account password and manage device login notifications.</p>
                             </div>
                         </div>
 
                         {/* Informative Security Message */}
-                        <div className="flex items-center gap-2 p-3.5 bg-emerald-50/80 border border-emerald-100 rounded-xl text-xs text-emerald-800">
+                        <div className="flex items-center gap-2 p-3.5 bg-white/90 border border-emerald-200 rounded-xl text-xs text-emerald-900 shadow-2xs">
                             <Info className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                             <span>
                                 <strong>Password Guidelines:</strong> Enter your current password to authorize password changes. Use a strong password containing letters and numbers.
@@ -551,49 +580,49 @@ const StudentSettings: React.FC = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Password Change Box */}
-                            <div className="space-y-4 bg-slate-50/60 p-5 rounded-2xl border border-slate-200/80">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                                    <Lock className="w-4 h-4 text-blue-600" />
+                            <div className="space-y-4 bg-white p-5 rounded-2xl border border-emerald-100/90 shadow-2xs">
+                                <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
+                                    <Lock className="w-4 h-4 text-emerald-600" />
                                     <span>Update Password</span>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">Current Password</label>
+                                    <label className="text-[11px] font-bold text-slate-700">Current Password</label>
                                     <input
                                         type="password"
                                         value={settings.currentPassword || ''}
                                         onChange={(e) => setSettings({ ...settings, currentPassword: e.target.value })}
-                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-blue-600 outline-none"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-emerald-600 outline-none transition-all"
                                         placeholder="••••••••"
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">New Password</label>
+                                    <label className="text-[11px] font-bold text-slate-700">New Password</label>
                                     <input
                                         type="password"
                                         value={settings.newPassword || ''}
                                         onChange={(e) => setSettings({ ...settings, newPassword: e.target.value })}
-                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-blue-600 outline-none"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-emerald-600 outline-none transition-all"
                                         placeholder="••••••••"
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-slate-600">Confirm New Password</label>
+                                    <label className="text-[11px] font-bold text-slate-700">Confirm New Password</label>
                                     <input
                                         type="password"
                                         value={settings.confirmPassword || ''}
                                         onChange={(e) => setSettings({ ...settings, confirmPassword: e.target.value })}
-                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:border-blue-600 outline-none"
+                                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:bg-white focus:border-emerald-600 outline-none transition-all"
                                         placeholder="••••••••"
                                     />
                                 </div>
                             </div>
 
                             {/* Session & Device Controls */}
-                            <div className="space-y-4 bg-slate-50/60 p-5 rounded-2xl border border-slate-200/80">
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                            <div className="space-y-4 bg-white p-5 rounded-2xl border border-emerald-100/90 shadow-2xs">
+                                <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
                                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
                                     <span>Session Protection</span>
                                 </div>
@@ -603,14 +632,16 @@ const StudentSettings: React.FC = () => {
                                     onChange={() => handleToggle('notifyDeviceLogin')}
                                     label="New Login Alert"
                                     desc="Receive security notification alerts when a new device accesses your account."
+                                    colorClass="bg-emerald-600"
+                                    borderColor="border-emerald-100"
                                 />
 
-                                <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-1">
-                                    <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                        <Clock className="w-3.5 h-3.5 text-blue-600" />
+                                <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl space-y-1">
+                                    <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-emerald-600" />
                                         Session Security Timeout
                                     </p>
-                                    <p className="text-[11px] text-slate-500">
+                                    <p className="text-[11px] text-emerald-700">
                                         Inactive portal sessions automatically terminate after 12 hours for account protection.
                                     </p>
                                 </div>
@@ -621,14 +652,14 @@ const StudentSettings: React.FC = () => {
 
                 {/* 3. ALERTS & NOTIFICATIONS */}
                 {(activeTab === 'notifications' || searchQuery) && (
-                    <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
+                    <div className="bg-[#f5f0ff] border border-purple-200/90 rounded-3xl p-6 md:p-8 shadow-xs space-y-6">
+                        <div className="flex items-center gap-3 pb-4 border-b border-purple-200/70">
+                            <div className="p-2.5 rounded-xl bg-purple-600 text-white shadow-xs">
                                 <Bell className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Alerts & Notification Preferences</h3>
-                                <p className="text-xs text-slate-500">Customize how and when you receive portal alerts, announcements, and task updates.</p>
+                                <h3 className="text-base font-extrabold text-purple-950">Alerts & Notification Preferences</h3>
+                                <p className="text-xs text-purple-800/90">Customize how and when you receive portal alerts, announcements, and task updates.</p>
                             </div>
                         </div>
 
@@ -638,6 +669,8 @@ const StudentSettings: React.FC = () => {
                                 onChange={() => handleToggle('emailAlertsTask')}
                                 label="Task Assignment Notifications"
                                 desc="Receive email alerts whenever mentors assign new OJT tasks or update task statuses."
+                                colorClass="bg-purple-600"
+                                borderColor="border-purple-100"
                             />
 
                             <SwitchControl
@@ -645,6 +678,8 @@ const StudentSettings: React.FC = () => {
                                 onChange={() => handleToggle('emailAlertsAnnouncement')}
                                 label="Admin Announcement Alerts"
                                 desc="Receive instant email updates for official announcements posted by administrative staff."
+                                colorClass="bg-purple-600"
+                                borderColor="border-purple-100"
                             />
 
                             <SwitchControl
@@ -652,6 +687,8 @@ const StudentSettings: React.FC = () => {
                                 onChange={() => handleToggle('shiftReminders')}
                                 label="Shift & Attendance Reminders"
                                 desc="Receive timely notifications prior to shift duty start times and daily time record submissions."
+                                colorClass="bg-purple-600"
+                                borderColor="border-purple-100"
                             />
                         </div>
                     </div>
@@ -659,14 +696,14 @@ const StudentSettings: React.FC = () => {
 
                 {/* 4. PORTAL PREFERENCES */}
                 {(activeTab === 'preferences' || searchQuery) && (
-                    <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
+                    <div className="bg-[#fffbeb] border border-amber-200/90 rounded-3xl p-6 md:p-8 shadow-xs space-y-6">
+                        <div className="flex items-center gap-3 pb-4 border-b border-amber-200/70">
+                            <div className="p-2.5 rounded-xl bg-amber-500 text-white shadow-xs">
                                 <Sliders className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Portal Experience & UI Preferences</h3>
-                                <p className="text-xs text-slate-500">Personalize your student dashboard view and automatic draft behaviors.</p>
+                                <h3 className="text-base font-extrabold text-amber-950">Portal Experience & UI Preferences</h3>
+                                <p className="text-xs text-amber-800/90">Personalize your student dashboard view and automatic draft behaviors.</p>
                             </div>
                         </div>
 
@@ -676,6 +713,8 @@ const StudentSettings: React.FC = () => {
                                 onChange={() => handleToggle('autoSaveDrafts')}
                                 label="Auto-Save Submission Drafts"
                                 desc="Automatically preserve document submission notes and request drafts while typing."
+                                colorClass="bg-amber-500"
+                                borderColor="border-amber-100"
                             />
 
                             <SwitchControl
@@ -683,6 +722,8 @@ const StudentSettings: React.FC = () => {
                                 onChange={() => handleToggle('compactDashboard')}
                                 label="High-Density Compact View"
                                 desc="Use compact card dimensions on the student dashboard for faster navigation."
+                                colorClass="bg-amber-500"
+                                borderColor="border-amber-100"
                             />
 
                             <SwitchControl
@@ -690,6 +731,8 @@ const StudentSettings: React.FC = () => {
                                 onChange={() => handleToggle('soundEffects')}
                                 label="Audio Feedback & Chimes"
                                 desc="Play subtle chime sounds upon successful clock-in, clock-out, and task submissions."
+                                colorClass="bg-amber-500"
+                                borderColor="border-amber-100"
                             />
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { PrintableDTRModal } from '../../components/PrintableDTRModal';
+import { exportToCSV } from '../../utils/exportCsv';
 import { 
     Clock, CheckCircle2, AlertCircle, XCircle, Search, 
     Filter, Download, RefreshCw, ChevronLeft, ChevronRight, Printer 
@@ -95,29 +96,6 @@ const ManageAttendance = () => {
     useEffect(() => {
         fetchAllAttendance();
     }, []);
-
-    const exportToCSV = () => {
-        if (!records || records.length === 0) return;
-        const headers = ['ID', 'Student Name', 'Date', 'Clock In', 'Clock Out', 'Total Hours', 'Status'];
-        const rows = records.map(r => [
-            r.id,
-            `"${r.student_name || 'N/A'}"`,
-            `"${r.date}"`,
-            `"${r.clock_in}"`,
-            `"${r.clock_out || 'Active'}"`,
-            r.total_hours ? Number(r.total_hours).toFixed(2) : '0',
-            `"${r.status}"`
-        ]);
-
-        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement('a');
-        link.setAttribute('href', encodedUri);
-        link.setAttribute('download', `dtr_attendance_report_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -219,6 +197,18 @@ const ManageAttendance = () => {
         }
     };
 
+    const handleExportCSV = () => {
+        exportToCSV('mentorlog_attendance_logs.csv', filteredRecords, [
+            { header: 'ID', key: 'id' },
+            { header: 'Student Name', key: 'student_name' },
+            { header: 'Date', key: 'date', formatter: (val: any) => val ? String(val).split('T')[0] : '' },
+            { header: 'Clock In', key: 'clock_in', formatter: (val: any) => formatTimeString(val) },
+            { header: 'Clock Out', key: 'clock_out', formatter: (val: any) => formatTimeString(val) },
+            { header: 'Total Hours', key: 'total_hours', formatter: (val: any) => val ? Number(val).toFixed(2) : '0.00' },
+            { header: 'Status', key: 'status' }
+        ]);
+    };
+
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             
@@ -258,9 +248,9 @@ const ManageAttendance = () => {
                     </button>
 
                     <button 
-                        onClick={exportToCSV} 
-                        disabled={records.length === 0}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 disabled:opacity-50"
+                        onClick={handleExportCSV} 
+                        disabled={filteredRecords.length === 0}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                     >
                         <Download className="w-4 h-4" />
                         <span>Export CSV</span>
