@@ -7,7 +7,6 @@
 ![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?style=flat-square&logo=mysql&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![PHP](https://img.shields.io/badge/PHP-Bridge_API-777BB4?style=flat-square&logo=php&logoColor=white)
 
 **MentorLog** is a comprehensive, full-stack On-the-Job Training (OJT) Management Platform designed to streamline attendance logging, task assignments, document submissions, progress tracking, and communication between mentors, administrators, and student interns.
 
@@ -18,7 +17,7 @@
 ### 👨‍🎓 Student Portal
 - **Dashboard Overview:** Real-time metrics for completed tasks, total rendered OJT hours, upcoming deadlines, and announcements.
 - **Task Management & Submissions:** View assigned tasks, track status (Pending, In Progress, Completed), submit deliverables with file attachments.
-- **Attendance Tracking & Schedule Upload:** Log clock-in / clock-out times and upload schedule documents (with OCR schedule verification support).
+- **Attendance Tracking & Schedule Upload:** Log clock-in / clock-out times and upload schedule documents.
 - **Document Management:** Submit mandatory OJT requirements (Resume, MOA, Endorsement Letters, Daily Time Records).
 - **Q&A & Requests:** Submit inquiries directly to mentors via the Ask Question portal and file leave or schedule adjustment requests.
 - **Announcements & Calendar:** Interactive event calendar and real-time announcement feed.
@@ -39,7 +38,6 @@
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Lucide React, Chart.js, Recharts, React Router v7, Axios |
 | **Backend** | Node.js, Express.js, TypeScript, MySQL2, JSON Web Tokens (JWT), Bcrypt.js, Multer (File Uploads), Nodemon |
 | **Database** | MySQL (XAMPP / Standalone server) |
-| **Bridge Layer** | PHP (Direct MySQL endpoints for custom web service integration) |
 
 ---
 
@@ -50,36 +48,29 @@ MentorLog/
 ├── backend/                        # Node.js + Express TypeScript REST API
 │   ├── src/
 │   │   ├── app.ts                  # Server entry point & API route definitions
-│   │   ├── config/                 # Database connection pool (MySQL2)
-│   │   ├── controllers/            # 14 Controller modules for core services
-│   │   ├── middleware/             # JWT Authentication middleware
+│   │   ├── config/                 # Database connection pool (MySQL2) & SQL Schemas
+│   │   ├── controllers/            # 15 Controller modules for core services
+│   │   ├── middleware/             # JWT Authentication & Rate Limiting middleware
 │   │   ├── routes/                 # Express route definitions
 │   │   └── utils/                  # Utility functions & helpers
-│   ├── uploads/                    # File upload directory (Avatars, Submissions, OCR)
+│   ├── uploads/                    # File upload directory (Avatars, Submissions)
 │   ├── .env                        # Server environment configuration
 │   ├── package.json
 │   └── tsconfig.json
 │
-├── frontend/
-│   └── frontend/                   # React + Vite TypeScript Frontend App
-│       ├── src/
-│       │   ├── App.tsx             # Main routing & application state
-│       │   ├── auth/               # Auth components (Login, Register)
-│       │   ├── components/         # Protected routes & reusable components
-│       │   ├── pages/
-│       │   │   ├── admin/          # 20 Admin/Mentor management views
-│       │   │   ├── student/        # 11 Student portal views
-│       │   │   └── LandingPage.tsx # Public landing page
-│       │   └── services/           # Axios API service client
-│       ├── package.json
-│       ├── tailwind.config.js
-│       └── vite.config.ts
-│
-└── php-bridge/                     # PHP Scripts for standalone DB services
-    ├── db_connection.php           # MySQL connection setup
-    ├── get-tasks.php / assign-task.php / create-task.php
-    ├── get-students.php / update-profile.php
-    └── update-task-status.php
+└── frontend/                       # React + Vite TypeScript Frontend App
+    ├── src/
+    │   ├── App.tsx                 # Main routing & application state
+    │   ├── auth/                   # Auth components (Login, Register)
+    │   ├── components/             # Protected routes & reusable UI components
+    │   ├── pages/
+    │   │   ├── admin/              # 19 Admin/Mentor management views
+    │   │   ├── student/            # 11 Student portal views
+    │   │   └── LandingPage.tsx     # Public landing page
+    │   └── services/               # Axios API service client
+    ├── package.json
+    ├── tailwind.config.js
+    └── vite.config.ts
 ```
 
 ---
@@ -91,7 +82,6 @@ MentorLog/
 Ensure you have the following software installed on your development machine:
 - **Node.js** (v18.x or higher) & **npm**
 - **XAMPP** (or a local MySQL Server instance)
-- **PHP** (v8.0+ for running the PHP Bridge if needed)
 - **Git**
 
 ---
@@ -110,7 +100,7 @@ cd MentorLog
 1. Start **Apache** and **MySQL** services in your XAMPP Control Panel.
 2. Open PHPMyAdmin at `http://localhost/phpmyadmin`.
 3. Create a new database named `mentorlog_db`.
-4. Import your database schema tables into `mentorlog_db`.
+4. Import your database schema tables from `backend/src/config/schema_mysql.sql` into `mentorlog_db`.
 
 ---
 
@@ -145,7 +135,7 @@ cd MentorLog
 
 1. Open a new terminal and navigate to the frontend directory:
    ```bash
-   cd frontend/frontend
+   cd frontend
    ```
 2. Install dependencies:
    ```bash
@@ -156,14 +146,6 @@ cd MentorLog
    npm run dev
    ```
 4. Open your browser and navigate to `http://localhost:5173`.
-
----
-
-### Step 5: PHP Bridge Setup (Optional)
-
-If using the PHP bridge endpoints, ensure the project root is located within your local server web directory:
-- Path: `c:/xampp/htdocs/MentorLog/php-bridge/`
-- Test connection by accessing `http://localhost/MentorLog/php-bridge/db_connection.php`.
 
 ---
 
