@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
     Clock, ShieldCheck, FileText, 
     ArrowRight, Sparkles, BarChart3, ChevronRight, ChevronLeft,
-    UserCheck, Calendar, Award, Lock, Zap,
+    UserCheck, Calendar, Award, Zap,
     Pencil, BookOpen, GraduationCap, ClipboardList, 
     BookMarked, PenTool, Star, Quote
 } from 'lucide-react';
@@ -280,12 +280,6 @@ const LandingPage = () => {
                             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Portals
                         </Link>
                         <Link 
-                            to="/login"
-                            className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-[#090e1a] border border-slate-800 hover:border-slate-700 transition-all flex items-center gap-2"
-                        >
-                            <Lock className="w-3.5 h-3.5 text-emerald-400" /> Sign In
-                        </Link>
-                        <Link 
                             to="/register"
                             className="px-5 py-2.5 rounded-xl text-xs font-black text-slate-950 bg-emerald-500 hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
                         >
@@ -330,10 +324,10 @@ const LandingPage = () => {
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Link>
                         <Link 
-                            to="/login"
-                            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#090e1a] hover:bg-slate-900 border border-slate-800 text-white font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2"
+                            to="/portal"
+                            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#090e1a] hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-white font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2"
                         >
-                            Sign In to Portal
+                            Access Portals
                         </Link>
                     </div>
                 </div>
