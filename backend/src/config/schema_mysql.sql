@@ -227,3 +227,23 @@ CREATE TABLE IF NOT EXISTS `email_verifications` (
   KEY `email_idx` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- 16. evaluations
+CREATE TABLE IF NOT EXISTS `evaluations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` int(11) NOT NULL,
+  `evaluator_id` int(11) NOT NULL,
+  `evaluation_type` enum('Midterm', 'Final') NOT NULL,
+  `professionalism` int(11) NOT NULL DEFAULT 5,
+  `technical_skills` int(11) NOT NULL DEFAULT 5,
+  `punctuality` int(11) NOT NULL DEFAULT 5,
+  `communication` int(11) NOT NULL DEFAULT 5,
+  `overall_score` decimal(3,2) NOT NULL DEFAULT 5.00,
+  `comments` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `student_id` (`student_id`),
+  KEY `evaluator_id` (`evaluator_id`),
+  CONSTRAINT `fk_evaluations_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_evaluations_evaluator` FOREIGN KEY (`evaluator_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
