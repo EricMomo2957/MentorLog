@@ -88,7 +88,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         localStorage.removeItem('userId');
         localStorage.removeItem('user');
         localStorage.removeItem('id');
-        navigate('/login');
+        navigate('/');
     };
 
     const navGroups: NavGroup[] = [
