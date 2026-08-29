@@ -6,7 +6,8 @@
     "dev": "nodemon --watch \"src/**/*.ts\" --exec \"ts-node\" src/app.ts",
     "start": "node dist/app.js",
     "build": "tsc",
-    "seed": "ts-node src/config/seed.ts"
+    "seed": "ts-node src/config/seed.ts",
+    "export:seeds": "ts-node src/config/export_seeds.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
