@@ -7,6 +7,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Register = lazy(() => import('./pages/Register'));
 const Login = lazy(() => import('./pages/Login'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const PortalSelection = lazy(() => import('./pages/PortalSelection'));
 
 // Admin Pages
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
@@ -58,6 +59,9 @@ function App() {
         <Routes>
           {/* --- Public Routes --- */}
           <Route path="/" element={<LandingPage />} /> 
+          <Route path="/portal" element={<PortalSelection />} />
+          <Route path="/select-portal" element={<PortalSelection />} />
+          <Route path="/portals" element={<PortalSelection />} />
           
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

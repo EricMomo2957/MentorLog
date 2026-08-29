@@ -1,32 +1,97 @@
+-- ==============================================================================
 -- MentorLog PostgreSQL Database Schema
 -- Location: backend/src/config/schema_postgres.sql
+-- ==============================================================================
 
 -- Custom ENUM Types
-CREATE TYPE user_role AS ENUM ('admin', 'student');
-CREATE TYPE task_status AS ENUM ('Pending', 'In-Progress', 'Completed');
-CREATE TYPE request_status AS ENUM ('Pending', 'Processing', 'Accepted', 'Rejected');
-CREATE TYPE request_urgency AS ENUM ('Normal', 'Urgent', 'Immediate Attention');
-CREATE TYPE question_status AS ENUM ('pending', 'replied', 'closed');
-CREATE TYPE question_sender_role AS ENUM ('admin', 'intern');
-CREATE TYPE reset_status AS ENUM ('pending', 'resolved');
-CREATE TYPE submission_status AS ENUM ('pending', 'approved', 'rejected');
-CREATE TYPE attendance_status AS ENUM ('Present', 'Late', 'Absent');
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('admin', 'student');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE task_status AS ENUM ('Pending', 'In-Progress', 'Completed');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE request_status AS ENUM ('Pending', 'Processing', 'Accepted', 'Rejected');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE request_urgency AS ENUM ('Normal', 'Urgent', 'Immediate Attention');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE question_status AS ENUM ('pending', 'replied', 'closed');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE question_sender_role AS ENUM ('admin', 'intern');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE reset_status AS ENUM ('pending', 'resolved');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE submission_status AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE attendance_status AS ENUM ('Present', 'Late', 'Absent');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE evaluation_type_enum AS ENUM ('Midterm', 'Final');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- 1. users
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
+  member_title VARCHAR(20) DEFAULT NULL,
+  first_name VARCHAR(100) DEFAULT NULL,
+  middle_name VARCHAR(100) DEFAULT NULL,
+  last_name VARCHAR(100) DEFAULT NULL,
+  id_number VARCHAR(50) DEFAULT NULL,
   full_name VARCHAR(100) NOT NULL,
   email VARCHAR(100) NOT NULL UNIQUE,
   phone VARCHAR(20) DEFAULT NULL,
+  date_of_birth DATE DEFAULT NULL,
+  age INT DEFAULT NULL,
+  gender VARCHAR(20) DEFAULT NULL,
+  civil_status VARCHAR(30) DEFAULT NULL,
+  address TEXT DEFAULT NULL,
+  school_name VARCHAR(255) DEFAULT NULL,
   student_id VARCHAR(50) DEFAULT NULL,
   course VARCHAR(100) DEFAULT NULL,
   year_level VARCHAR(10) DEFAULT NULL,
+  it_position VARCHAR(100) DEFAULT NULL,
   ojt_hours_required INT DEFAULT 600,
   password VARCHAR(255) NOT NULL,
   role user_role DEFAULT 'student',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   is_active BOOLEAN DEFAULT TRUE,
-  required_hours INT DEFAULT 600
+  required_hours INT DEFAULT 600,
+  profile_pic VARCHAR(255) DEFAULT NULL
 );
 
 -- 2. tasks
@@ -36,7 +101,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   title VARCHAR(150) NOT NULL,
   task_description TEXT DEFAULT NULL,
   status task_status DEFAULT 'Pending',
-  due_date DATE DEFAULT NULL
+  due_date DATE DEFAULT NULL,
+  attachment_url VARCHAR(255) DEFAULT NULL,
+  attachment_name VARCHAR(255) DEFAULT NULL
 );
 
 -- 3. service_requests
@@ -156,5 +223,41 @@ CREATE TABLE IF NOT EXISTS admin_codes (
   code VARCHAR(20) NOT NULL,
   is_used BOOLEAN DEFAULT FALSE,
   created_by INT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 14. notifications
+CREATE TABLE IF NOT EXISTS notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  type VARCHAR(50) DEFAULT 'info',
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 15. email_verifications
+CREATE TABLE IF NOT EXISTS email_verifications (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  otp_code VARCHAR(10) NOT NULL,
+  payload TEXT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 16. evaluations
+CREATE TABLE IF NOT EXISTS evaluations (
+  id SERIAL PRIMARY KEY,
+  student_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  evaluator_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  evaluation_type evaluation_type_enum NOT NULL,
+  professionalism INT NOT NULL DEFAULT 5,
+  technical_skills INT NOT NULL DEFAULT 5,
+  punctuality INT NOT NULL DEFAULT 5,
+  communication INT NOT NULL DEFAULT 5,
+  overall_score NUMERIC(3,2) NOT NULL DEFAULT 5.00,
+  comments TEXT DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

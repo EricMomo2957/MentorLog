@@ -274,8 +274,14 @@ const LandingPage = () => {
                     {/* Action Buttons */}
                     <div className="flex items-center gap-3">
                         <Link 
+                            to="/portal"
+                            className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-[#090e1a] border border-slate-800 hover:border-emerald-500/50 transition-all flex items-center gap-2"
+                        >
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Portals
+                        </Link>
+                        <Link 
                             to="/login"
-                            className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-[#090e1a] border border-slate-800 hover:border-slate-700 transition-all flex items-center gap-2"
+                            className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-[#090e1a] border border-slate-800 hover:border-slate-700 transition-all flex items-center gap-2"
                         >
                             <Lock className="w-3.5 h-3.5 text-emerald-400" /> Sign In
                         </Link>

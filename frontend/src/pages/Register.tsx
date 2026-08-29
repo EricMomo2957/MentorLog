@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { 
     UserCircle, 
@@ -53,6 +53,9 @@ const IT_POSITIONS = [
 ];
 
 const Register = () => {
+    const [searchParams] = useSearchParams();
+    const initialRole = searchParams.get('role') === 'admin' ? 'admin' : 'student';
+
     // Multi-Step Registration State (1: Account Info, 2: Verify Email, 3: Complete)
     const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -72,9 +75,9 @@ const Register = () => {
         school_name: '',
         course: '',
         year_level: '',
-        it_position: 'Software Engineer / Developer',
+        it_position: initialRole === 'admin' ? 'Administrator / OJT Supervisor' : 'Software Engineer / Developer',
         password: '',
-        role: 'student',
+        role: initialRole,
         adminCode: '' 
     });
     const [confirmPassword, setConfirmPassword] = useState('');
