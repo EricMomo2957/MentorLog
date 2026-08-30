@@ -13,7 +13,7 @@ const seedDatabase = async () => {
         if (adminRows.length === 0) {
             const [result]: any = await db.execute(`
                 INSERT INTO users (full_name, email, password, role, is_active, required_hours)
-                VALUES ('System Administrator', 'admin@mentorlog.com', ?, 'admin', 1, 0)
+                VALUES ('System Administrator', 'admin@mentorlog.com', ?, 'admin', true, 0)
             `, [adminPasswordHash]);
             adminId = result.insertId;
             console.log("✅ Created Default Admin Account: admin@mentorlog.com / admin123");
@@ -61,7 +61,7 @@ const seedDatabase = async () => {
             if (rows.length === 0) {
                 const [res]: any = await db.execute(`
                     INSERT INTO users (full_name, email, password, student_id, course, it_position, school_name, ojt_hours_required, required_hours, role, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'student', 1)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'student', true)
                 `, [s.name, s.email, studentPasswordHash, s.student_id, s.course, s.position, s.school, s.hours, s.hours]);
                 insertedStudentIds.push(res.insertId);
                 console.log(`✅ Created Sample Student: ${s.name} (${s.email})`);
@@ -75,7 +75,7 @@ const seedDatabase = async () => {
         if (codeRows.length === 0) {
             await db.execute(`
                 INSERT INTO admin_codes (code, is_used, created_by)
-                VALUES ('MENTORLOG-ADMIN-2026', 0, ?)
+                VALUES ('MENTORLOG-ADMIN-2026', false, ?)
             `, [adminId]);
             console.log("✅ Created Initial Admin Registration Code: MENTORLOG-ADMIN-2026");
         }
