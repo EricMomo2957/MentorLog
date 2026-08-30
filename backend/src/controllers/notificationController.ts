@@ -8,18 +8,6 @@ import { AuthRequest } from '../middleware/authMiddleware';
 export const createNotification = async (userId: number, title: string, message: string, type: string = 'info') => {
     try {
         await db.execute(
-            `CREATE TABLE IF NOT EXISTS notifications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                title VARCHAR(255) NOT NULL,
-                message TEXT NOT NULL,
-                type VARCHAR(50) DEFAULT 'info',
-                is_read TINYINT(1) DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`
-        );
-
-        await db.execute(
             `INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)`,
             [userId, title, message, type]
         );
@@ -52,18 +40,6 @@ export const getMyNotifications = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.id;
         if (!userId) return res.status(401).json({ message: "Not authorized" });
-
-        await db.execute(
-            `CREATE TABLE IF NOT EXISTS notifications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                title VARCHAR(255) NOT NULL,
-                message TEXT NOT NULL,
-                type VARCHAR(50) DEFAULT 'info',
-                is_read TINYINT(1) DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`
-        );
 
         const [rows]: any = await db.execute(
             `SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 30`,

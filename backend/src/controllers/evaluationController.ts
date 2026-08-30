@@ -7,33 +7,7 @@ import { createNotification } from './notificationController';
 /**
  * Ensures 'evaluations' table exists in database
  */
-export const initEvaluationsTable = async () => {
-    try {
-        const query = `
-            CREATE TABLE IF NOT EXISTS evaluations (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                student_id INT NOT NULL,
-                evaluator_id INT NOT NULL,
-                evaluation_type ENUM('Midterm', 'Final') NOT NULL,
-                professionalism INT NOT NULL DEFAULT 5,
-                technical_skills INT NOT NULL DEFAULT 5,
-                punctuality INT NOT NULL DEFAULT 5,
-                communication INT NOT NULL DEFAULT 5,
-                overall_score DECIMAL(3,2) NOT NULL DEFAULT 5.00,
-                comments TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (evaluator_id) REFERENCES users(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `;
-        await db.execute(query);
-    } catch (err) {
-        console.error("Error creating evaluations table:", err);
-    }
-};
-
-// Initialize table on controller load
-initEvaluationsTable();
+// Evaluation Controller for MentorLog
 
 /**
  * ADMIN: Submit or Update Student Evaluation (Midterm or Final)

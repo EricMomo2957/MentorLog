@@ -134,19 +134,6 @@ export const sendRegistrationOTP = async (req: Request, res: Response) => {
             adminCode: role === 'admin' ? adminCode : null
         };
 
-        // Ensure email_verifications table exists
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS email_verifications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                email VARCHAR(255) NOT NULL,
-                otp_code VARCHAR(10) NOT NULL,
-                payload TEXT NOT NULL,
-                expires_at DATETIME NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX (email)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-
         // Generate 6-digit OTP
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         
@@ -424,19 +411,6 @@ export const sendPasswordResetOTP = async (req: Request, res: Response) => {
         }
 
         const user = users[0];
-
-        // Ensure email_verifications table exists
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS email_verifications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                email VARCHAR(255) NOT NULL,
-                otp_code VARCHAR(10) NOT NULL,
-                payload TEXT NOT NULL,
-                expires_at DATETIME NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX (email)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
 
         // Generate 6-digit OTP
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
