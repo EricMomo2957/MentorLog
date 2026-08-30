@@ -67,6 +67,8 @@ function normalizeQueryForPostgres(sql: string): { normalizedSql: string; isInse
 
     // Convert MySQL-specific functions
     normalizedSql = normalizedSql.replace(/TIMESTAMPDIFF\(HOUR,\s*([a-zA-Z0-9_.]+),\s*([a-zA-Z0-9_.]+)\)/gi, 'EXTRACT(EPOCH FROM ($2 - $1))/3600');
+    normalizedSql = normalizedSql.replace(/CURDATE\(\)/gi, 'CURRENT_DATE');
+    normalizedSql = normalizedSql.replace(/DATE_ADD\(([^,]+),\s*INTERVAL\s+(\d+)\s+DAY\)/gi, "($1 + INTERVAL '$2 days')");
 
     // For INSERT statements, append RETURNING id if not already returning
     if (isInsert && !/returning\s+/i.test(normalizedSql)) {
