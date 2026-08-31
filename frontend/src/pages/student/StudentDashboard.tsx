@@ -135,19 +135,23 @@ const StudentDashboard = () => {
     // --- DATA FETCHING ---
     const refreshDashboardData = useCallback(async () => {
         try {
-            const [historyRes, reportRes, profileRes, taskRes, annRes] = await Promise.all([
+            const [historyRes, reportRes, profileRes, taskRes, annRes] = await Promise.allSettled([
                 api.get('/attendance/history'),
                 api.get('/attendance/weekly-report'),
                 api.get('/auth/profile'),
-                api.get('/tasks/my-tasks').catch(() => ({ data: [] })),
-                api.get('/announcements/all').catch(() => ({ data: [] }))
+                api.get('/tasks/my-tasks'),
+                api.get('/announcements/all')
             ]);
 
-            const historyData = historyRes.data;
-            const reportData = reportRes.data;
-            const profileData = profileRes.data?.user || profileRes.data;
-            const taskData = Array.isArray(taskRes.data) ? taskRes.data : (taskRes.data?.data || []);
-            const annData = Array.isArray(annRes.data) ? annRes.data : (annRes.data?.data || []);
+            const historyData = historyRes.status === 'fulfilled' ? historyRes.value.data : [];
+            const reportData = reportRes.status === 'fulfilled' ? reportRes.value.data : null;
+            const profileData = profileRes.status === 'fulfilled' ? (profileRes.value.data?.user || profileRes.value.data) : null;
+            const taskData = taskRes.status === 'fulfilled' 
+                ? (Array.isArray(taskRes.value.data) ? taskRes.value.data : (taskRes.value.data?.data || [])) 
+                : [];
+            const annData = annRes.status === 'fulfilled' 
+                ? (Array.isArray(annRes.value.data) ? annRes.value.data : (annRes.value.data?.data || [])) 
+                : [];
 
             const currentSettings = getAdminSettings();
             const targetHours = currentSettings.requiredOjtHours || (profileData && Number(profileData.ojt_hours_required)) || 600;
@@ -173,7 +177,7 @@ const StudentDashboard = () => {
                 // Check if shift is finished for today
                 const todayStr = getTodayDate();
                 const finishedToday = historyData.some((log: AttendanceLog) =>
-                    log.date.includes(todayStr) && log.clock_out !== null
+                    log.date && log.date.includes(todayStr) && log.clock_out !== null
                 );
                 setHasCompletedShift(finishedToday);
             }
