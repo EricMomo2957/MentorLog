@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'mentorlog_super_secret_jwt_key_2026';
 
 if (!process.env.JWT_SECRET) {
     console.warn("⚠️  [Security Warning] JWT_SECRET is not defined in .env. Using default development secret.");
