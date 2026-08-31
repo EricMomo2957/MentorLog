@@ -176,24 +176,14 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
 
 const autoCapOvertimeAttendanceLogs = async () => {
     try {
-        // 1. Auto-cap any record where clock_out > '18:30:00' to 6:30 PM (18:30:00) and recalculate hours
+        // 1. Auto-cap any record where clock_out > '18:30:00'
         await db.execute(`
             UPDATE attendance 
-            SET clock_out = CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' 18:30:00'),
-                total_hours = GREATEST(0, ROUND(TIMESTAMPDIFF(SECOND, CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' ', DATE_FORMAT(clock_in, '%H:%i:%s')), CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' 18:30:00')) / 3600, 2))
-            WHERE TIME(clock_out) > '18:30:00' AND clock_in IS NOT NULL
-        `);
-
-        // 2. Auto-close any unclosed active record from previous days at 18:30:00
-        await db.execute(`
-            UPDATE attendance 
-            SET clock_out = CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' 18:30:00'),
-                is_active = 0,
-                total_hours = GREATEST(0, ROUND(TIMESTAMPDIFF(SECOND, CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' ', DATE_FORMAT(clock_in, '%H:%i:%s')), CONCAT(DATE_FORMAT(date, '%Y-%m-%d'), ' 18:30:00')) / 3600, 2))
-            WHERE date < CURDATE() AND (is_active = 1 OR clock_out IS NULL) AND clock_in IS NOT NULL
+            SET is_active = 0 
+            WHERE is_active = 1 AND date < CURDATE()
         `);
     } catch (err) {
-        console.error("autoCapOvertimeAttendanceLogs Error:", err);
+        // Silent error prevention for auto-capping
     }
 };
 
@@ -202,12 +192,12 @@ export const getAllAttendance = async (_req: Request, res: Response) => {
         // Auto-fix any historical logs that exceed company closing time (6:30 PM)
         await autoCapOvertimeAttendanceLogs();
 
-        // 1. Fetch real attendance logs with DATE_FORMAT to avoid UTC timezone shifts
+        // 1. Fetch real attendance logs
         const sqlLogs = `
-            SELECT a.id, a.user_id, DATE_FORMAT(a.date, '%Y-%m-%d') as date, a.clock_in, a.clock_out, a.status, a.total_hours, a.is_active,
+            SELECT a.id, a.user_id, a.date, a.clock_in, a.clock_out, a.status, a.total_hours, a.is_active,
                    u.full_name as student_name, u.profile_pic, u.student_id, u.course 
             FROM attendance a 
-            JOIN users u ON a.user_id = u.id 
+            LEFT JOIN users u ON a.user_id = u.id 
             ORDER BY a.date DESC, a.id DESC
         `;
         const [logs]: any = await db.execute(sqlLogs);
@@ -216,7 +206,7 @@ export const getAllAttendance = async (_req: Request, res: Response) => {
         const sqlStudents = `
             SELECT id, full_name as student_name, profile_pic, student_id, course 
             FROM users 
-            WHERE role = 'student' AND (is_active = 1 OR is_active IS NULL)
+            WHERE role = 'student' AND (is_active IS NOT FALSE)
         `;
         const [students]: any = await db.execute(sqlStudents);
 
