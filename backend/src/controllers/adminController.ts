@@ -10,7 +10,7 @@ import pool from '../config/db';
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
         const [rows]: any = await db.execute(
-            'SELECT id, full_name, email, phone, student_id, course, year_level, profile_pic, role, created_at FROM users ORDER BY created_at DESC'
+            'SELECT id, full_name, email, phone, student_id, course, year_level, profile_pic, role, ojt_hours_required, is_active, created_at FROM users ORDER BY created_at DESC'
         );
         res.status(200).json({ success: true, data: rows });
     } catch (error) {
