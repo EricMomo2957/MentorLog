@@ -68,7 +68,16 @@ function normalizeQueryForPostgres(sql: string): { normalizedSql: string; isInse
     // Convert MySQL-specific functions
     normalizedSql = normalizedSql.replace(/TIMESTAMPDIFF\(HOUR,\s*([a-zA-Z0-9_.]+),\s*([a-zA-Z0-9_.]+)\)/gi, 'EXTRACT(EPOCH FROM ($2 - $1))/3600');
     normalizedSql = normalizedSql.replace(/CURDATE\(\)/gi, 'CURRENT_DATE');
+    normalizedSql = normalizedSql.replace(/NOW\(\)/gi, 'CURRENT_TIMESTAMP');
     normalizedSql = normalizedSql.replace(/DATE_ADD\(([^,]+),\s*INTERVAL\s+(\d+)\s+DAY\)/gi, "($1 + INTERVAL '$2 days')");
+
+    // Normalize boolean comparisons for PostgreSQL
+    normalizedSql = normalizedSql.replace(/\bis_active\s*=\s*1\b/gi, 'is_active = true');
+    normalizedSql = normalizedSql.replace(/\bis_active\s*=\s*0\b/gi, 'is_active = false');
+    normalizedSql = normalizedSql.replace(/\bis_used\s*=\s*1\b/gi, 'is_used = true');
+    normalizedSql = normalizedSql.replace(/\bis_used\s*=\s*0\b/gi, 'is_used = false');
+    normalizedSql = normalizedSql.replace(/\bis_used\s*=\s*FALSE\b/gi, 'is_used = false');
+    normalizedSql = normalizedSql.replace(/\bis_used\s*=\s*TRUE\b/gi, 'is_used = true');
 
     // For INSERT statements, append RETURNING id if not already returning
     if (isInsert && !/returning\s+/i.test(normalizedSql)) {
