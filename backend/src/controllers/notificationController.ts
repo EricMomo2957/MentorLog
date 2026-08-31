@@ -70,7 +70,7 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
         if (!userId) return res.status(401).json({ message: "Not authorized" });
 
         await db.execute(
-            `UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?`,
+            `UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?`,
             [id, userId]
         );
 
@@ -91,7 +91,7 @@ export const markAllAsRead = async (req: AuthRequest, res: Response) => {
         if (!userId) return res.status(401).json({ message: "Not authorized" });
 
         await db.execute(
-            `UPDATE notifications SET is_read = 1 WHERE user_id = ?`,
+            `UPDATE notifications SET is_read = TRUE WHERE user_id = ?`,
             [userId]
         );
 

@@ -74,6 +74,8 @@ function normalizeQueryForPostgres(sql: string): { normalizedSql: string; isInse
     // Normalize boolean comparisons for PostgreSQL
     normalizedSql = normalizedSql.replace(/\bis_active\s*=\s*1\b/gi, 'is_active = true');
     normalizedSql = normalizedSql.replace(/\bis_active\s*=\s*0\b/gi, 'is_active = false');
+    normalizedSql = normalizedSql.replace(/\bis_read\s*=\s*1\b/gi, 'is_read = true');
+    normalizedSql = normalizedSql.replace(/\bis_read\s*=\s*0\b/gi, 'is_read = false');
     normalizedSql = normalizedSql.replace(/\bis_used\s*=\s*1\b/gi, 'is_used = true');
     normalizedSql = normalizedSql.replace(/\bis_used\s*=\s*0\b/gi, 'is_used = false');
     normalizedSql = normalizedSql.replace(/\bis_used\s*=\s*FALSE\b/gi, 'is_used = false');
