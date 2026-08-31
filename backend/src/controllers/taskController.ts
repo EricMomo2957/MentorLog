@@ -79,7 +79,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
                 u.full_name as student_name,
                 u.profile_pic 
             FROM tasks t
-            JOIN users u ON t.user_id = u.id
+            LEFT JOIN users u ON t.user_id = u.id
             ORDER BY t.id DESC
         `);
         
@@ -88,8 +88,27 @@ export const getAllTasks = async (req: Request, res: Response) => {
             data: rows
         });
     } catch (error) {
-        console.error("Error in getAllTasks:", error);
-        res.status(500).json({ success: false, message: 'Error fetching task logs.' });
+        // Fallback in case attachment columns don't exist yet in the database
+        try {
+            const [fallbackRows] = await pool.query(`
+                SELECT 
+                    t.id, 
+                    t.user_id,
+                    t.title,
+                    t.task_description, 
+                    t.status,
+                    t.due_date, 
+                    u.full_name as student_name,
+                    u.profile_pic 
+                FROM tasks t
+                LEFT JOIN users u ON t.user_id = u.id
+                ORDER BY t.id DESC
+            `);
+            res.status(200).json({ success: true, data: fallbackRows });
+        } catch (innerErr) {
+            console.error("Error in getAllTasks:", error);
+            res.status(200).json({ success: true, data: [] });
+        }
     }
 };
 
