@@ -9,7 +9,12 @@ export const sendOTPEmail = async (email: string, otpCode: string, fullName: str
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
-    const fromEmail = process.env.SMTP_FROM || 'no-reply@mentorlog.com';
+    
+    // Use the authenticated SMTP_USER (e.g. Gmail) as the sender address so SPF/DKIM passes and emails land in Primary Inbox
+    const senderEmail = (process.env.SMTP_FROM && process.env.SMTP_FROM.includes('@') && !process.env.SMTP_FROM.includes('mentorlog.com'))
+        ? process.env.SMTP_FROM
+        : smtpUser || 'no-reply@mentorlog.com';
+    const fromHeader = `"MentorLog Security" <${senderEmail}>`;
 
     // Always log OTP to server console for quick dev testing
     console.log(`\n==================================================`);
@@ -61,7 +66,7 @@ export const sendOTPEmail = async (email: string, otpCode: string, fullName: str
         `;
 
         await transporter.sendMail({
-            from: `"MentorLog Security" <${fromEmail}>`,
+            from: fromHeader,
             to: email,
             subject: `${otpCode} is your MentorLog Email Verification Code`,
             html: htmlContent
