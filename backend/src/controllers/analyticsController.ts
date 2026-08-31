@@ -11,13 +11,13 @@ interface CountResult {
 const getCount = async (tableName: string): Promise<number> => {
     try {
         const [rows] = await db.execute(`SELECT COUNT(*) as count FROM ${tableName}`) as [CountResult[], any];
-        return rows[0]?.count || 0;
+        return parseInt(String(rows[0]?.count || 0), 10);
     } catch (error: any) {
         if (error.errno === 1146) {
             console.warn(`⚠️ Warning: Table '${tableName}' not found. Returning 0.`);
             return 0;
         }
-        throw error;
+        return 0;
     }
 };
 
@@ -29,7 +29,7 @@ const getStatusCount = async (tableName: string, status: string): Promise<number
             `SELECT COUNT(*) as count FROM ${tableName} WHERE status = ?`, 
             [status]
         ) as [CountResult[], any];
-        return rows[0]?.count || 0;
+        return parseInt(String(rows[0]?.count || 0), 10);
     } catch (error: any) {
         if (error.errno === 1146) return 0;
         console.error(`Error fetching status ${status} from ${tableName}:`, error);
