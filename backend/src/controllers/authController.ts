@@ -2,10 +2,13 @@ import { Request, Response } from 'express';
 import pool from '../config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
 import { logAction } from '../utils/logger';
 import { sendOTPEmail } from '../utils/mailer';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'mentorlog_super_secret_jwt_key_2026';
 
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -155,7 +158,8 @@ export const sendRegistrationOTP = async (req: Request, res: Response) => {
 
         res.status(200).json({ 
             success: true, 
-            message: 'Verification code sent to your email. Please check your inbox or spam folder.' 
+            message: 'Verification code sent to your email. Please check your inbox, spam, or all mail folder.',
+            devOtp: process.env.NODE_ENV !== 'production' ? otpCode : undefined
         });
 
     } catch (error) {
@@ -286,7 +290,8 @@ export const resendRegistrationOTP = async (req: Request, res: Response) => {
 
         res.status(200).json({ 
             success: true, 
-            message: 'A new 6-digit code has been sent to your email.' 
+            message: 'A new 6-digit code has been sent to your email.',
+            devOtp: process.env.NODE_ENV !== 'production' ? newOtpCode : undefined
         });
 
     } catch (error) {
