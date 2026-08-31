@@ -342,7 +342,7 @@ export const getMyAttendanceHistory = async (req: AuthRequest, res: Response) =>
 
         // 2. Fetch all real logs for this student
         const [rows]: any = await db.execute(
-            `SELECT id, user_id, DATE_FORMAT(date, '%Y-%m-%d') as date, clock_in, clock_out, status, total_hours, is_active 
+            `SELECT id, user_id, date, clock_in, clock_out, status, total_hours, is_active 
              FROM attendance 
              WHERE user_id = ? 
              ORDER BY date DESC`,
