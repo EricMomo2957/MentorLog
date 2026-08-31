@@ -143,8 +143,9 @@ const StudentDashboard = () => {
                 api.get('/announcements/all')
             ]);
 
-            const historyData = historyRes.status === 'fulfilled' ? historyRes.value.data : [];
-            const reportData = reportRes.status === 'fulfilled' ? reportRes.value.data : null;
+            const rawHistory = historyRes.status === 'fulfilled' ? historyRes.value.data : [];
+            const historyData: AttendanceLog[] = Array.isArray(rawHistory) ? rawHistory : (rawHistory?.data || []);
+            const reportData = reportRes.status === 'fulfilled' ? (reportRes.value.data?.data || reportRes.value.data) : null;
             const profileData = profileRes.status === 'fulfilled' ? (profileRes.value.data?.user || profileRes.value.data) : null;
             const taskData = taskRes.status === 'fulfilled' 
                 ? (Array.isArray(taskRes.value.data) ? taskRes.value.data : (taskRes.value.data?.data || [])) 
@@ -357,9 +358,9 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
     const progressPercentage = Math.min((report.accumulated_hours / totalTargetHours) * 100, 100);
     const remainingHours = Math.max(0, totalTargetHours - report.accumulated_hours);
 
-    const presentCount = logs.filter(l => l.status === 'Present').length;
-    const lateCount = logs.filter(l => l.status === 'Late').length;
-    const absentCount = logs.filter(l => l.status === 'Absent').length;
+    const presentCount = logs.filter(l => l.status?.toLowerCase() === 'present').length;
+    const lateCount = logs.filter(l => l.status?.toLowerCase() === 'late').length;
+    const absentCount = logs.filter(l => l.status?.toLowerCase() === 'absent').length;
 
     const pendingTasksCount = allTasks.filter(t => t.status === 'Pending').length;
     const inProgressTasksCount = allTasks.filter(t => t.status === 'In-Progress' || t.status === 'In-Process').length;
