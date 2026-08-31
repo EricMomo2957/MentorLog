@@ -91,6 +91,7 @@ const Register = () => {
     // OTP State (6 Digits)
     const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
     const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const [devOtp, setDevOtp] = useState<string>('');
     const [expiryTimer, setExpiryTimer] = useState<number>(600); // 10 mins (600s)
     const [resendTimer, setResendTimer] = useState<number>(30); // 30s
     const [canResend, setCanResend] = useState<boolean>(false);
@@ -205,6 +206,9 @@ const Register = () => {
         try {
             const response = await api.post('/auth/send-otp', payload);
             if (response.data?.success) {
+                if (response.data.devOtp) {
+                    setDevOtp(response.data.devOtp);
+                }
                 setStep(2);
                 setExpiryTimer(600); // 10 mins
                 setResendTimer(30);  // 30s
@@ -298,6 +302,9 @@ const Register = () => {
         try {
             const response = await api.post('/auth/resend-otp', { email: formData.email });
             if (response.data?.success) {
+                if (response.data.devOtp) {
+                    setDevOtp(response.data.devOtp);
+                }
                 setSuccessMsg('A new 6-digit verification code has been sent to your email.');
                 setResendTimer(30);
                 setCanResend(false);
@@ -783,7 +790,30 @@ const Register = () => {
                                 <p className="text-slate-400 text-xs font-medium mt-1">
                                     We sent a 6-digit code to <span className="text-emerald-400 font-bold">{formData.email}</span>
                                 </p>
+                                <p className="text-[11px] text-slate-500 mt-1">
+                                    Please check your <strong>Primary Inbox</strong>, <strong>Spam</strong>, or <strong>All Mail</strong> folder.
+                                </p>
                             </div>
+
+                            {devOtp && (
+                                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-xs text-emerald-300 flex items-center justify-between gap-2 shadow-inner text-left">
+                                    <div>
+                                        <p className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Dev Mode Active</p>
+                                        <p className="text-xs text-slate-300">Code: <strong className="font-mono text-emerald-300 text-sm tracking-widest">{devOtp}</strong></p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const digits = devOtp.split('').slice(0, 6);
+                                            setOtpDigits(digits);
+                                            otpInputRefs.current[5]?.focus();
+                                        }}
+                                        className="text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-3 py-1.5 rounded-lg cursor-pointer transition-all shadow-xs"
+                                    >
+                                        Auto-Fill Code
+                                    </button>
+                                </div>
+                            )}
 
                             <form onSubmit={handleVerifyOTP} className="space-y-5">
                                 <div className="flex items-center justify-center gap-2 my-2">

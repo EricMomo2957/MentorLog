@@ -110,17 +110,35 @@ const AdminDashboard = () => {
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [userRes, attRes, taskRes, analyticsRes] = await Promise.all([
+            const [userRes, attRes, taskRes, analyticsRes] = await Promise.allSettled([
                 api.get('/admin/users/all'), 
                 api.get('/attendance/all'),
                 api.get('/tasks/all'),
-                api.get('/analytics/stats').catch(() => ({ data: { success: false } }))
+                api.get('/analytics/stats')
             ]);
             
-            if (userRes.data?.success) setUsers(userRes.data.data || []);
-            if (attRes.data?.success) setLogs(attRes.data.data || []);
-            if (taskRes.data?.success) setTasks(taskRes.data.data || []);
-            if (analyticsRes.data?.success) setAnalyticsStats(analyticsRes.data.data);
+            if (userRes.status === 'fulfilled' && userRes.value.data?.success) {
+                setUsers(userRes.value.data.data || []);
+            } else {
+                try {
+                    const fallbackStudents = await api.get('/admin/students');
+                    if (fallbackStudents.data?.success) {
+                        setUsers(fallbackStudents.data.data || []);
+                    }
+                } catch (e) {
+                    console.error("Fallback students fetch error:", e);
+                }
+            }
+
+            if (attRes.status === 'fulfilled' && attRes.value.data?.success) {
+                setLogs(attRes.value.data.data || []);
+            }
+            if (taskRes.status === 'fulfilled' && taskRes.value.data?.success) {
+                setTasks(taskRes.value.data.data || []);
+            }
+            if (analyticsRes.status === 'fulfilled' && analyticsRes.value.data?.success) {
+                setAnalyticsStats(analyticsRes.value.data.data);
+            }
         } catch (err) {
             console.error("Fetch Error:", err);
         } finally {
@@ -135,7 +153,7 @@ const AdminDashboard = () => {
     // Stats Calculations
     const totalPresentAndLate = logs.filter(l => l.status === 'Present' || l.status === 'Late').length;
     const attendanceRate = logs.length > 0 ? ((totalPresentAndLate / logs.length) * 100).toFixed(1) : "0.0";
-    const studentUsers = users.filter(u => u.role === 'student');
+    const studentUsers = users.filter(u => !u.role || u.role.toLowerCase() === 'student');
 
     // Helper to calculate total hours rendered by an intern
     const getStudentRenderedHours = (userId: number, studentName: string) => {
@@ -147,12 +165,12 @@ const AdminDashboard = () => {
     // Chart Data
     const moduleMixData = [
         { name: 'Announcements', value: analyticsStats?.announcements || 0 },
-        { name: 'Attendance', value: analyticsStats?.attendance || 0 },
+        { name: 'Attendance', value: analyticsStats?.attendance || logs.length },
         { name: 'Events', value: analyticsStats?.events || 0 },
         { name: 'Feedbacks', value: analyticsStats?.feedbacks || 0 },
         { name: 'Services', value: analyticsStats?.requests || 0 },
-        { name: 'Tasks', value: analyticsStats?.tasks || 0 },
-        { name: 'Users', value: analyticsStats?.users || 0 }
+        { name: 'Tasks', value: analyticsStats?.tasks || tasks.length },
+        { name: 'Users', value: analyticsStats?.users || studentUsers.length }
     ].filter(d => d.value > 0);
 
     const attendanceBreakdownData = [
