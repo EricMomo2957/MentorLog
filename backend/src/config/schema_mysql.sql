@@ -241,11 +241,29 @@ CREATE TABLE IF NOT EXISTS `evaluations` (
   `communication` int(11) NOT NULL DEFAULT 5,
   `overall_score` decimal(3,2) NOT NULL DEFAULT 5.00,
   `comments` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `student_id` (`student_id`),
   KEY `evaluator_id` (`evaluator_id`),
   CONSTRAINT `fk_evaluations_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_evaluations_evaluator` FOREIGN KEY (`evaluator_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 17. tasks
+CREATE TABLE IF NOT EXISTS `tasks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(150) NOT NULL,
+  `task_description` text DEFAULT NULL,
+  `status` enum('Pending','In-Progress','Completed') DEFAULT 'Pending',
+  `due_date` date DEFAULT NULL,
+  `attachment_url` varchar(255) DEFAULT NULL,
+  `attachment_name` varchar(255) DEFAULT NULL,
+  `proof_link` varchar(500) DEFAULT NULL,
+  `proof_file_url` varchar(500) DEFAULT NULL,
+  `submission_notes` text DEFAULT NULL,
+  `verified_by_mentor` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `fk_tasks_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
