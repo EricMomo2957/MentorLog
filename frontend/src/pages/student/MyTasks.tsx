@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import { 
     CheckCircle2, Clock, AlertCircle, Download, 
-    ChevronDown, Calendar, RefreshCw, FileText, Paperclip
+    ChevronDown, Calendar, RefreshCw, FileText, Paperclip,
+    ExternalLink, ShieldCheck, Plus, X, Loader2
 } from 'lucide-react';
 
 interface Task {
@@ -14,6 +15,10 @@ interface Task {
     due_date: string;
     attachment_url?: string;
     attachment_name?: string;
+    proof_link?: string;
+    proof_file_url?: string;
+    submission_notes?: string;
+    verified_by_mentor?: boolean;
 }
 
 type FilterType = 'All' | 'Pending' | 'In-Progress' | 'Completed';
@@ -35,6 +40,14 @@ const MyTasks = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<FilterType>('All');
 
+    // Deliverable Modal States
+    const [isDeliverableModalOpen, setIsDeliverableModalOpen] = useState(false);
+    const [activeTaskForProof, setActiveTaskForProof] = useState<Task | null>(null);
+    const [proofLink, setProofLink] = useState('');
+    const [submissionNotes, setSubmissionNotes] = useState('');
+    const [proofFile, setProofFile] = useState<File | null>(null);
+    const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+
     const fetchTasks = useCallback(async () => {
         setLoading(true);
         try {
@@ -49,11 +62,52 @@ const MyTasks = () => {
     }, []);
 
     const updateStatus = async (taskId: number, newStatus: Task['status']) => {
+        if (newStatus === 'Completed') {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                openDeliverableModal(task);
+                return;
+            }
+        }
+
         try {
             await api.put(`/tasks/${taskId}/status`, { status: newStatus });
             fetchTasks();
         } catch (error) {
             console.error("Update failed:", error);
+        }
+    };
+
+    const openDeliverableModal = (task: Task) => {
+        setActiveTaskForProof(task);
+        setProofLink(task.proof_link || '');
+        setSubmissionNotes(task.submission_notes || '');
+        setProofFile(null);
+        setIsDeliverableModalOpen(true);
+    };
+
+    const handleSubmitDeliverable = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!activeTaskForProof) return;
+
+        try {
+            setIsSubmittingProof(true);
+            const formData = new FormData();
+            formData.append('status', 'Completed');
+            if (proofLink.trim()) formData.append('proof_link', proofLink.trim());
+            if (submissionNotes.trim()) formData.append('submission_notes', submissionNotes.trim());
+            if (proofFile) formData.append('proof_file', proofFile);
+
+            await api.put(`/tasks/${activeTaskForProof.id}/status`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            setIsDeliverableModalOpen(false);
+            fetchTasks();
+        } catch (error) {
+            console.error("Failed to submit deliverable proof:", error);
+        } finally {
+            setIsSubmittingProof(false);
         }
     };
 
@@ -244,7 +298,7 @@ const MyTasks = () => {
                                         <div className={`pt-3 border-t ${style.dividerBg} space-y-2`}>
                                             <div className={`flex items-center gap-1.5 text-[11px] ${style.attachmentLabel} uppercase tracking-wider`}>
                                                 <Paperclip className={`w-3.5 h-3.5 ${style.iconColor}`} />
-                                                <span>OJT Resource Attachment</span>
+                                                <span>Mentor Resource Attachment</span>
                                             </div>
 
                                             {isImageFile(task.attachment_name || task.attachment_url) ? (
@@ -292,6 +346,53 @@ const MyTasks = () => {
                                             )}
                                         </div>
                                     )}
+
+                                    {/* Submitted Task Deliverable & Proof Section */}
+                                    {(task.proof_link || task.submission_notes || task.status === 'Completed') && (
+                                        <div className={`pt-3 border-t ${style.dividerBg} space-y-2`}>
+                                            <div className="flex items-center justify-between">
+                                                <span className={`text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1 text-slate-800`}>
+                                                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                                                    My Work Deliverable
+                                                </span>
+                                                {task.verified_by_mentor ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified by Mentor
+                                                    </span>
+                                                ) : task.status === 'Completed' ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                                        <Clock className="w-3 h-3 text-amber-600" /> Pending Mentor Review
+                                                    </span>
+                                                ) : null}
+                                            </div>
+
+                                            {task.proof_link && (
+                                                <a
+                                                    href={task.proof_link.startsWith('http') ? task.proof_link : `https://${task.proof_link}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs font-bold transition-all shadow-2xs w-full justify-between"
+                                                >
+                                                    <span className="truncate max-w-[85%]">{task.proof_link}</span>
+                                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                                                </a>
+                                            )}
+
+                                            {task.submission_notes && (
+                                                <p className="text-[11px] text-slate-600 italic bg-white/60 p-2 rounded-lg border border-slate-200/60">
+                                                    "{task.submission_notes}"
+                                                </p>
+                                            )}
+
+                                            <button
+                                                onClick={() => openDeliverableModal(task)}
+                                                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer pt-0.5"
+                                            >
+                                                <Plus className="w-3 h-3" />
+                                                <span>{task.proof_link || task.submission_notes ? 'Update Deliverable Proof' : 'Attach Output Link / Notes'}</span>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className={`flex items-center justify-between pt-3 border-t ${style.dividerBg}`}>
@@ -309,6 +410,95 @@ const MyTasks = () => {
             ) : (
                 <div className="bg-white border border-slate-200 rounded-xl p-16 text-center text-slate-400 text-xs italic shadow-xs">
                     No OJT tasks found matching filter.
+                </div>
+            )}
+
+            {/* Deliverable Proof Submission Modal */}
+            {isDeliverableModalOpen && activeTaskForProof && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs animate-in fade-in">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden space-y-4 p-6">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900">Submit Task Deliverable & Proof</h3>
+                                    <p className="text-[11px] text-slate-500">Attach deliverables for: "{activeTaskForProof.title}"</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsDeliverableModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmitDeliverable} className="space-y-3.5 text-xs">
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Deliverable URL (GitHub / Google Drive / Figma / Loom)
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="url"
+                                        placeholder="https://github.com/my-org/project or https://drive.google.com/..."
+                                        value={proofLink}
+                                        onChange={(e) => setProofLink(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:border-indigo-500 outline-none"
+                                    />
+                                    <ExternalLink className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Attach Output File (Screenshot, Document, or ZIP)
+                                </label>
+                                <input
+                                    type="file"
+                                    onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Submission Summary & Notes
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    placeholder="Briefly describe what you built, accomplished, or resolved for this task..."
+                                    value={submissionNotes}
+                                    onChange={(e) => setSubmissionNotes(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 placeholder-slate-400 focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDeliverableModalOpen(false)}
+                                    className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmittingProof}
+                                    className="px-5 py-2 font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    {isSubmittingProof ? (
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <span>Submitting Output...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 className="w-4 h-4" />
+                                            <span>Mark as Completed with Proof</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>
