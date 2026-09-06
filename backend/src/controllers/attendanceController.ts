@@ -5,8 +5,21 @@ import { notifyAdmins } from './notificationController';
 
 // Use this interface to fix 'req.user' TypeScript errors
 interface AuthRequest extends Request {
-    user?: { id: number };
+    user?: { id: number; role?: string };
 }
+
+/**
+ * Calculates net credit OJT hours with standard 1-hour unpaid lunch break deduction.
+ * If raw duration is >= 5.0 hours, deduct 1.0 hour for standard lunch break (12:00 - 1:00 PM).
+ * Example: 9.0 elapsed hours (08:00 - 17:00) yields 8.0 credit hours.
+ * Example: 4.0 elapsed hours (08:00 - 12:00) yields 4.0 credit hours.
+ */
+export const calculateCreditHours = (rawHours: number): number => {
+    if (rawHours >= 5.0) {
+        return Math.max(0, parseFloat((rawHours - 1.0).toFixed(2)));
+    }
+    return Math.max(0, parseFloat(rawHours.toFixed(2)));
+};
 
 export const toggleAttendance = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -78,7 +91,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
             const notes = req.body.notes || req.body.reason || null;
 
             await db.execute(
-                'INSERT INTO attendance (user_id, date, clock_in, status, notes, is_active) VALUES (?, CURDATE(), NOW(), ?, ?, 1)',
+                'INSERT INTO attendance (user_id, date, clock_in, status, notes, is_active, approval_status) VALUES (?, CURDATE(), NOW(), ?, ?, 1, \'Approved\')',
                 [userId, status, notes]
             );
 
@@ -145,10 +158,11 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 effectiveClockOutDate = now;
             }
 
-            // Calculate total hours up to effective clock-out date
+            // Calculate raw hours and net credit hours with 1-hr lunch deduction if >= 5 hrs
             const clockInDate = new Date(activeRecord.clock_in.includes('T') ? activeRecord.clock_in : `${recordDateStr} ${activeRecord.clock_in}`);
             const diffMs = effectiveClockOutDate.getTime() - (isNaN(clockInDate.getTime()) ? new Date().getTime() : clockInDate.getTime());
-            const totalHours = Math.max(0, parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)));
+            const rawHours = Math.max(0, parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)));
+            const totalHours = calculateCreditHours(rawHours);
 
             await db.execute(`
                 UPDATE attendance 
@@ -159,12 +173,12 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
             `, [effectiveClockOutStr, totalHours, activeRecord.id]);
 
             // Audit Log
-            await logAction(userId, 'UPDATE', 'Attendance', `Clocked out of shift (Hours: ${totalHours})`);
+            await logAction(userId, 'UPDATE', 'Attendance', `Clocked out of shift (${totalHours} credit hrs logged with 1hr lunch break policy)`);
 
             // Notify Admins
             const [uRows]: any = await db.execute('SELECT full_name FROM users WHERE id = ?', [userId]);
             const studentName = (uRows && uRows[0]?.full_name) || 'An OJT Student';
-            await notifyAdmins('Student Clocked Out', `${studentName} clocked out of shift (${totalHours} hrs logged).`, 'info');
+            await notifyAdmins('Student Clocked Out', `${studentName} clocked out of shift (${totalHours} hrs credited).`, 'info');
 
             return res.json({ success: true, message: "Clocked out successfully", total_hours: totalHours });
         }
@@ -195,6 +209,7 @@ export const getAllAttendance = async (_req: Request, res: Response) => {
         // 1. Fetch real attendance logs
         const sqlLogs = `
             SELECT a.id, a.user_id, a.date, a.clock_in, a.clock_out, a.status, a.total_hours, a.is_active,
+                   a.approval_status, a.admin_remarks,
                    u.full_name as student_name, u.profile_pic, u.student_id, u.course 
             FROM attendance a 
             LEFT JOIN users u ON a.user_id = u.id 
@@ -266,7 +281,9 @@ export const getAllAttendance = async (_req: Request, res: Response) => {
                         clock_out: '---',
                         status: 'Absent',
                         total_hours: 0,
-                        is_active: 0
+                        is_active: 0,
+                        approval_status: 'Approved',
+                        admin_remarks: null
                     });
                 }
             });
@@ -291,7 +308,7 @@ export const getAllAttendance = async (_req: Request, res: Response) => {
 
 export const getStudentStats = async (req: Request, res: Response) => {
     const { userId } = req.params;
-    const sql = "SELECT * FROM attendance WHERE user_id = ?";
+    const sql = "SELECT * FROM attendance WHERE user_id = ? ORDER BY date DESC";
 
     try {
         const [results] = await db.execute(sql, [userId]);
@@ -308,14 +325,13 @@ export const getWeeklyReport = async (req: AuthRequest, res: Response) => {
 
         const [rows]: any = await db.execute(`
             SELECT 
-                COALESCE(SUM(total_hours), 0) as accumulated_hours,
-                COUNT(id) as days_present,
-                COUNT(CASE WHEN status = 'Late' THEN 1 END) as days_late
+                COALESCE(SUM(CASE WHEN approval_status = 'Approved' OR approval_status IS NULL THEN total_hours ELSE 0 END), 0) as accumulated_hours,
+                COUNT(CASE WHEN (approval_status = 'Approved' OR approval_status IS NULL) AND (status = 'Present' OR status = 'Late') THEN 1 END) as days_present,
+                COUNT(CASE WHEN (approval_status = 'Approved' OR approval_status IS NULL) AND status = 'Late' THEN 1 END) as days_late
             FROM attendance 
             WHERE user_id = ?
         `, [userId]);
 
-        // Return the first row directly
         res.json(rows[0]); 
     } catch (error) {
         console.error("Report Error:", error);
@@ -342,7 +358,8 @@ export const getMyAttendanceHistory = async (req: AuthRequest, res: Response) =>
 
         // 2. Fetch all real logs for this student
         const [rows]: any = await db.execute(
-            `SELECT id, user_id, date, clock_in, clock_out, status, total_hours, is_active 
+            `SELECT id, user_id, date, clock_in, clock_out, status, total_hours, is_active,
+                    approval_status, admin_remarks
              FROM attendance 
              WHERE user_id = ? 
              ORDER BY date DESC`,
@@ -397,7 +414,9 @@ export const getMyAttendanceHistory = async (req: AuthRequest, res: Response) =>
                         clock_out: '---',
                         status: 'Absent',
                         total_hours: 0,
-                        is_active: 0
+                        is_active: 0,
+                        approval_status: 'Approved',
+                        admin_remarks: null
                     });
                 }
             }
@@ -412,41 +431,156 @@ export const getMyAttendanceHistory = async (req: AuthRequest, res: Response) =>
             return dateB.localeCompare(dateA);
         });
 
-        res.json(combined);
+        res.json({ success: true, data: combined });
     } catch (error) {
         console.error("History Error:", error);
         res.status(500).json({ message: "Error fetching your history" });
     }
 };
 
+/**
+ * POST /api/attendance/request-manual
+ * Student requests a manual attendance log (e.g., fieldwork, forgot to clock in)
+ * Defaults to approval_status = 'Pending'
+ */
+export const requestManualAttendance = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+    const { date, clock_in, clock_out, status, reason } = req.body;
+
+    if (!date || !clock_in || !clock_out) {
+        return res.status(400).json({ message: "Date, clock in, and clock out times are required." });
+    }
+
+    try {
+        const start = new Date(`${date} ${clock_in}`);
+        const end = new Date(`${date} ${clock_out}`);
+        
+        const diffInMs = end.getTime() - start.getTime();
+        const rawHours = parseFloat((diffInMs / (1000 * 60 * 60)).toFixed(2));
+
+        if (rawHours <= 0) {
+            return res.status(400).json({ message: "Clock out time must be after clock in time." });
+        }
+
+        // Apply 1-hour lunch break deduction if raw shift >= 5.0 hours
+        const totalHours = calculateCreditHours(rawHours);
+
+        const sql = `
+            INSERT INTO attendance (user_id, date, clock_in, clock_out, status, total_hours, is_active, approval_status, admin_remarks) 
+            VALUES (?, ?, ?, ?, ?, ?, 0, 'Pending', ?)
+        `;
+
+        await db.execute(sql, [userId, date, clock_in, clock_out, status || 'Present', totalHours, reason || null]);
+
+        // Audit Log
+        await logAction(userId, 'CREATE', 'Attendance', `Requested manual attendance for ${date} (${totalHours} credit hrs, Pending Approval)`);
+
+        // Notify Admins
+        const [uRows]: any = await db.execute('SELECT full_name FROM users WHERE id = ?', [userId]);
+        const studentName = (uRows && uRows[0]?.full_name) || 'An OJT Student';
+        await notifyAdmins('Manual Attendance Request', `${studentName} submitted a manual log request for ${date} (${totalHours} hrs).`, 'warning');
+
+        return res.json({ 
+            success: true, 
+            message: "Manual attendance request submitted for admin review!",
+            totalHours 
+        });
+    } catch (error) {
+        console.error("Manual Request Error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+/**
+ * PUT /api/attendance/:id/approve
+ * Admin approves a pending attendance log
+ */
+export const approveAttendance = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const adminId = req.user?.id || 0;
+
+    try {
+        const [rows]: any = await db.execute('SELECT a.*, u.full_name FROM attendance a LEFT JOIN users u ON a.user_id = u.id WHERE a.id = ?', [id]);
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ message: "Attendance record not found." });
+        }
+
+        const record = rows[0];
+
+        await db.execute(`
+            UPDATE attendance 
+            SET approval_status = 'Approved',
+                admin_remarks = NULL 
+            WHERE id = ?
+        `, [id]);
+
+        await logAction(adminId, 'UPDATE', 'Attendance', `Approved manual attendance record #${id} for ${record.full_name} (${record.total_hours} hrs)`);
+
+        return res.json({ success: true, message: `Approved attendance log for ${record.full_name}.` });
+    } catch (error) {
+        console.error("Approve Attendance Error:", error);
+        res.status(500).json({ message: "Failed to approve attendance log." });
+    }
+};
+
+/**
+ * PUT /api/attendance/:id/reject
+ * Admin rejects a pending attendance log with optional remarks
+ */
+export const rejectAttendance = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const adminId = req.user?.id || 0;
+    const { admin_remarks } = req.body;
+
+    try {
+        const [rows]: any = await db.execute('SELECT a.*, u.full_name FROM attendance a LEFT JOIN users u ON a.user_id = u.id WHERE a.id = ?', [id]);
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ message: "Attendance record not found." });
+        }
+
+        const record = rows[0];
+
+        await db.execute(`
+            UPDATE attendance 
+            SET approval_status = 'Rejected',
+                admin_remarks = ?
+            WHERE id = ?
+        `, [admin_remarks || 'Rejected by administrator', id]);
+
+        await logAction(adminId, 'UPDATE', 'Attendance', `Rejected manual attendance record #${id} for ${record.full_name}. Reason: ${admin_remarks || 'None'}`);
+
+        return res.json({ success: true, message: `Rejected attendance log for ${record.full_name}.` });
+    } catch (error) {
+        console.error("Reject Attendance Error:", error);
+        res.status(500).json({ message: "Failed to reject attendance log." });
+    }
+};
 
 export const addManualLog = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "User not authenticated" });
 
-    // Destructure the data from the modal
     const { date, clock_in, clock_out, status } = req.body;
 
     try {
-        // 1. Calculate Total Hours
-        // We create date objects to find the difference between clock_in and clock_out
         const start = new Date(`${date} ${clock_in}`);
         const end = new Date(`${date} ${clock_out}`);
         
-        // Calculate difference in hours
         const diffInMs = end.getTime() - start.getTime();
-        const totalHours = parseFloat((diffInMs / (1000 * 60 * 60)).toFixed(2));
+        const rawHours = parseFloat((diffInMs / (1000 * 60 * 60)).toFixed(2));
 
-        // Validation: Ensure they didn't pick a clock-out time before clock-in
-        if (totalHours < 0) {
+        if (rawHours < 0) {
             return res.status(400).json({ message: "Clock out time must be after clock in time." });
         }
 
-        // 2. Insert into database
-        // is_active is 0 because manual logs are usually for completed shifts
+        // Apply 1-hour lunch break deduction if raw shift >= 5.0 hours
+        const totalHours = calculateCreditHours(rawHours);
+
         const sql = `
-            INSERT INTO attendance (user_id, date, clock_in, clock_out, status, total_hours, is_active) 
-            VALUES (?, ?, ?, ?, ?, ?, 0)
+            INSERT INTO attendance (user_id, date, clock_in, clock_out, status, total_hours, is_active, approval_status) 
+            VALUES (?, ?, ?, ?, ?, ?, 0, 'Approved')
         `;
 
         await db.execute(sql, [userId, date, clock_in, clock_out, status, totalHours]);
@@ -468,7 +602,6 @@ export const manualAttendanceLog = async (req: AuthRequest, res: Response) => {
     const { date, clock_in, clock_out, status } = req.body;
 
     try {
-        // 1. Check if ANY record (manual or toggle) already exists for this specific date
         const [existing]: any = await db.execute(
             'SELECT id FROM attendance WHERE user_id = ? AND date = ? LIMIT 1',
             [userId, date]
@@ -480,12 +613,16 @@ export const manualAttendanceLog = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        // 2. Calculate hours (MySQL-side calculation for decimal(5,2))
-        // Since your table uses decimal(5,2), we ensure the value fits
+        const start = new Date(`${date} ${clock_in}`);
+        const end = new Date(`${date} ${clock_out}`);
+        const diffInMs = end.getTime() - start.getTime();
+        const rawHours = Math.max(0, parseFloat((diffInMs / (1000 * 60 * 60)).toFixed(2)));
+        const totalHours = calculateCreditHours(rawHours);
+
         await db.execute(`
-            INSERT INTO attendance (user_id, date, clock_in, clock_out, status, total_hours, is_active)
-            VALUES (?, ?, ?, ?, ?, TIMESTAMPDIFF(SECOND, ?, ?) / 3600, 0)
-        `, [userId, date, clock_in, clock_out, status, clock_in, clock_out]);
+            INSERT INTO attendance (user_id, date, clock_in, clock_out, status, total_hours, is_active, approval_status)
+            VALUES (?, ?, ?, ?, ?, ?, 0, 'Approved')
+        `, [userId, date, clock_in, clock_out, status, totalHours]);
 
         return res.json({ success: true, message: "Manual entry saved successfully." });
     } catch (error) {
@@ -504,7 +641,7 @@ export const bulkApproveAttendance = async (req: AuthRequest, res: Response) => 
     try {
         const placeholders = ids.map(() => '?').join(',');
         await db.execute(
-            `UPDATE attendance SET status = ? WHERE id IN (${placeholders})`,
+            `UPDATE attendance SET status = ?, approval_status = 'Approved' WHERE id IN (${placeholders})`,
             [targetStatus, ...ids]
         );
 
