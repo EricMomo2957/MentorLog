@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { getAdminSettings } from '../admin/AdminSettings';
 import { PrintableDTRModal } from '../../components/PrintableDTRModal';
+import { CertificateOfCompletionModal } from '../../components/CertificateOfCompletionModal';
+import { FinalGradeSheetModal } from '../../components/FinalGradeSheetModal';
 import { 
     Clock, Play, Square, CheckCircle2, ShieldCheck, AlertCircle, AlertTriangle, 
-    Printer, Filter, X, Plus, Calendar, FileText, HelpCircle 
+    Printer, Filter, X, Plus, Calendar, FileText, HelpCircle, Award, FileSpreadsheet 
 } from 'lucide-react';
 
 // --- INTERFACES ---
@@ -63,6 +65,9 @@ const StudentDashboard = () => {
 
     const [dateRange, setDateRange] = useState<string>('All');
     const [isDTRModalOpen, setIsDTRModalOpen] = useState(false);
+    const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+    const [isGradeSheetOpen, setIsGradeSheetOpen] = useState(false);
+    const [studentProfile, setStudentProfile] = useState<any>(null);
     const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
     const [overtimeReason, setOvertimeReason] = useState('');
 
@@ -158,6 +163,9 @@ const StudentDashboard = () => {
             const historyData: AttendanceLog[] = Array.isArray(rawHistory) ? rawHistory : (rawHistory?.data || []);
             const reportData = reportRes.status === 'fulfilled' ? (reportRes.value.data?.data || reportRes.value.data) : null;
             const profileData = profileRes.status === 'fulfilled' ? (profileRes.value.data?.user || profileRes.value.data) : null;
+            if (profileData) {
+                setStudentProfile(profileData);
+            }
             const taskData = taskRes.status === 'fulfilled' 
                 ? (Array.isArray(taskRes.value.data) ? taskRes.value.data : (taskRes.value.data?.data || [])) 
                 : [];
@@ -650,6 +658,25 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                             {remainingHours === 0 ? 'Target Reached! 🎉' : `${remainingHours.toFixed(1)} hours remaining`}
                         </span>
                     </div>
+
+                    {remainingHours === 0 && (
+                        <div className="pt-2 flex flex-col sm:flex-row gap-2 animate-in fade-in">
+                            <button
+                                onClick={() => setIsCertModalOpen(true)}
+                                className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <Award className="w-4 h-4 text-slate-950" />
+                                <span>Claim Certificate of Completion 🎉</span>
+                            </button>
+                            <button
+                                onClick={() => setIsGradeSheetOpen(true)}
+                                className="bg-white hover:bg-sky-50 text-sky-900 border border-sky-300 font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <FileSpreadsheet className="w-4 h-4 text-sky-700" />
+                                <span>Grade Sheet</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Attendance Summary Card (Emerald Green Theme) */}
@@ -798,6 +825,14 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                         </button>
 
                         <button 
+                            onClick={() => setIsGradeSheetOpen(true)}
+                            className="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
+                        >
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Grade Sheet</span>
+                        </button>
+
+                        <button 
                             onClick={() => setIsDTRModalOpen(true)}
                             className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
                         >
@@ -899,6 +934,25 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                         status: l.status as 'Present' | 'Late' | 'Absent'
                     }))
                 }
+            />
+
+            {/* Certificate of Completion Modal */}
+            <CertificateOfCompletionModal
+                isOpen={isCertModalOpen}
+                onClose={() => setIsCertModalOpen(false)}
+                studentName={studentProfile?.full_name || localStorage.getItem('userName') || 'Student Intern'}
+                studentId={studentProfile?.student_id || studentProfile?.id || ''}
+                course={studentProfile?.course || 'Bachelor of Science in Information Technology'}
+                companyName={studentProfile?.company_name || 'Host Training Establishment'}
+                renderedHours={report.accumulated_hours}
+                requiredHours={totalTargetHours}
+            />
+
+            {/* Final Grade Sheet Modal */}
+            <FinalGradeSheetModal
+                isOpen={isGradeSheetOpen}
+                onClose={() => setIsGradeSheetOpen(false)}
+                studentName={studentProfile?.full_name || localStorage.getItem('userName') || 'Student Intern'}
             />
 
             {/* Request Manual Attendance Log Modal */}
