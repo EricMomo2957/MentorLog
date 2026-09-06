@@ -1,4 +1,7 @@
-import { Printer, X } from 'lucide-react';
+import { useState } from 'react';
+import { Printer, Download, X, Loader2 } from 'lucide-react';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 
 interface AttendanceRecord {
     id: number;
@@ -66,6 +69,8 @@ export const PrintableDTRModal = ({
     records,
     monthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }: PrintableDTRModalProps) => {
+    const [isExporting, setIsExporting] = useState(false);
+
     if (!isOpen) return null;
 
     const totalRenderedHours = records.reduce((acc, curr) => acc + (Number(curr.total_hours) || 0), 0);
@@ -74,30 +79,74 @@ export const PrintableDTRModal = ({
         window.print();
     };
 
+    const handleDownloadPDF = async () => {
+        const element = document.getElementById('dtr-print-area');
+        if (!element) return;
+
+        setIsExporting(true);
+        const cleanStudentName = studentName.replace(/[^a-zA-Z0-9]/g, '_');
+        const cleanPeriod = monthYear.replace(/[^a-zA-Z0-9]/g, '_');
+        const filename = `DTR_Form48_${cleanStudentName}_${cleanPeriod}.pdf`;
+
+        const opt = {
+            margin: [10, 10, 10, 10] as [number, number, number, number],
+            filename: filename,
+            image: { type: 'jpeg' as const, quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+        };
+
+        try {
+            await html2pdf().set(opt).from(element).save();
+        } catch (error) {
+            console.error('PDF generation error:', error);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
             {/* Modal Box */}
             <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
                 
                 {/* Modal Top Bar (Non-Printable) */}
-                <div className="p-4 bg-slate-900 text-white flex items-center justify-between print:hidden">
+                <div className="p-4 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 print:hidden">
                     <div className="flex items-center gap-2">
                         <Printer className="w-4 h-4 text-blue-400" />
                         <h3 className="text-sm font-bold tracking-tight">Printable Daily Time Record (Civil Service Form No. 48)</h3>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
+                        <button 
+                            onClick={handleDownloadPDF}
+                            disabled={isExporting}
+                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                        >
+                            {isExporting ? (
+                                <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Generating PDF...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Download PDF</span>
+                                </>
+                            )}
+                        </button>
+
                         <button 
                             onClick={handlePrint}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 active:scale-95"
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer"
                         >
                             <Printer className="w-3.5 h-3.5" />
-                            <span>Print / Save as PDF</span>
+                            <span>Print</span>
                         </button>
 
                         <button 
                             onClick={onClose}
-                            className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+                            className="text-slate-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer"
                         >
                             <X className="w-5 h-5" />
                         </button>
