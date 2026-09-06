@@ -10,13 +10,14 @@ import {
     assignTask,
     updateTask,
     updateTaskStatus,
-    deleteTask
+    deleteTask,
+    verifyTaskDeliverable
 } from '../controllers/taskController';
 import { verifyToken, adminOnly } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// Multer Storage Configuration for Task Attachments (Photos & Documents)
+// Multer Storage Configuration for Task Attachments & Deliverable Proofs
 const storage = multer.diskStorage({
     destination: (req: any, file: any, cb: any) => {
         const uploadPath = './uploads/tasks/';
@@ -34,25 +35,25 @@ const ALLOWED_TASK_MIME_TYPES = [
     'image/jpeg', 'image/png', 'image/webp',
     'application/pdf', 'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/plain'
+    'text/plain', 'application/zip', 'application/x-zip-compressed'
 ];
 
 const fileFilter = (_req: any, file: any, cb: any) => {
-    const allowedExts = /jpeg|jpg|png|webp|pdf|doc|docx|txt/;
+    const allowedExts = /jpeg|jpg|png|webp|pdf|doc|docx|txt|zip/;
     const isExtValid = allowedExts.test(path.extname(file.originalname).toLowerCase());
     const isMimeValid = ALLOWED_TASK_MIME_TYPES.includes(file.mimetype);
 
     if (isExtValid && isMimeValid) {
         cb(null, true);
     } else {
-        cb(new Error('Security Block: Invalid file type for task attachment. Only images and document files are allowed.'));
+        cb(new Error('Security Block: Invalid file type for task attachment. Only images, documents, and ZIP archives are allowed.'));
     }
 };
 
 const upload = multer({ 
     storage: storage,
     fileFilter: fileFilter,
-    limits: { fileSize: 20 * 1024 * 1024 } // 20MB limit for docs and images
+    limits: { fileSize: 25 * 1024 * 1024 } // 25MB limit
 });
 
 /**
@@ -69,11 +70,14 @@ router.post('/submit', submitTask);
 // Fetch tasks for the logged-in student (GET /api/tasks/my-tasks)
 router.get('/my-tasks', getMyTasks);
 
-// Update status of a task (PUT /api/tasks/status or PUT /api/tasks/:id/status)
-router.put('/status', updateTaskStatus);
-router.put('/:id/status', updateTaskStatus);
+// Update status and attach deliverable proof (PUT /api/tasks/status or PUT /api/tasks/:id/status)
+router.put('/status', upload.single('proof_file'), updateTaskStatus);
+router.put('/:id/status', upload.single('proof_file'), updateTaskStatus);
 
 // --- Admin/Mentor Routes ---
+
+// Verify student task deliverable (PUT /api/tasks/:id/verify)
+router.put('/:id/verify', adminOnly, verifyTaskDeliverable);
 
 // Assign task to a student with optional attachment (POST /api/tasks/assign)
 router.post('/assign', adminOnly, upload.single('attachment'), assignTask);
