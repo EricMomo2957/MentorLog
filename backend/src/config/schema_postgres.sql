@@ -204,7 +204,9 @@ CREATE TABLE IF NOT EXISTS attendance (
   clock_out TIME DEFAULT NULL,
   status attendance_status DEFAULT 'Present',
   total_hours NUMERIC(5,2) DEFAULT 0.00,
-  is_active BOOLEAN DEFAULT FALSE
+  is_active BOOLEAN DEFAULT FALSE,
+  approval_status VARCHAR(20) DEFAULT 'Approved',
+  admin_remarks TEXT DEFAULT NULL
 );
 
 -- 12. announcements

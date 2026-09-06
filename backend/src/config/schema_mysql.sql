@@ -171,6 +171,8 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `status` enum('Present', 'Late', 'Absent') DEFAULT 'Present',
   `total_hours` decimal(5,2) DEFAULT 0.00,
   `is_active` tinyint(1) DEFAULT 0,
+  `approval_status` varchar(20) DEFAULT 'Approved',
+  `admin_remarks` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `fk_attendance_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
