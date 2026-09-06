@@ -5,8 +5,10 @@ import {
     Search, Filter, Download, Edit2, Trash2, CheckCircle2, 
     XCircle, ChevronLeft, ChevronRight, X, UserPlus,
     Users, UserCheck, UserX, Clock, Eye, School, 
-    Briefcase, User, ShieldCheck, Mail
+    Briefcase, User, ShieldCheck, Mail, Award, FileSpreadsheet 
 } from 'lucide-react';
+import CertificateOfCompletionModal from '../../components/CertificateOfCompletionModal';
+import FinalGradeSheetModal from '../../components/FinalGradeSheetModal';
 
 interface Student {
     id: number;
@@ -93,6 +95,12 @@ const ManageStudents = () => {
 
     // Edit Modal State
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+
+    // Certificate & Grade Sheet Modal States
+    const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+    const [selectedStudentForCert, setSelectedStudentForCert] = useState<Student | null>(null);
+    const [isGradeSheetOpen, setIsGradeSheetOpen] = useState(false);
+    const [selectedStudentForGrade, setSelectedStudentForGrade] = useState<Student | null>(null);
 
     const fetchStudents = useCallback(async () => {
         setLoading(true);
@@ -441,6 +449,30 @@ const ManageStudents = () => {
                                             {/* Actions */}
                                             <td className="py-3.5 px-4 text-right">
                                                 <div className="flex items-center justify-end gap-1">
+                                                    {/* GRADE SHEET BUTTON */}
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSelectedStudentForGrade(student);
+                                                            setIsGradeSheetOpen(true);
+                                                        }}
+                                                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                                                        title="Generate OJT Final Grade Sheet"
+                                                    >
+                                                        <FileSpreadsheet className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* CERTIFICATE BUTTON */}
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSelectedStudentForCert(student);
+                                                            setIsCertModalOpen(true);
+                                                        }}
+                                                        className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all cursor-pointer"
+                                                        title="Issue Official Certificate of Completion"
+                                                    >
+                                                        <Award className="w-4 h-4" />
+                                                    </button>
+
                                                     {/* VIEW DETAIL EYE BUTTON */}
                                                     <button 
                                                         onClick={() => setViewingStudent(student)}
@@ -885,6 +917,36 @@ const ManageStudents = () => {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Official Certificate of Completion Modal */}
+            {selectedStudentForCert && (
+                <CertificateOfCompletionModal
+                    isOpen={isCertModalOpen}
+                    onClose={() => {
+                        setIsCertModalOpen(false);
+                        setSelectedStudentForCert(null);
+                    }}
+                    studentName={selectedStudentForCert.full_name}
+                    studentId={selectedStudentForCert.id_number || selectedStudentForCert.student_id}
+                    course={selectedStudentForCert.course}
+                    companyName={selectedStudentForCert.school_name || 'Partner Host Establishment'}
+                    renderedHours={selectedStudentForCert.ojt_hours_required || 600}
+                    requiredHours={selectedStudentForCert.ojt_hours_required || 600}
+                />
+            )}
+
+            {/* OJT Final Grade & Competency Summary Sheet Modal */}
+            {selectedStudentForGrade && (
+                <FinalGradeSheetModal
+                    isOpen={isGradeSheetOpen}
+                    onClose={() => {
+                        setIsGradeSheetOpen(false);
+                        setSelectedStudentForGrade(null);
+                    }}
+                    studentId={selectedStudentForGrade.id}
+                    studentName={selectedStudentForGrade.full_name}
+                />
             )}
         </div>
     );
