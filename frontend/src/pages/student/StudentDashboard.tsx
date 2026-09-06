@@ -4,7 +4,7 @@ import { getAdminSettings } from '../admin/AdminSettings';
 import { PrintableDTRModal } from '../../components/PrintableDTRModal';
 import { 
     Clock, Play, Square, CheckCircle2, ShieldCheck, AlertCircle, AlertTriangle, 
-    Printer, Filter, X 
+    Printer, Filter, X, Plus, Calendar, FileText, HelpCircle 
 } from 'lucide-react';
 
 // --- INTERFACES ---
@@ -17,6 +17,8 @@ interface AttendanceLog {
     status: 'Present' | 'Late' | 'Absent';
     total_hours: number;
     is_active: boolean;
+    approval_status?: 'Pending' | 'Approved' | 'Rejected';
+    admin_remarks?: string | null;
 }
 
 interface WeeklyReport {
@@ -63,6 +65,15 @@ const StudentDashboard = () => {
     const [isDTRModalOpen, setIsDTRModalOpen] = useState(false);
     const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
     const [overtimeReason, setOvertimeReason] = useState('');
+
+    // --- MANUAL ATTENDANCE REQUEST MODAL STATES ---
+    const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+    const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
+    const [manualClockIn, setManualClockIn] = useState('08:00');
+    const [manualClockOut, setManualClockOut] = useState('17:00');
+    const [manualStatus, setManualStatus] = useState<'Present' | 'Late' | 'Absent'>('Present');
+    const [manualReason, setManualReason] = useState('');
+    const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
     const filteredLogs = logs.filter(log => {
         let matchesDate = true;
@@ -325,6 +336,46 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
             }
         } catch (err: any) {
             setToast({ message: err.response?.data?.message || "Network error.", type: 'error' });
+        }
+    };
+
+    const handleRequestManualLog = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!manualDate || !manualClockIn || !manualClockOut) {
+            setToast({ message: "Please fill in all date and time fields.", type: 'warning' });
+            return;
+        }
+
+        if (!manualReason.trim()) {
+            setToast({ message: "Please provide a reason or explanation for this manual log.", type: 'warning' });
+            return;
+        }
+
+        try {
+            setIsSubmittingManual(true);
+            const response = await api.post('/attendance/request-manual', {
+                date: manualDate,
+                clock_in: manualClockIn,
+                clock_out: manualClockOut,
+                status: manualStatus,
+                reason: manualReason.trim()
+            });
+
+            if (response.data?.success) {
+                setToast({ 
+                    message: "Manual attendance request submitted! Awaiting mentor/admin approval.", 
+                    type: 'success' 
+                });
+                setIsManualModalOpen(false);
+                setManualReason('');
+                refreshDashboardData();
+            } else {
+                setToast({ message: response.data?.message || "Request submission failed.", type: 'error' });
+            }
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || "Failed to submit request.", type: 'error' });
+        } finally {
+            setIsSubmittingManual(false);
         }
     };
 
@@ -723,7 +774,7 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                         <span className="text-[11px] text-slate-500">{filteredLogs.length} Total Logs</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <div className="relative">
                             <select 
                                 value={dateRange}
@@ -739,8 +790,16 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                         </div>
 
                         <button 
+                            onClick={() => setIsManualModalOpen(true)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
+                        >
+                            <Plus className="w-3.5 h-3.5 text-white" />
+                            <span>Request Manual Log</span>
+                        </button>
+
+                        <button 
                             onClick={() => setIsDTRModalOpen(true)}
-                            className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-xs transition-all flex items-center gap-1.5 active:scale-98"
+                            className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
                         >
                             <Printer className="w-3.5 h-3.5 text-blue-400" />
                             <span>Print My DTR (Form 48)</span>
@@ -751,11 +810,12 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                     <table className="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                <th className="py-3 px-4">Log Date ↕</th>
-                                <th className="py-3 px-4">Clock In ↕</th>
-                                <th className="py-3 px-4">Clock Out ↕</th>
-                                <th className="py-3 px-4">Total Hours ↕</th>
-                                <th className="py-3 px-4 text-right">Status</th>
+                                <th className="py-3 px-4">Log Date</th>
+                                <th className="py-3 px-4">Clock In</th>
+                                <th className="py-3 px-4">Clock Out</th>
+                                <th className="py-3 px-4">Credit Hours</th>
+                                <th className="py-3 px-4 text-center">Duty Status</th>
+                                <th className="py-3 px-4 text-right">Approval Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -767,9 +827,16 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                                         {row.clock_out ? formatTimeString(row.clock_out) : <span className="italic text-blue-600 font-semibold">Active...</span>}
                                     </td>
                                     <td className="py-3.5 px-4 font-mono font-semibold text-slate-700">
-                                        {row.total_hours ? `${Number(row.total_hours).toFixed(2)} hrs` : '--'}
+                                        {row.total_hours ? (
+                                            <span>
+                                                {Number(row.total_hours).toFixed(2)} hrs
+                                                {Number(row.total_hours) >= 4.0 && (
+                                                    <span className="text-[10px] text-slate-400 ml-1 block">(-1hr lunch break applied)</span>
+                                                )}
+                                            </span>
+                                        ) : '--'}
                                     </td>
-                                    <td className="py-3.5 px-4 text-right">
+                                    <td className="py-3.5 px-4 text-center">
                                         <span className={`inline-block px-2.5 py-0.5 text-[11px] font-semibold border rounded-full ${
                                             row.status === 'Present' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                             row.status === 'Late' ? 'bg-amber-50 text-amber-700 border-amber-200' :
@@ -778,10 +845,36 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                                             {row.status}
                                         </span>
                                     </td>
+                                    <td className="py-3.5 px-4 text-right">
+                                        {row.approval_status === 'Pending' ? (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300">
+                                                <Clock className="w-3 h-3 text-amber-600 animate-spin" />
+                                                Pending Review
+                                            </span>
+                                        ) : row.approval_status === 'Rejected' ? (
+                                            <span 
+                                                title={row.admin_remarks ? `Remarks: ${row.admin_remarks}` : 'Rejected by mentor/admin'} 
+                                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 cursor-help"
+                                            >
+                                                <AlertCircle className="w-3 h-3 text-rose-600" />
+                                                Rejected
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                Approved
+                                            </span>
+                                        )}
+                                        {row.approval_status === 'Rejected' && row.admin_remarks && (
+                                            <p className="text-[10px] text-rose-600 mt-0.5 max-w-[150px] ml-auto truncate italic">
+                                                {row.admin_remarks}
+                                            </p>
+                                        )}
+                                    </td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={5} className="py-12 text-center text-slate-400 text-xs italic">No attendance records found for this period.</td>
+                                    <td colSpan={6} className="py-12 text-center text-slate-400 text-xs italic">No attendance records found for this period.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -794,16 +887,135 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                 isOpen={isDTRModalOpen}
                 onClose={() => setIsDTRModalOpen(false)}
                 studentName={localStorage.getItem('userName') || 'Student Intern'}
-                records={filteredLogs.map(l => ({
-                    id: l.id,
-                    student_name: localStorage.getItem('userName') || 'Student Intern',
-                    date: formatDateString(l.date),
-                    clock_in: formatTimeString(l.clock_in),
-                    clock_out: l.clock_out ? formatTimeString(l.clock_out) : null,
-                    total_hours: Number(l.total_hours) || 0,
-                    status: l.status as 'Present' | 'Late' | 'Absent'
-                }))}
+                records={filteredLogs
+                    .filter(l => l.approval_status !== 'Rejected')
+                    .map(l => ({
+                        id: l.id,
+                        student_name: localStorage.getItem('userName') || 'Student Intern',
+                        date: formatDateString(l.date),
+                        clock_in: formatTimeString(l.clock_in),
+                        clock_out: l.clock_out ? formatTimeString(l.clock_out) : null,
+                        total_hours: Number(l.total_hours) || 0,
+                        status: l.status as 'Present' | 'Late' | 'Absent'
+                    }))
+                }
             />
+
+            {/* Request Manual Attendance Log Modal */}
+            {isManualModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
+                    <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-indigo-600" />
+                                    Request Manual Attendance Log
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Missed a punch or attended fieldwork? Submit a log for mentor review.
+                                </p>
+                            </div>
+                            <button onClick={() => setIsManualModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* OJT Policy Alert */}
+                        <div className="bg-indigo-50 border border-indigo-200/80 rounded-xl p-3.5 text-xs text-indigo-900 space-y-1">
+                            <div className="font-bold flex items-center gap-1.5">
+                                <HelpCircle className="w-4 h-4 text-indigo-600 shrink-0" />
+                                ⏱️ Company & Academic OJT Deduction Rule:
+                            </div>
+                            <p className="text-indigo-800 text-[11px] leading-relaxed">
+                                Shifts lasting <strong>5 hours or longer</strong> automatically deduct a standard <strong>1-hour unpaid lunch break</strong>. Requests enter the <em>Pending Review</em> queue and must be approved by your mentor before hours count toward your OJT total.
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleRequestManualLog} className="space-y-3.5 text-xs">
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">Log Date</label>
+                                <div className="relative">
+                                    <input
+                                        type="date"
+                                        required
+                                        value={manualDate}
+                                        onChange={(e) => setManualDate(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:border-indigo-500 outline-none"
+                                    />
+                                    <Calendar className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Clock In Time</label>
+                                    <input
+                                        type="time"
+                                        required
+                                        value={manualClockIn}
+                                        onChange={(e) => setManualClockIn(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:border-indigo-500 outline-none font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Clock Out Time</label>
+                                    <input
+                                        type="time"
+                                        required
+                                        value={manualClockOut}
+                                        onChange={(e) => setManualClockOut(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:border-indigo-500 outline-none font-mono"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">Duty Status</label>
+                                <select
+                                    value={manualStatus}
+                                    onChange={(e) => setManualStatus(e.target.value as any)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:border-indigo-500 outline-none"
+                                >
+                                    <option value="Present">Present (Full Day / Regular Shift)</option>
+                                    <option value="Late">Late Arrival</option>
+                                    <option value="Absent">Official Absent / Make-up Duty</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                    Reason & Remarks <span className="text-rose-500">*</span>
+                                </label>
+                                <textarea
+                                    required
+                                    rows={3}
+                                    value={manualReason}
+                                    onChange={(e) => setManualReason(e.target.value)}
+                                    placeholder="Explain why manual logging is requested (e.g. Off-site client onboarding fieldwork, forgot to punch out due to sudden power outage)..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 placeholder-slate-400 focus:border-indigo-500 outline-none transition-all"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsManualModalOpen(false)}
+                                    className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmittingManual || !manualReason.trim()}
+                                    className="px-5 py-2 font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    {isSubmittingManual ? 'Submitting...' : 'Submit Request for Approval'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Weekend / Overtime Clock-In Reason Modal */}
             {isReasonModalOpen && (
