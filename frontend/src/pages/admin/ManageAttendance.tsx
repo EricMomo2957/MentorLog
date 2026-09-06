@@ -16,6 +16,8 @@ interface AttendanceRecord {
     total_hours: number;
     status: 'Present' | 'Late' | 'Absent';
     profile_pic?: string;
+    approval_status?: 'Approved' | 'Pending' | 'Rejected';
+    admin_remarks?: string;
 }
 
 const getFullPicUrl = (path?: string) => {
@@ -33,7 +35,7 @@ const pastelAvatarStyles = [
     'bg-rose-100 text-rose-700 border-rose-200',
     'bg-indigo-100 text-indigo-700 border-indigo-200',
 ];
-const getAvatarStyle = (id: number) => pastelAvatarStyles[id % pastelAvatarStyles.length];
+const getAvatarStyle = (id: number) => pastelAvatarStyles[Math.abs(id) % pastelAvatarStyles.length];
 
 const getInitials = (name?: string) => {
     if (!name) return 'UN';
@@ -79,6 +81,11 @@ const ManageAttendance = () => {
     const [dateRange, setDateRange] = useState<string>('All');
     const [isDTRModalOpen, setIsDTRModalOpen] = useState(false);
 
+    // Reject Modal state
+    const [rejectingId, setRejectingId] = useState<number | null>(null);
+    const [rejectRemarks, setRejectRemarks] = useState('');
+    const [isActionLoading, setIsActionLoading] = useState(false);
+
     const fetchAllAttendance = async () => {
         setLoading(true);
         try {
@@ -97,7 +104,55 @@ const ManageAttendance = () => {
         fetchAllAttendance();
     }, []);
 
-    const getStatusBadge = (status: string) => {
+    const handleSingleApprove = async (id: number) => {
+        setIsActionLoading(true);
+        try {
+            const response = await api.put(`/attendance/${id}/approve`);
+            if (response.data?.success) {
+                fetchAllAttendance();
+            }
+        } catch (err) {
+            console.error("Approve error:", err);
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleSingleReject = async () => {
+        if (!rejectingId) return;
+        setIsActionLoading(true);
+        try {
+            const response = await api.put(`/attendance/${rejectingId}/reject`, {
+                admin_remarks: rejectRemarks || 'Not approved by supervisor'
+            });
+            if (response.data?.success) {
+                setRejectingId(null);
+                setRejectRemarks('');
+                fetchAllAttendance();
+            }
+        } catch (err) {
+            console.error("Reject error:", err);
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const getStatusBadge = (status: string, approvalStatus?: string) => {
+        if (approvalStatus === 'Pending') {
+            return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-amber-800 bg-amber-100/80 border border-amber-300 rounded-full animate-pulse">
+                    <Clock className="w-3 h-3 text-amber-600" /> Pending Review
+                </span>
+            );
+        }
+        if (approvalStatus === 'Rejected') {
+            return (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-rose-800 bg-rose-100/80 border border-rose-300 rounded-full">
+                    <XCircle className="w-3 h-3 text-rose-600" /> Rejected
+                </span>
+            );
+        }
+
         switch (status) {
             case 'Present': 
                 return <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full"><CheckCircle2 className="w-3 h-3" /> Present</span>;
@@ -151,8 +206,16 @@ const ManageAttendance = () => {
 
     const filteredRecords = records.filter(r => {
         const matchesSearch = r.student_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            (r.date && r.date.includes(searchTerm));
-        const matchesStatus = filterStatus === 'All' || r.status === filterStatus;
+            (r.date && r.date.includes(searchTerm)) ||
+            (r.admin_remarks && r.admin_remarks.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        let matchesStatus = true;
+        if (filterStatus === 'Pending') {
+            matchesStatus = r.approval_status === 'Pending';
+        } else if (filterStatus !== 'All') {
+            matchesStatus = r.status === filterStatus;
+        }
+
         const matchesDate = checkMatchesDate(r.date, dateRange);
 
         return matchesSearch && matchesStatus && matchesDate;
@@ -179,6 +242,7 @@ const ManageAttendance = () => {
     const presentCount = dateScopedRecords.filter(r => r.status === 'Present').length;
     const lateCount = dateScopedRecords.filter(r => r.status === 'Late').length;
     const absentCount = dateScopedRecords.filter(r => r.status === 'Absent').length;
+    const pendingCount = records.filter(r => r.approval_status === 'Pending').length;
     const totalCount = dateScopedRecords.length;
 
     const handleBulkApprove = async () => {
@@ -205,7 +269,9 @@ const ManageAttendance = () => {
             { header: 'Clock In', key: 'clock_in', formatter: (val: any) => formatTimeString(val) },
             { header: 'Clock Out', key: 'clock_out', formatter: (val: any) => formatTimeString(val) },
             { header: 'Total Hours', key: 'total_hours', formatter: (val: any) => val ? Number(val).toFixed(2) : '0.00' },
-            { header: 'Status', key: 'status' }
+            { header: 'Status', key: 'status' },
+            { header: 'Approval Status', key: 'approval_status' },
+            { header: 'Remarks', key: 'admin_remarks' }
         ]);
     };
 
@@ -216,7 +282,7 @@ const ManageAttendance = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Attendance Logs & Time Tracking</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Real-time verification of intern clock-in/out timestamps and total hours</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Real-time verification of intern clock-in/out timestamps, lunch break deductions, and manual approvals</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -232,7 +298,7 @@ const ManageAttendance = () => {
 
                     <button 
                         onClick={() => setIsDTRModalOpen(true)}
-                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 active:scale-98"
+                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 active:scale-98 cursor-pointer"
                     >
                         <Printer className="w-4 h-4 text-blue-400" />
                         <span>Print DTR (Form 48)</span>
@@ -241,7 +307,7 @@ const ManageAttendance = () => {
                     <button 
                         onClick={fetchAllAttendance}
                         disabled={loading}
-                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2"
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xs transition-all flex items-center gap-2 cursor-pointer"
                     >
                         <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-600' : ''}`} />
                         <span>Refresh Logs</span>
@@ -259,21 +325,21 @@ const ManageAttendance = () => {
             </div>
 
             {/* Status Metric Cards Grid with Light Earth Tone Colors */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
                 {/* Present */}
                 <div 
                     onClick={() => setFilterStatus(filterStatus === 'Present' ? 'All' : 'Present')}
-                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f6f3] ${
+                    className={`rounded-2xl border p-4 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f6f3] ${
                         filterStatus === 'Present' ? 'border-[#2d4a34] ring-2 ring-[#2d4a34]/20 shadow-xs' : 'border-[#d4e2d6] hover:border-[#b0c7b3]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-[#e0ece2] border border-[#c0d6c3] text-[#2d4a34] flex items-center justify-center mb-2.5">
-                        <CheckCircle2 className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl bg-[#e0ece2] border border-[#c0d6c3] text-[#2d4a34] flex items-center justify-center mb-2">
+                        <CheckCircle2 className="w-4 h-4" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-[#486650] tracking-wider uppercase mb-1">
+                    <span className="text-[10px] font-extrabold text-[#486650] tracking-wider uppercase mb-0.5">
                         PRESENT
                     </span>
-                    <span className="text-3xl font-black text-[#243c2a]">
+                    <span className="text-2xl font-black text-[#243c2a]">
                         {presentCount}
                     </span>
                 </div>
@@ -281,17 +347,17 @@ const ManageAttendance = () => {
                 {/* Late */}
                 <div 
                     onClick={() => setFilterStatus(filterStatus === 'Late' ? 'All' : 'Late')}
-                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#fcf8f1] ${
+                    className={`rounded-2xl border p-4 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#fcf8f1] ${
                         filterStatus === 'Late' ? 'border-[#996825] ring-2 ring-[#996825]/20 shadow-xs' : 'border-[#f5e6d2] hover:border-[#e6cb9f]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-[#f8ead7] border border-[#edd6b6] text-[#996825] flex items-center justify-center mb-2.5">
-                        <AlertCircle className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl bg-[#f8ead7] border border-[#edd6b6] text-[#996825] flex items-center justify-center mb-2">
+                        <AlertCircle className="w-4 h-4" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-[#946e38] tracking-wider uppercase mb-1">
+                    <span className="text-[10px] font-extrabold text-[#946e38] tracking-wider uppercase mb-0.5">
                         LATE
                     </span>
-                    <span className="text-3xl font-black text-[#6e4614]">
+                    <span className="text-2xl font-black text-[#6e4614]">
                         {lateCount}
                     </span>
                 </div>
@@ -299,41 +365,59 @@ const ManageAttendance = () => {
                 {/* Absent */}
                 <div 
                     onClick={() => setFilterStatus(filterStatus === 'Absent' ? 'All' : 'Absent')}
-                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#faf2f4] ${
+                    className={`rounded-2xl border p-4 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#faf2f4] ${
                         filterStatus === 'Absent' ? 'border-[#9c4b60] ring-2 ring-[#9c4b60]/20 shadow-xs' : 'border-[#f3d7df] hover:border-[#e2b4c2]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-[#f6e1e6] border border-[#ebc8d1] text-[#9c4b60] flex items-center justify-center mb-2.5">
-                        <XCircle className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl bg-[#f6e1e6] border border-[#ebc8d1] text-[#9c4b60] flex items-center justify-center mb-2">
+                        <XCircle className="w-4 h-4" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-[#995364] tracking-wider uppercase mb-1">
+                    <span className="text-[10px] font-extrabold text-[#995364] tracking-wider uppercase mb-0.5">
                         ABSENT
                     </span>
-                    <span className="text-3xl font-black text-[#6e2f3e]">
+                    <span className="text-2xl font-black text-[#6e2f3e]">
                         {absentCount}
+                    </span>
+                </div>
+
+                {/* Pending Approvals */}
+                <div 
+                    onClick={() => setFilterStatus(filterStatus === 'Pending' ? 'All' : 'Pending')}
+                    className={`rounded-2xl border p-4 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#fffbeb] ${
+                        filterStatus === 'Pending' ? 'border-amber-500 ring-2 ring-amber-500/20 shadow-xs' : 'border-amber-200 hover:border-amber-300'
+                    }`}
+                >
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 text-amber-700 flex items-center justify-center mb-2">
+                        <Clock className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-extrabold text-amber-800 tracking-wider uppercase mb-0.5">
+                        PENDING
+                    </span>
+                    <span className="text-2xl font-black text-amber-900">
+                        {pendingCount}
                     </span>
                 </div>
 
                 {/* Total Time Logs */}
                 <div 
                     onClick={() => setFilterStatus('All')}
-                    className={`rounded-2xl border p-5 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f5f7] ${
+                    className={`rounded-2xl border p-4 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-98 bg-[#f2f5f7] ${
                         filterStatus === 'All' ? 'border-[#3d5a6c] ring-2 ring-[#3d5a6c]/20 shadow-xs' : 'border-[#d8e0e4] hover:border-[#b3c2c9]'
                     }`}
                 >
-                    <div className="w-11 h-11 rounded-xl bg-[#e2eaed] border border-[#c7d5db] text-[#3d5a6c] flex items-center justify-center mb-2.5">
-                        <Clock className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl bg-[#e2eaed] border border-[#c7d5db] text-[#3d5a6c] flex items-center justify-center mb-2">
+                        <Clock className="w-4 h-4" />
                     </div>
-                    <span className="text-[11px] font-extrabold text-[#4c6a7d] tracking-wider uppercase mb-1">
+                    <span className="text-[10px] font-extrabold text-[#4c6a7d] tracking-wider uppercase mb-0.5">
                         TOTAL LOGS
                     </span>
-                    <span className="text-3xl font-black text-[#263b48]">
+                    <span className="text-2xl font-black text-[#263b48]">
                         {totalCount}
                     </span>
                 </div>
             </div>
 
-            {/* Filter & Control Bar (Automoor Style) */}
+            {/* Filter & Control Bar */}
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
                 
                 {/* Left Filter Pill Buttons */}
@@ -345,6 +429,7 @@ const ManageAttendance = () => {
                             className="appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 pr-8 text-xs font-medium text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
                         >
                             <option value="All">Status: All Logs</option>
+                            <option value="Pending">Pending Review ({pendingCount})</option>
                             <option value="Present">Present</option>
                             <option value="Late">Late</option>
                             <option value="Absent">Absent</option>
@@ -406,8 +491,9 @@ const ManageAttendance = () => {
                                     <th className="py-3 px-4">Student Contact ↕</th>
                                     <th className="py-3 px-4">Log Date ↕</th>
                                     <th className="py-3 px-4">Clock In / Out ↕</th>
-                                    <th className="py-3 px-4">Total Duration ↕</th>
-                                    <th className="py-3 px-4">Status ↕</th>
+                                    <th className="py-3 px-4">Credit Hours ↕</th>
+                                    <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-4 text-center">Approval Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -415,6 +501,7 @@ const ManageAttendance = () => {
                                     const avatarStyle = getAvatarStyle(record.id);
                                     const initials = getInitials(record.student_name);
                                     const isChecked = selectedRecords.includes(record.id);
+                                    const isPending = record.approval_status === 'Pending';
 
                                     return (
                                         <tr key={record.id} className={`hover:bg-slate-50/80 transition-colors ${isChecked ? 'bg-blue-50/30' : ''}`}>
@@ -427,7 +514,7 @@ const ManageAttendance = () => {
                                                 />
                                             </td>
                                             
-                                            {/* Student Column with Photo or Pastel Initial Avatar */}
+                                            {/* Student Column */}
                                             <td className="py-3.5 px-4">
                                                 <div className="flex items-center gap-3">
                                                     {record.profile_pic ? (
@@ -465,14 +552,55 @@ const ManageAttendance = () => {
                                                 </div>
                                             </td>
 
-                                            {/* Total Duration */}
-                                            <td className="py-3.5 px-4 font-mono font-semibold text-slate-700">
-                                                {record.total_hours ? `${Number(record.total_hours).toFixed(2)} HRS` : '---'}
+                                            {/* Total Duration with Lunch deduction hint */}
+                                            <td className="py-3.5 px-4">
+                                                <span className="font-mono font-semibold text-slate-800 block">
+                                                    {record.total_hours ? `${Number(record.total_hours).toFixed(2)} HRS` : '---'}
+                                                </span>
+                                                {Number(record.total_hours) >= 8 && (
+                                                    <span className="text-[10px] text-slate-400 font-sans block">-1h lunch break deducted</span>
+                                                )}
                                             </td>
 
-                                            {/* Status */}
+                                            {/* Status Badge */}
                                             <td className="py-3.5 px-4">
-                                                {getStatusBadge(record.status)}
+                                                <div className="space-y-1">
+                                                    {getStatusBadge(record.status, record.approval_status)}
+                                                    {record.admin_remarks && (
+                                                        <p className="text-[10px] text-slate-500 italic max-w-xs truncate" title={record.admin_remarks}>
+                                                            Note: {record.admin_remarks}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            {/* Action Buttons for Approvals */}
+                                            <td className="py-3.5 px-4 text-center">
+                                                {isPending ? (
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <button 
+                                                            onClick={() => handleSingleApprove(record.id)}
+                                                            disabled={isActionLoading}
+                                                            className="p-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-colors title='Approve'"
+                                                        >
+                                                            <CheckCircle2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                setRejectingId(record.id);
+                                                                setRejectRemarks('');
+                                                            }}
+                                                            disabled={isActionLoading}
+                                                            className="p-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg transition-colors title='Reject'"
+                                                        >
+                                                            <XCircle className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-semibold text-slate-400">
+                                                        {record.approval_status || 'Approved'}
+                                                    </span>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -505,6 +633,50 @@ const ManageAttendance = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Reject Reason Modal */}
+            {rejectingId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+                        <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                            <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+                                <XCircle className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900">Reject Attendance Request</h3>
+                                <p className="text-xs text-slate-500">Please provide a reason for the student</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-700">Reason / Remarks</label>
+                            <textarea 
+                                value={rejectRemarks}
+                                onChange={(e) => setRejectRemarks(e.target.value)}
+                                placeholder="E.g., No proof of fieldwork attached, shift timing discrepancy..."
+                                rows={3}
+                                className="w-full text-xs p-3 border border-slate-200 rounded-xl outline-none focus:border-rose-500 resize-none bg-slate-50"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-2.5 pt-2">
+                            <button 
+                                onClick={() => setRejectingId(null)}
+                                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleSingleReject}
+                                disabled={isActionLoading}
+                                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors shadow-xs cursor-pointer"
+                            >
+                                Confirm Rejection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Printable DTR Modal */}
             <PrintableDTRModal 
