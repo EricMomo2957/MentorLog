@@ -131,6 +131,44 @@ class UniversalDbPool {
 
 const pool = new UniversalDbPool();
 
+export const runSchemaMigrations = async (): Promise<void> => {
+    try {
+        if (isPostgres && pgPool) {
+            // PostgreSQL column additions
+            await pgPool.query(`
+                ALTER TABLE attendance ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) DEFAULT 'Approved';
+                ALTER TABLE attendance ADD COLUMN IF NOT EXISTS admin_remarks TEXT DEFAULT NULL;
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS proof_link VARCHAR(500) DEFAULT NULL;
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS proof_file_url VARCHAR(500) DEFAULT NULL;
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS submission_notes TEXT DEFAULT NULL;
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS verified_by_mentor BOOLEAN DEFAULT FALSE;
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS supervisor_signature TEXT DEFAULT NULL;
+            `);
+        } else if (mysqlPool) {
+            // MySQL column additions (safe alter with try/catch)
+            const safeAdd = async (table: string, colDef: string) => {
+                try {
+                    await mysqlPool!.query(`ALTER TABLE ${table} ADD COLUMN ${colDef}`);
+                } catch (e: any) {
+                    // Ignore duplicate column errors (errno 1060)
+                    if (e.errno !== 1060 && !e.message?.includes('Duplicate column')) {
+                        // ignore
+                    }
+                }
+            };
+            await safeAdd('attendance', 'approval_status VARCHAR(20) DEFAULT "Approved"');
+            await safeAdd('attendance', 'admin_remarks TEXT DEFAULT NULL');
+            await safeAdd('tasks', 'proof_link VARCHAR(500) DEFAULT NULL');
+            await safeAdd('tasks', 'proof_file_url VARCHAR(500) DEFAULT NULL');
+            await safeAdd('tasks', 'submission_notes TEXT DEFAULT NULL');
+            await safeAdd('tasks', 'verified_by_mentor TINYINT(1) DEFAULT 0');
+            await safeAdd('users', 'supervisor_signature TEXT DEFAULT NULL');
+        }
+    } catch (err) {
+        console.warn('Database schema auto-check notice:', err);
+    }
+};
+
 /**
  * Health check ping to verify Database connection
  */
@@ -138,9 +176,11 @@ export const checkDbConnection = async (): Promise<boolean> => {
     try {
         if (isPostgres && pgPool) {
             const res = await pgPool.query('SELECT 1');
+            await runSchemaMigrations();
             return !!res;
         } else if (mysqlPool) {
             await mysqlPool.query('SELECT 1');
+            await runSchemaMigrations();
             return true;
         }
         return false;
