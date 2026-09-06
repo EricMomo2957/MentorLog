@@ -24,6 +24,10 @@ interface Task {
     due_date: string;
     attachment_url?: string;
     attachment_name?: string;
+    proof_link?: string;
+    proof_file_url?: string;
+    submission_notes?: string;
+    verified_by_mentor?: boolean;
     student_name?: string; 
     profile_pic?: string;
 }
@@ -168,6 +172,11 @@ const ManageTasks = () => {
         } catch (err) { console.error(err); }
     };
 
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setEditingTask(null);
+    };
+
     const openModal = (task?: Task) => {
         setAttachmentFile(null);
         if (task) {
@@ -193,9 +202,13 @@ const ManageTasks = () => {
         setIsModalOpen(true);
     };
 
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setAttachmentFile(null);
+    const toggleVerifyDeliverable = async (taskId: number, currentVerified?: boolean) => {
+        try {
+            await api.put(`/tasks/${taskId}/verify`, { verified: !currentVerified });
+            fetchDatabaseData();
+        } catch (error) {
+            console.error("Failed to update verification status:", error);
+        }
     };
 
     const getStatusBadge = (status: string) => {
@@ -451,28 +464,49 @@ const ManageTasks = () => {
                                             </td>
 
                                             {/* Task Details & Attached Resources */}
-                                            <td className="py-3.5 px-4 max-w-sm space-y-1">
+                                            <td className="py-3.5 px-4 max-w-sm space-y-1.5">
                                                 <p className="font-semibold text-slate-900 leading-snug">{task.title}</p>
                                                 <p className="text-slate-500 text-[11px] line-clamp-2">{task.task_description}</p>
                                                 
-                                                {/* Attachment Badge */}
+                                                {/* Mentor Attachment Badge */}
                                                 {hasAttachment && (
-                                                    <div className="pt-1">
+                                                    <div className="pt-0.5">
                                                         <a 
                                                             href={getFullPicUrl(task.attachment_url)} 
                                                             target="_blank" 
                                                             rel="noopener noreferrer" 
-                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all shadow-2xs group"
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all shadow-2xs group"
                                                         >
                                                             {isImageFile(task.attachment_name || task.attachment_url) ? (
-                                                                <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                                                                <ImageIcon className="w-3 h-3 text-blue-600" />
                                                             ) : (
-                                                                <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                                                <FileText className="w-3 h-3 text-blue-600" />
                                                             )}
-                                                            <span className="truncate max-w-[180px]">{task.attachment_name || 'Attached Resource'}</span>
-                                                            <ExternalLink className="w-3 h-3 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                                                            <span className="truncate max-w-[160px]">Mentor Resource</span>
+                                                            <ExternalLink className="w-2.5 h-2.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
                                                         </a>
                                                     </div>
+                                                )}
+
+                                                {/* Student Deliverable Link & Notes */}
+                                                {task.proof_link && (
+                                                    <div className="pt-0.5">
+                                                        <a 
+                                                            href={task.proof_link.startsWith('http') ? task.proof_link : `https://${task.proof_link}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all shadow-2xs group"
+                                                        >
+                                                            <ExternalLink className="w-3 h-3 text-indigo-600" />
+                                                            <span className="truncate max-w-[180px]">Intern Deliverable: {task.proof_link}</span>
+                                                        </a>
+                                                    </div>
+                                                )}
+
+                                                {task.submission_notes && (
+                                                    <p className="text-[10px] text-slate-500 italic bg-slate-50 p-1.5 rounded border border-slate-100">
+                                                        "{task.submission_notes}"
+                                                    </p>
                                                 )}
                                             </td>
 
@@ -481,26 +515,54 @@ const ManageTasks = () => {
                                                 {task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No Due Date'}
                                             </td>
 
-                                            {/* Status */}
-                                            <td className="py-3.5 px-4">
+                                            {/* Status & Verification */}
+                                            <td className="py-3.5 px-4 space-y-1">
                                                 <button onClick={() => toggleStatus(task)} title="Click to toggle status">
                                                     {getStatusBadge(task.status)}
                                                 </button>
+                                                {task.status === 'Completed' && (
+                                                    <div>
+                                                        {task.verified_by_mentor ? (
+                                                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700">
+                                                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified Output
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700">
+                                                                <Clock className="w-3 h-3 text-amber-600" /> Unreviewed Output
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </td>
 
                                             {/* Actions */}
                                             <td className="py-3.5 px-4 text-right">
-                                                <div className="flex items-center justify-end gap-1">
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    {task.status === 'Completed' && (
+                                                        <button
+                                                            onClick={() => toggleVerifyDeliverable(task.id, task.verified_by_mentor)}
+                                                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                                                task.verified_by_mentor
+                                                                    ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                                                                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-2xs'
+                                                            }`}
+                                                            title="Toggle mentor verification for student deliverable"
+                                                        >
+                                                            <CheckCircle2 className="w-3 h-3" />
+                                                            <span>{task.verified_by_mentor ? 'Verified ✓' : 'Verify Output'}</span>
+                                                        </button>
+                                                    )}
+
                                                     <button 
                                                         onClick={() => openModal(task)}
-                                                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-all"
+                                                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-all cursor-pointer"
                                                         title="Edit Task & Resource Attachments"
                                                     >
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDelete(task.id)}
-                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all"
+                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all cursor-pointer"
                                                         title="Delete Task"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
