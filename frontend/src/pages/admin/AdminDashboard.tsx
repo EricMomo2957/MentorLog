@@ -8,7 +8,7 @@ import {
     Users, CheckSquare, Clock, 
     RefreshCw, Search, Plus, Megaphone, 
     Calendar as CalendarIcon, MessageSquare, Inbox,
-    Hourglass
+    Hourglass, AlertTriangle, ExternalLink
 } from 'lucide-react';
 import TaskFeed from './TaskFeed';
 import api from '../../services/api';
@@ -54,6 +54,24 @@ interface TaskLog {
     due_date: string; 
 }
 
+interface AtRiskStudent {
+    id: number;
+    student_name: string;
+    student_number: string;
+    email: string;
+    course: string;
+    company_name: string;
+    total_hours: number;
+    required_hours: number;
+    progress_percentage: number;
+    absent_count: number;
+    late_count: number;
+    weekly_velocity: number;
+    days_since_last_log: string;
+    pace_status: 'On Track' | 'Behind Pace' | 'At-Risk' | 'Completed';
+    risk_reason: string;
+}
+
 interface SystemStats {
     announcements: number;
     attendance: number;
@@ -78,6 +96,9 @@ interface SystemStats {
         accepted: number;
         rejected: number;
     };
+    atRiskStudents?: AtRiskStudent[];
+    atRiskCount?: number;
+    studentPaceList?: AtRiskStudent[];
 }
 
 const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b']; 
@@ -305,6 +326,71 @@ const AdminDashboard = () => {
                     </div>
                 ))}
             </div>
+
+            {/* Early Warning System: At-Risk & Behind-Pace Interns */}
+            {analyticsStats?.atRiskStudents && analyticsStats.atRiskStudents.length > 0 && (
+                <div className="bg-[#fff8f5] border border-rose-200/90 rounded-2xl p-5 shadow-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-rose-100">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center text-rose-700">
+                                <AlertTriangle className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-bold text-rose-950 uppercase tracking-wider flex items-center gap-1.5">
+                                    OJT Early Warning Monitor
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow-2xs">
+                                        {analyticsStats.atRiskStudents.length} Students Need Attention
+                                    </span>
+                                </h3>
+                                <p className="text-[11px] text-rose-700/80">
+                                    Interns flagged with low weekly velocity (&lt;25 hrs/wk), high absenteeism, or prolonged inactivity
+                                </p>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={() => navigate('/manage-attendance')}
+                            className="text-xs font-bold text-rose-800 hover:text-rose-950 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-rose-200 shadow-2xs transition-all cursor-pointer"
+                        >
+                            <span>Inspect All Attendance Logs</span>
+                            <ExternalLink className="w-3 h-3" />
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {analyticsStats.atRiskStudents.slice(0, 6).map((student) => (
+                            <div 
+                                key={student.id} 
+                                className="bg-white p-3.5 rounded-xl border border-rose-100 shadow-2xs flex flex-col justify-between space-y-2 hover:border-rose-300 transition-all"
+                            >
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-start">
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                            student.pace_status === 'At-Risk' 
+                                                ? 'bg-rose-100 text-rose-800 border border-rose-300' 
+                                                : 'bg-amber-100 text-amber-800 border border-amber-300'
+                                        }`}>
+                                            {student.pace_status}
+                                        </span>
+                                        <span className="text-[10px] font-mono font-bold text-slate-500">
+                                            {student.total_hours.toFixed(1)} / {student.required_hours} hrs
+                                        </span>
+                                    </div>
+                                    <h4 className="text-xs font-bold text-slate-900 truncate">{student.student_name}</h4>
+                                    <p className="text-[10px] text-slate-500 truncate">{student.course || 'BSIT'} • {student.company_name || 'Host Company'}</p>
+                                </div>
+
+                                <div className="bg-rose-50/70 p-2 rounded-lg border border-rose-100 text-[10px] space-y-0.5">
+                                    <p className="font-semibold text-rose-900 leading-tight">⚠️ {student.risk_reason}</p>
+                                    <p className="text-rose-700/80 font-mono">
+                                        Pace: <strong>{student.weekly_velocity} hrs/wk</strong> • Absences: <strong>{student.absent_count}</strong> • Last: {student.days_since_last_log}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* 4 Analytics & Status Charts Positioned ABOVE Intern OJT Hours Tracker */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
