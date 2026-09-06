@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Printer, Download, X, Loader2 } from 'lucide-react';
+import { Printer, Download, X, Loader2, PenTool } from 'lucide-react';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
+import DigitalSignatureModal from './DigitalSignatureModal';
 
 interface AttendanceRecord {
     id: number;
@@ -21,6 +22,7 @@ interface PrintableDTRModalProps {
     course?: string;
     records: AttendanceRecord[];
     monthYear?: string;
+    supervisorSignature?: string | null;
 }
 
 const formatTimeString = (timeStr: string | null | undefined): string => {
@@ -67,9 +69,14 @@ export const PrintableDTRModal = ({
     studentId = 'N/A',
     course = 'BS Information Technology',
     records,
-    monthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    monthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    supervisorSignature
 }: PrintableDTRModalProps) => {
     const [isExporting, setIsExporting] = useState(false);
+    const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+    const [supervisorSig, setSupervisorSig] = useState<string | null>(
+        supervisorSignature || localStorage.getItem('mentorlog_supervisor_signature') || null
+    );
 
     if (!isOpen) return null;
 
@@ -118,6 +125,14 @@ export const PrintableDTRModal = ({
                     </div>
 
                     <div className="flex items-center gap-2.5">
+                        <button
+                            onClick={() => setIsSignatureModalOpen(true)}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                        >
+                            <PenTool className="w-3.5 h-3.5" />
+                            <span>{supervisorSig ? 'Edit e-Signature' : 'Add e-Signature'}</span>
+                        </button>
+
                         <button 
                             onClick={handleDownloadPDF}
                             disabled={isExporting}
@@ -219,26 +234,48 @@ export const PrintableDTRModal = ({
                     </table>
 
                     {/* Certificate & Signatures */}
-                    <div className="space-y-8 pt-4 text-xs">
-                        <p className="italic text-slate-700 leading-relaxed">
+                    <div className="space-y-6 pt-4 text-xs">
+                        <p className="italic text-slate-700 leading-relaxed text-[11px]">
                             I certify on my honor that the above is a true and correct record of the hours of work performed, 
                             record of which was made daily at the time of arrival and departure from office.
                         </p>
 
-                        <div className="grid grid-cols-2 gap-12 pt-8">
-                            <div className="text-center border-t border-slate-900 pt-2">
-                                <p className="font-bold text-slate-900 uppercase">{studentName}</p>
-                                <p className="text-[10px] text-slate-500">Student Intern Signature</p>
+                        <div className="grid grid-cols-2 gap-12 pt-6">
+                            <div className="text-center pt-2">
+                                <div className="h-10 flex items-center justify-center">
+                                    <span className="font-serif italic text-slate-700 text-xs">Verified Student Attendance</span>
+                                </div>
+                                <div className="border-t border-slate-900 pt-1">
+                                    <p className="font-bold text-slate-900 uppercase">{studentName}</p>
+                                    <p className="text-[10px] text-slate-500">Student Intern Signature</p>
+                                </div>
                             </div>
 
-                            <div className="text-center border-t border-slate-900 pt-2">
-                                <p className="font-bold text-slate-900 uppercase">OJT Supervisor / Mentor</p>
-                                <p className="text-[10px] text-slate-500">Authorized Signature & Seal</p>
+                            <div className="text-center pt-2">
+                                <div className="h-10 flex items-center justify-center">
+                                    {supervisorSig ? (
+                                        <img src={supervisorSig} alt="Supervisor Signature" className="max-h-9 max-w-[150px] object-contain" />
+                                    ) : (
+                                        <span className="text-[10px] text-slate-400 italic">Signature on File</span>
+                                    )}
+                                </div>
+                                <div className="border-t border-slate-900 pt-1">
+                                    <p className="font-bold text-slate-900 uppercase">OJT Supervisor / Mentor</p>
+                                    <p className="text-[10px] text-slate-500">Authorized In-Charge Signature</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Supervisor Digital Signature Modal */}
+            <DigitalSignatureModal
+                isOpen={isSignatureModalOpen}
+                onClose={() => setIsSignatureModalOpen(false)}
+                initialSignature={supervisorSig}
+                onSaveSignature={(sig) => setSupervisorSig(sig)}
+            />
 
             {/* Print Styles */}
             <style>{`
