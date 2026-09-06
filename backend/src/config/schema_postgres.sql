@@ -103,7 +103,11 @@ CREATE TABLE IF NOT EXISTS tasks (
   status task_status DEFAULT 'Pending',
   due_date DATE DEFAULT NULL,
   attachment_url VARCHAR(255) DEFAULT NULL,
-  attachment_name VARCHAR(255) DEFAULT NULL
+  attachment_name VARCHAR(255) DEFAULT NULL,
+  proof_link VARCHAR(500) DEFAULT NULL,
+  proof_file_url VARCHAR(500) DEFAULT NULL,
+  submission_notes TEXT DEFAULT NULL,
+  verified_by_mentor BOOLEAN DEFAULT FALSE
 );
 
 -- 3. service_requests
