@@ -76,6 +76,10 @@ export const getAllTasks = async (req: Request, res: Response) => {
                 t.due_date, 
                 t.attachment_url,
                 t.attachment_name,
+                t.proof_link,
+                t.proof_file_url,
+                t.submission_notes,
+                t.verified_by_mentor,
                 u.full_name as student_name,
                 u.profile_pic 
             FROM tasks t
@@ -88,7 +92,6 @@ export const getAllTasks = async (req: Request, res: Response) => {
             data: rows
         });
     } catch (error) {
-        // Fallback in case attachment columns don't exist yet in the database
         try {
             const [fallbackRows] = await pool.query(`
                 SELECT 
@@ -227,11 +230,11 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * 7. Update Task Status (Student / Admin)
+ * 7. Update Task Status (Student / Admin with Deliverable Proof Support)
  */
 export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
-    const { status, task_id } = req.body;
+    const { status, task_id, proof_link, submission_notes } = req.body;
     const targetId = id || task_id;
 
     if (!targetId || !status) {
@@ -240,31 +243,93 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
 
     try {
         const [tRows]: any = await pool.query(
-            'SELECT t.title, u.full_name FROM tasks t JOIN users u ON t.user_id = u.id WHERE t.id = ?',
+            'SELECT t.title, u.full_name, t.user_id FROM tasks t JOIN users u ON t.user_id = u.id WHERE t.id = ?',
             [targetId]
         );
 
-        await pool.query(
-            'UPDATE tasks SET status = ? WHERE id = ?',
-            [status, targetId]
-        );
+        let proofFileUrl = req.file ? `/uploads/tasks/${req.file.filename}` : null;
+
+        if (proofFileUrl || proof_link || submission_notes) {
+            await pool.query(
+                `UPDATE tasks 
+                 SET status = ?, 
+                     proof_link = COALESCE(?, proof_link), 
+                     proof_file_url = COALESCE(?, proof_file_url),
+                     submission_notes = COALESCE(?, submission_notes),
+                     verified_by_mentor = FALSE
+                 WHERE id = ?`,
+                [status, proof_link || null, proofFileUrl, submission_notes || null, targetId]
+            );
+        } else {
+            await pool.query(
+                'UPDATE tasks SET status = ? WHERE id = ?',
+                [status, targetId]
+            );
+        }
 
         if (tRows && tRows.length > 0) {
             const studentName = tRows[0].full_name;
             const taskTitle = tRows[0].title;
             await notifyAdmins(
-                'Task Status Updated',
-                `${studentName} updated task status to "${status}" for "${taskTitle}".`,
+                'Task Deliverable Updated',
+                `${studentName} marked "${taskTitle}" as "${status}"${proof_link ? ' with attached deliverable link' : ''}.`,
                 status === 'Completed' ? 'success' : 'info'
             );
         }
 
         await logAction(req.user?.id || null, 'UPDATE', 'Task Directives', `Set task #${targetId} status to ${status}`);
 
-        res.status(200).json({ success: true, message: 'Task status updated successfully.' });
+        res.status(200).json({ success: true, message: 'Task status and deliverables updated successfully.' });
     } catch (error) {
         console.error("Error in updateTaskStatus:", error);
         res.status(500).json({ message: 'Error updating task status.' });
+    }
+};
+
+/**
+ * 7.1. Verify Task Deliverable (Admin/Mentor Sign-Off)
+ */
+export const verifyTaskDeliverable = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { verified } = req.body;
+    const isVerified = verified !== undefined ? Boolean(verified) : true;
+
+    try {
+        const [tRows]: any = await pool.query(
+            'SELECT t.title, t.user_id, u.full_name FROM tasks t JOIN users u ON t.user_id = u.id WHERE t.id = ?',
+            [id]
+        );
+
+        if (!tRows || tRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Task not found.' });
+        }
+
+        await pool.query(
+            'UPDATE tasks SET verified_by_mentor = ? WHERE id = ?',
+            [isVerified, id]
+        );
+
+        const studentId = tRows[0].user_id;
+        const taskTitle = tRows[0].title;
+
+        if (isVerified) {
+            await createNotification(
+                studentId,
+                'Task Deliverable Verified ✓',
+                `Your mentor has reviewed and verified your output for "${taskTitle}".`,
+                'success'
+            );
+        }
+
+        await logAction(req.user?.id || null, 'UPDATE', 'Task Directives', `${isVerified ? 'Verified' : 'Unverified'} deliverable output for task #${id}`);
+
+        res.status(200).json({ 
+            success: true, 
+            message: `Task deliverable ${isVerified ? 'verified' : 'marked unverified'} successfully.` 
+        });
+    } catch (error) {
+        console.error("Error in verifyTaskDeliverable:", error);
+        res.status(500).json({ success: false, message: 'Error verifying task deliverable.' });
     }
 };
 
