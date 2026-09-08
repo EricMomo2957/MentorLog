@@ -130,7 +130,7 @@ const StudentWeeklyJournal = () => {
                 setToast({ message: res.data?.message || "Submission failed", type: 'error' });
             }
         } catch (err: any) {
-            setToast({ message: err.response?.data?.message || "Failed to submit journal.", type: 'error' });
+            setToast({ message: err.response?.data?.message || err.message || "Failed to submit journal.", type: 'error' });
         } finally {
             setSubmitting(false);
         }
