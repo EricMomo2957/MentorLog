@@ -69,9 +69,12 @@ export const submitJournal = async (req: Request, res: Response) => {
         );
 
         return res.status(201).json({ success: true, message: `Week #${week_number} Accomplishment Journal submitted!` });
-    } catch (err) {
+    } catch (err: any) {
         console.error("Submit Journal Error:", err);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({ 
+            success: false, 
+            message: err?.message || "Failed to submit journal to database." 
+        });
     }
 };
 

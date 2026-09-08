@@ -128,9 +128,15 @@ app.use('/api/journals', journalRoutes);
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`🚀 MentorLog Backend running on http://localhost:${PORT}`);
     console.log(`🛡️  Audit Log System: ACTIVE`);
+    try {
+        await checkDbConnection();
+        console.log(`✅ Database connected & schema auto-migrated successfully.`);
+    } catch (err) {
+        console.error(`❌ Initial database connection error:`, err);
+    }
 });
 
 export default app;
