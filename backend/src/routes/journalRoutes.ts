@@ -13,6 +13,7 @@ const router = express.Router();
 router.post('/submit', protect, submitJournal);
 router.get('/my-journals', protect, getMyJournals);
 router.get('/all', protect, getAllJournals);
+router.put('/:id/review', protect, reviewJournal);
 router.put('/review/:id', protect, reviewJournal);
 router.delete('/:id', protect, deleteJournal);
 
