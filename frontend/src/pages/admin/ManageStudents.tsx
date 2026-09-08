@@ -5,7 +5,8 @@ import {
     Search, Filter, Download, Edit2, Trash2, CheckCircle2, 
     XCircle, ChevronLeft, ChevronRight, X, UserPlus,
     Users, UserCheck, UserX, Clock, Eye, School, 
-    Briefcase, User, ShieldCheck, Mail, Award, FileSpreadsheet 
+    Briefcase, User, ShieldCheck, Mail, Award, FileSpreadsheet,
+    Building2, AlertCircle
 } from 'lucide-react';
 import CertificateOfCompletionModal from '../../components/CertificateOfCompletionModal';
 import FinalGradeSheetModal from '../../components/FinalGradeSheetModal';
@@ -34,6 +35,17 @@ interface Student {
     ojt_hours_required: number;
     is_active: boolean;
     created_at?: string;
+    // Industry Training Supervisor
+    supervisor_name?: string;
+    supervisor_designation?: string;
+    supervisor_email?: string;
+    supervisor_phone?: string;
+    supervisor_department?: string;
+    // Emergency Contact
+    emergency_contact_name?: string;
+    emergency_contact_relationship?: string;
+    emergency_contact_phone?: string;
+    emergency_contact_address?: string;
 }
 
 const IT_POSITIONS = [
@@ -156,7 +168,8 @@ const ManageStudents = () => {
             (s.student_id && s.student_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (s.id_number && s.id_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (s.school_name && s.school_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (s.it_position && s.it_position.toLowerCase().includes(searchTerm.toLowerCase()));
+            (s.it_position && s.it_position.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (s.supervisor_name && s.supervisor_name.toLowerCase().includes(searchTerm.toLowerCase()));
         
         const matchesStatus = filterStatus === 'All' || 
             (filterStatus === 'Active' && s.is_active) || 
@@ -215,6 +228,7 @@ const ManageStudents = () => {
                                 Email: s.email,
                                 Course: s.course || 'N/A',
                                 Position: s.it_position || 'N/A',
+                                Supervisor: s.supervisor_name || 'N/A',
                                 Status: s.is_active ? 'Active' : 'Inactive'
                             }));
                             exportToCSV('student_roster', exportData);
@@ -323,7 +337,7 @@ const ManageStudents = () => {
                     <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
                         type="text"
-                        placeholder="Search student, school, ID, or IT track..."
+                        placeholder="Search student, school, ID, or supervisor..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-blue-500 transition-all"
@@ -356,7 +370,7 @@ const ManageStudents = () => {
                                     </th>
                                     <th className="py-3 px-4">Student Info & Photo</th>
                                     <th className="py-3 px-4">School & Course</th>
-                                    <th className="py-3 px-4">IT Specialization</th>
+                                    <th className="py-3 px-4">IT Track & Supervisor</th>
                                     <th className="py-3 px-4">I.D / Student ID</th>
                                     <th className="py-3 px-4">Hours</th>
                                     <th className="py-3 px-4">Status</th>
@@ -413,12 +427,20 @@ const ManageStudents = () => {
                                                 <p className="text-[11px] text-slate-500">{student.course || 'IT Track'} — {student.year_level || 'N/A'}</p>
                                             </td>
 
-                                            {/* IT Specialization */}
+                                            {/* IT Specialization & Supervisor */}
                                             <td className="py-3.5 px-4">
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-semibold">
-                                                    <Briefcase className="w-3 h-3 text-amber-600 shrink-0" />
-                                                    {student.it_position || 'Software Engineer'}
-                                                </span>
+                                                <div className="space-y-1">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-semibold">
+                                                        <Briefcase className="w-3 h-3 text-amber-600 shrink-0" />
+                                                        {student.it_position || 'Software Engineer'}
+                                                    </span>
+                                                    {student.supervisor_name && (
+                                                        <p className="text-[10px] text-indigo-700 font-medium flex items-center gap-1 truncate">
+                                                            <Building2 className="w-2.5 h-2.5 text-indigo-500 shrink-0" />
+                                                            <span>Sup: {student.supervisor_name}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </td>
 
                                             {/* Student ID */}
@@ -728,6 +750,62 @@ const ManageStudents = () => {
                                 </div>
                             </div>
 
+                            {/* Company Training Supervisor Directory */}
+                            <div className="p-4 bg-slate-50/60 border border-slate-200/80 rounded-2xl space-y-3">
+                                <h5 className="font-bold text-indigo-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                    <Building2 className="w-3.5 h-3.5" /> Company Training Supervisor
+                                </h5>
+
+                                <div className="space-y-2">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Supervisor Name & Designation</p>
+                                        <p className="font-extrabold text-slate-900">
+                                            {viewingStudent.supervisor_name || 'Not Designated'}
+                                            {viewingStudent.supervisor_designation ? ` (${viewingStudent.supervisor_designation})` : ''}
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
+                                            <p className="font-semibold text-slate-800 truncate">{viewingStudent.supervisor_email || 'Not Provided'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Phone</p>
+                                            <p className="font-semibold text-slate-800 font-mono">{viewingStudent.supervisor_phone || 'Not Provided'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Emergency Contact Person */}
+                            <div className="p-4 bg-slate-50/60 border border-slate-200/80 rounded-2xl space-y-3">
+                                <h5 className="font-bold text-rose-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                    <AlertCircle className="w-3.5 h-3.5" /> Emergency Contact
+                                </h5>
+
+                                <div className="space-y-2">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Contact Name & Relationship</p>
+                                        <p className="font-extrabold text-slate-900">
+                                            {viewingStudent.emergency_contact_name || 'Not Designated'}
+                                            {viewingStudent.emergency_contact_relationship ? ` (${viewingStudent.emergency_contact_relationship})` : ''}
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Emergency Phone</p>
+                                            <p className="font-semibold text-slate-800 font-mono">{viewingStudent.emergency_contact_phone || 'Not Provided'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Address</p>
+                                            <p className="font-semibold text-slate-800 truncate">{viewingStudent.emergency_contact_address || 'Not Provided'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
 
                         {/* Modal Action Buttons */}
@@ -761,7 +839,7 @@ const ManageStudents = () => {
                         <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">Update Student Record</h3>
-                                <p className="text-xs text-slate-500">Edit complete intern verification details and academic track</p>
+                                <p className="text-xs text-slate-500">Edit complete intern verification details, supervisor, and emergency contact</p>
                             </div>
                             <button onClick={() => setEditingStudent(null)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100">
                                 <X className="w-5 h-5" />
@@ -897,6 +975,104 @@ const ManageStudents = () => {
                                         <option key={idx} value={pos}>{pos}</option>
                                     ))}
                                 </select>
+                            </div>
+
+                            {/* Company Training Supervisor */}
+                            <div className="pt-2 border-t border-slate-100 space-y-3">
+                                <h4 className="font-bold text-indigo-700 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                                    <Building2 className="w-3.5 h-3.5" /> Company Training Supervisor
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Supervisor Full Name</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                            value={editingStudent.supervisor_name || ''} 
+                                            onChange={(e) => setEditingStudent({...editingStudent, supervisor_name: e.target.value})}
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Designation / Role</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                            value={editingStudent.supervisor_designation || ''} 
+                                            onChange={(e) => setEditingStudent({...editingStudent, supervisor_designation: e.target.value})}
+                                            placeholder="Senior Lead Engineer"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Corporate Email</label>
+                                        <input 
+                                            type="email" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                            value={editingStudent.supervisor_email || ''} 
+                                            onChange={(e) => setEditingStudent({...editingStudent, supervisor_email: e.target.value})}
+                                            placeholder="supervisor@company.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Contact Number</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                            value={editingStudent.supervisor_phone || ''} 
+                                            onChange={(e) => setEditingStudent({...editingStudent, supervisor_phone: e.target.value})}
+                                            placeholder="+63 900 000 0000"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Emergency Contact */}
+                            <div className="pt-2 border-t border-slate-100 space-y-3">
+                                <h4 className="font-bold text-rose-700 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                                    <AlertCircle className="w-3.5 h-3.5" /> Emergency Contact
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Emergency Contact Name</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                            value={editingStudent.emergency_contact_name || ''} 
+                                            onChange={(e) => setEditingStudent({...editingStudent, emergency_contact_name: e.target.value})}
+                                            placeholder="Maria Santos"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Relationship</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                            value={editingStudent.emergency_contact_relationship || ''} 
+                                            onChange={(e) => setEditingStudent({...editingStudent, emergency_contact_relationship: e.target.value})}
+                                            placeholder="Parent / Guardian"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Emergency Phone</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                            value={editingStudent.emergency_contact_phone || ''} 
+                                            onChange={(e) => setEditingStudent({...editingStudent, emergency_contact_phone: e.target.value})}
+                                            placeholder="+63 900 000 0000"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Address</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                                            value={editingStudent.emergency_contact_address || ''} 
+                                            onChange={(e) => setEditingStudent({...editingStudent, emergency_contact_address: e.target.value})}
+                                            placeholder="Address"
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
