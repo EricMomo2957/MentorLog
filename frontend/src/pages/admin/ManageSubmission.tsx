@@ -2,16 +2,20 @@ import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { 
     FileText, CheckCircle2, XCircle, Clock, ExternalLink, 
-    Edit2, Trash2, Search, Filter, Download, ChevronLeft, ChevronRight, X, Check
+    Edit2, Trash2, Search, Filter, Download, ChevronLeft, ChevronRight, X, ShieldCheck
 } from 'lucide-react';
 
 interface Submission {
     id: number;
+    student_id?: number;
     student_name: string;
     document_type: string;
     status: string;
     file_path: string;
     submitted_at: string;
+    feedback?: string;
+    notes?: string;
+    original_name?: string;
     profile_pic?: string;
 }
 
@@ -46,6 +50,8 @@ const ManageSubmission = () => {
     const [filterStatus, setFilterStatus] = useState<string>('All');
     const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([]);
     const [editingSub, setEditingSub] = useState<Submission | null>(null);
+    const [reviewingSub, setReviewingSub] = useState<Submission | null>(null);
+    const [reviewFeedback, setReviewFeedback] = useState('');
 
     useEffect(() => {
         fetchSubmissions();
@@ -63,9 +69,11 @@ const ManageSubmission = () => {
         }
     };
 
-    const updateStatus = async (id: number, status: string) => {
+    const updateStatus = async (id: number, status: string, customFeedback?: string) => {
         try {
-            await api.put(`/documents/update/${id}`, { status, feedback: "" });
+            await api.put(`/documents/update/${id}`, { status, feedback: customFeedback || "" });
+            setReviewingSub(null);
+            setReviewFeedback('');
             fetchSubmissions();
         } catch (_err) {
             alert("Failed to update status");
@@ -372,29 +380,22 @@ const ManageSubmission = () => {
                                                         <ExternalLink className="w-3.5 h-3.5" />
                                                     </button>
 
-                                                    {sub.status === 'pending' && (
-                                                        <>
-                                                            <button 
-                                                                onClick={() => updateStatus(sub.id, 'approved')}
-                                                                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
-                                                                title="Approve File"
-                                                            >
-                                                                <Check className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => updateStatus(sub.id, 'rejected')}
-                                                                className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-md transition-all"
-                                                                title="Reject File"
-                                                            >
-                                                                <X className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </>
-                                                    )}
+                                                    <button 
+                                                        onClick={() => {
+                                                            setReviewingSub(sub);
+                                                            setReviewFeedback(sub.feedback || '');
+                                                        }}
+                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-all font-bold text-[11px] inline-flex items-center gap-1"
+                                                        title="Review Document & Leave Feedback"
+                                                    >
+                                                        <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                                                        <span>Review</span>
+                                                    </button>
 
                                                     <button 
                                                         onClick={() => setEditingSub(sub)}
                                                         className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-all"
-                                                        title="Edit Submission"
+                                                        title="Edit Category"
                                                     >
                                                         <Edit2 className="w-3.5 h-3.5" />
                                                     </button>
@@ -438,6 +439,89 @@ const ManageSubmission = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Mentor Review & Verification Modal */}
+            {reviewingSub && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                    <div className="bg-white border border-slate-200 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                    <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                                    Review OJT Document Submission
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Submitted by <strong className="text-slate-700">{reviewingSub.student_name}</strong>
+                                </p>
+                            </div>
+                            <button onClick={() => setReviewingSub(null)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Document File Info */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Document Classification</span>
+                                    <p className="font-bold text-slate-900 text-sm mt-0.5">{reviewingSub.document_type}</p>
+                                </div>
+                                <a
+                                    href={getFileUrl(reviewingSub.file_path)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-2xs"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>Preview File</span>
+                                </a>
+                            </div>
+
+                            {reviewingSub.notes && (
+                                <div className="pt-2 border-t border-slate-200">
+                                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Student Submission Notes:</span>
+                                    <p className="text-slate-700 italic mt-0.5">"{reviewingSub.notes}"</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Mentor Feedback & Remarks Input */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-700 block">
+                                Mentor Verification Feedback / Rejection Reason
+                            </label>
+                            <textarea
+                                rows={3}
+                                value={reviewFeedback}
+                                onChange={(e) => setReviewFeedback(e.target.value)}
+                                placeholder="Enter specific feedback for the intern (e.g. Approved. Or: Missing parent signature on page 2, please re-upload)..."
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white outline-none resize-none"
+                            />
+                        </div>
+
+                        {/* Modal Action Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => updateStatus(reviewingSub.id, 'rejected', reviewFeedback)}
+                                className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <XCircle className="w-4 h-4" />
+                                <span>Reject / Request Revision</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => updateStatus(reviewingSub.id, 'approved', reviewFeedback)}
+                                className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>Approve Document</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Clean Edit Modal */}
             {editingSub && (
