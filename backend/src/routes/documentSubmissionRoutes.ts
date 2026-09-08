@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { 
     submitDocument, 
+    getMySubmissions,
     getAllSubmissions, 
     updateSubmissionStatus,
     editDocument,     
@@ -50,6 +51,7 @@ const upload = multer({
 
 // 2. Routes (Protected with authentication)
 router.post('/submit', protect, upload.single('document'), submitDocument);
+router.get('/my-submissions', protect, getMySubmissions);
 router.get('/all', protect, getAllSubmissions);
 router.put('/update/:id', protect, updateSubmissionStatus);
 router.put('/edit/:id', protect, editDocument);
