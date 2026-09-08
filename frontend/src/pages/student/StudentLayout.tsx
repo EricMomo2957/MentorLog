@@ -114,6 +114,7 @@ const StudentLayout = ({ children }: { children: React.ReactNode }) => {
             items: [
                 { path: '/student-dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 { path: '/tasks', label: 'My Tasks', icon: CheckSquare },
+                { path: '/weekly-journal', label: 'Weekly Journal', icon: FileText },
                 { path: '/campus-events', label: 'Events & Schedule', icon: Calendar },
                 { path: '/announcements', label: 'Announcements', icon: Megaphone },
             ]
