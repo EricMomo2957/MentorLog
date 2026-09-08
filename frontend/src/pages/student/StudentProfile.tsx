@@ -3,7 +3,8 @@ import api from '../../services/api';
 import { 
     User, Mail, Phone, Award, 
     Edit2, ShieldCheck, Download, X, Upload, Camera,
-    School, MapPin, Calendar, Hash, Briefcase, BookOpen, Clock, Heart
+    School, MapPin, Calendar, Hash, Briefcase, BookOpen, Clock, Heart,
+    Building2, AlertCircle
 } from 'lucide-react';
 
 interface UserProfile {
@@ -28,6 +29,17 @@ interface UserProfile {
     it_position?: string;
     profile_pic?: string;
     ojt_hours_required: number;
+    // Industry Training Supervisor
+    supervisor_name?: string;
+    supervisor_designation?: string;
+    supervisor_email?: string;
+    supervisor_phone?: string;
+    supervisor_department?: string;
+    // Emergency Contact
+    emergency_contact_name?: string;
+    emergency_contact_relationship?: string;
+    emergency_contact_phone?: string;
+    emergency_contact_address?: string;
 }
 
 const IT_POSITIONS = [
@@ -87,7 +99,17 @@ const StudentProfile = () => {
         school_name: '',
         course: '',
         year_level: '',
-        it_position: 'Software Engineer / Developer'
+        it_position: 'Software Engineer / Developer',
+        // Supervisor & Emergency
+        supervisor_name: '',
+        supervisor_designation: '',
+        supervisor_email: '',
+        supervisor_phone: '',
+        supervisor_department: '',
+        emergency_contact_name: '',
+        emergency_contact_relationship: '',
+        emergency_contact_phone: '',
+        emergency_contact_address: ''
     });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -138,7 +160,16 @@ const StudentProfile = () => {
                     year_level: userData.year_level || '4th Year',
                     it_position: userData.it_position || 'Software Engineer / Developer',
                     profile_pic: userData.profile_pic || undefined,
-                    ojt_hours_required: Number(userData.ojt_hours_required) || 600
+                    ojt_hours_required: Number(userData.ojt_hours_required) || 600,
+                    supervisor_name: userData.supervisor_name || '',
+                    supervisor_designation: userData.supervisor_designation || '',
+                    supervisor_email: userData.supervisor_email || '',
+                    supervisor_phone: userData.supervisor_phone || '',
+                    supervisor_department: userData.supervisor_department || '',
+                    emergency_contact_name: userData.emergency_contact_name || '',
+                    emergency_contact_relationship: userData.emergency_contact_relationship || '',
+                    emergency_contact_phone: userData.emergency_contact_phone || '',
+                    emergency_contact_address: userData.emergency_contact_address || ''
                 };
 
                 setProfile(mappedUser);
@@ -160,7 +191,16 @@ const StudentProfile = () => {
                     school_name: mappedUser.school_name || '',
                     course: mappedUser.course || '',
                     year_level: mappedUser.year_level || '',
-                    it_position: mappedUser.it_position || 'Software Engineer / Developer'
+                    it_position: mappedUser.it_position || 'Software Engineer / Developer',
+                    supervisor_name: mappedUser.supervisor_name || '',
+                    supervisor_designation: mappedUser.supervisor_designation || '',
+                    supervisor_email: mappedUser.supervisor_email || '',
+                    supervisor_phone: mappedUser.supervisor_phone || '',
+                    supervisor_department: mappedUser.supervisor_department || '',
+                    emergency_contact_name: mappedUser.emergency_contact_name || '',
+                    emergency_contact_relationship: mappedUser.emergency_contact_relationship || '',
+                    emergency_contact_phone: mappedUser.emergency_contact_phone || '',
+                    emergency_contact_address: mappedUser.emergency_contact_address || ''
                 });
             }
         } catch (err) {
@@ -215,6 +255,17 @@ const StudentProfile = () => {
             uploadData.append('course', formData.course);
             uploadData.append('year_level', formData.year_level);
             uploadData.append('it_position', formData.it_position);
+
+            // Supervisor & Emergency contact fields
+            uploadData.append('supervisor_name', formData.supervisor_name);
+            uploadData.append('supervisor_designation', formData.supervisor_designation);
+            uploadData.append('supervisor_email', formData.supervisor_email);
+            uploadData.append('supervisor_phone', formData.supervisor_phone);
+            uploadData.append('supervisor_department', formData.supervisor_department);
+            uploadData.append('emergency_contact_name', formData.emergency_contact_name);
+            uploadData.append('emergency_contact_relationship', formData.emergency_contact_relationship);
+            uploadData.append('emergency_contact_phone', formData.emergency_contact_phone);
+            uploadData.append('emergency_contact_address', formData.emergency_contact_address);
 
             if (selectedFile) {
                 uploadData.append('profile_pic', selectedFile);
@@ -279,7 +330,7 @@ const StudentProfile = () => {
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900">Student Account Profile</h1>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        Manage your detailed personal identification, school track, contact info, and IT specialization
+                        Manage personal verification, academic credentials, company supervisor directory, and emergency contacts.
                     </p>
                 </div>
 
@@ -314,7 +365,16 @@ const StudentProfile = () => {
                                 school_name: profile?.school_name || '',
                                 course: profile?.course || '',
                                 year_level: profile?.year_level || '',
-                                it_position: profile?.it_position || 'Software Engineer / Developer'
+                                it_position: profile?.it_position || 'Software Engineer / Developer',
+                                supervisor_name: profile?.supervisor_name || '',
+                                supervisor_designation: profile?.supervisor_designation || '',
+                                supervisor_email: profile?.supervisor_email || '',
+                                supervisor_phone: profile?.supervisor_phone || '',
+                                supervisor_department: profile?.supervisor_department || '',
+                                emergency_contact_name: profile?.emergency_contact_name || '',
+                                emergency_contact_relationship: profile?.emergency_contact_relationship || '',
+                                emergency_contact_phone: profile?.emergency_contact_phone || '',
+                                emergency_contact_address: profile?.emergency_contact_address || ''
                             });
                             setPreviewUrl(null);
                             setSelectedFile(null);
@@ -543,6 +603,76 @@ const StudentProfile = () => {
                     </div>
                 </div>
 
+                {/* 5. COMPANY TRAINING SUPERVISOR DIRECTORY */}
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5">
+                    <div className="flex items-center gap-2 pb-3 border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-indigo-600">
+                        <Building2 className="w-4 h-4" /> Company Training Supervisor & Mentor
+                    </div>
+
+                    <div className="space-y-3.5 text-xs">
+                        <div className="p-3.5 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-1">
+                            <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-indigo-600" /> Supervisor / Mentor Full Name
+                            </p>
+                            <p className="font-extrabold text-slate-900 text-sm">{profile?.supervisor_name || 'Not Designated Yet'}</p>
+                            {profile?.supervisor_designation && (
+                                <p className="text-[11px] text-indigo-800 font-medium">{profile.supervisor_designation} {profile.supervisor_department ? `• ${profile.supervisor_department}` : ''}</p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <Mail className="w-3 h-3 text-indigo-600" /> Corporate Email
+                                </p>
+                                <p className="font-semibold text-slate-800 truncate">{profile?.supervisor_email || 'Not Provided'}</p>
+                            </div>
+
+                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <Phone className="w-3 h-3 text-indigo-600" /> Contact Number
+                                </p>
+                                <p className="font-semibold text-slate-800 font-mono">{profile?.supervisor_phone || 'Not Provided'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 6. EMERGENCY CONTACT PERSON */}
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5">
+                    <div className="flex items-center gap-2 pb-3 border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-rose-600">
+                        <AlertCircle className="w-4 h-4" /> Emergency Contact Details
+                    </div>
+
+                    <div className="space-y-3.5 text-xs">
+                        <div className="p-3.5 bg-rose-50/50 border border-rose-100 rounded-2xl space-y-1">
+                            <p className="text-[10px] font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <Heart className="w-3.5 h-3.5 text-rose-600" /> Contact Person & Relationship
+                            </p>
+                            <p className="font-extrabold text-slate-900 text-sm">
+                                {profile?.emergency_contact_name || 'Not Designated'}
+                                {profile?.emergency_contact_relationship ? ` (${profile.emergency_contact_relationship})` : ''}
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <Phone className="w-3 h-3 text-rose-600" /> Emergency Phone
+                                </p>
+                                <p className="font-semibold text-slate-800 font-mono">{profile?.emergency_contact_phone || 'Not Provided'}</p>
+                            </div>
+
+                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 text-rose-600" /> Contact Address
+                                </p>
+                                <p className="font-semibold text-slate-800 truncate">{profile?.emergency_contact_address || 'Not Provided'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             {/* --- COMPLETE PROFILE EDIT MODAL --- */}
@@ -552,9 +682,9 @@ const StudentProfile = () => {
                         <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">Update Detailed Profile Verification</h3>
-                                <p className="text-xs text-slate-500">Edit your personal identification, school track, and contact info</p>
+                                <p className="text-xs text-slate-500">Edit your personal identification, school track, supervisor, and emergency info</p>
                             </div>
-                            <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-all">
+                            <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-all cursor-pointer">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -758,6 +888,105 @@ const StudentProfile = () => {
                                             <option key={idx} value={pos}>{pos}</option>
                                         ))}
                                     </select>
+                                </div>
+                            </div>
+
+                            {/* Section 5: Company Training Supervisor & Mentor */}
+                            <div className="space-y-4 pt-2 border-t border-slate-100">
+                                <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Building2 className="w-3.5 h-3.5" /> Company Training Supervisor & Mentor
+                                </h4>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Supervisor / Mentor Full Name</label>
+                                        <input 
+                                            type="text" name="supervisor_name" value={formData.supervisor_name} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="e.g. John Doe, Senior Tech Lead"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Job Designation / Role</label>
+                                        <input 
+                                            type="text" name="supervisor_designation" value={formData.supervisor_designation} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="e.g. Engineering Lead / Head of IT"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Corporate Email Address</label>
+                                        <input 
+                                            type="email" name="supervisor_email" value={formData.supervisor_email} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="supervisor@company.com"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Supervisor Contact Number</label>
+                                        <input 
+                                            type="text" name="supervisor_phone" value={formData.supervisor_phone} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="+63 900 000 0000"
+                                        />
+                                    </div>
+
+                                    <div className="sm:col-span-2">
+                                        <label className="font-bold text-slate-700 mb-1 block">Department / Team</label>
+                                        <input 
+                                            type="text" name="supervisor_department" value={formData.supervisor_department} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="e.g. Core Platform Engineering / Enterprise Applications"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section 6: Emergency Contact Person */}
+                            <div className="space-y-4 pt-2 border-t border-slate-100">
+                                <h4 className="text-xs font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
+                                    <AlertCircle className="w-3.5 h-3.5" /> Emergency Contact Details
+                                </h4>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Emergency Contact Name</label>
+                                        <input 
+                                            type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="e.g. Maria Santos"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Relationship</label>
+                                        <input 
+                                            type="text" name="emergency_contact_relationship" value={formData.emergency_contact_relationship} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="e.g. Parent / Guardian / Sibling"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Emergency Phone Number</label>
+                                        <input 
+                                            type="text" name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="+63 900 000 0000"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="font-bold text-slate-700 mb-1 block">Emergency Residential Address</label>
+                                        <input 
+                                            type="text" name="emergency_contact_address" value={formData.emergency_contact_address} onChange={handleFormChange}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                            placeholder="Home Address"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
