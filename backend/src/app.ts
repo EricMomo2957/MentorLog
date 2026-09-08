@@ -18,6 +18,7 @@ import askQuestionRoutes from './routes/AskQuestionRoutes';
 import documentSubmissionRoutes from './routes/documentSubmissionRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import evaluationRoutes from './routes/evaluationRoutes';
+import journalRoutes from './routes/journalRoutes';
 
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -116,10 +117,11 @@ app.use('/api/announcements', announcementRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/questions', askQuestionRoutes);
 
-// 5. Document Management, Evaluations & Notifications
+// 5. Document Management, Evaluations, Journals & Notifications
 app.use('/api/documents', documentSubmissionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/evaluations', evaluationRoutes);
+app.use('/api/journals', journalRoutes);
 
 // ==========================================
 // Server Configuration
