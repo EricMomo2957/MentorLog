@@ -32,6 +32,16 @@ CREATE TABLE IF NOT EXISTS `users` (
   `is_active` tinyint(1) DEFAULT 1,
   `required_hours` int(11) DEFAULT 600,
   `profile_pic` varchar(255) DEFAULT NULL,
+  `supervisor_signature` text DEFAULT NULL,
+  `supervisor_name` varchar(255) DEFAULT NULL,
+  `supervisor_designation` varchar(255) DEFAULT NULL,
+  `supervisor_email` varchar(255) DEFAULT NULL,
+  `supervisor_phone` varchar(50) DEFAULT NULL,
+  `supervisor_department` varchar(255) DEFAULT NULL,
+  `emergency_contact_name` varchar(255) DEFAULT NULL,
+  `emergency_contact_relationship` varchar(100) DEFAULT NULL,
+  `emergency_contact_phone` varchar(50) DEFAULT NULL,
+  `emergency_contact_address` text DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -142,9 +152,34 @@ CREATE TABLE IF NOT EXISTS `document_submissions` (
   `status` enum('pending', 'approved', 'rejected') DEFAULT 'pending',
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `feedback` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `original_name` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `student_id` (`student_id`),
   CONSTRAINT `fk_document_submissions_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 9b. weekly_journals
+CREATE TABLE IF NOT EXISTS `weekly_journals` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` int(11) NOT NULL,
+  `week_number` int(11) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `total_hours_rendered` decimal(5,2) DEFAULT 0.00,
+  `tasks_completed` text NOT NULL,
+  `skills_acquired` text DEFAULT NULL,
+  `challenges_and_solutions` text DEFAULT NULL,
+  `plan_next_week` text DEFAULT NULL,
+  `attachment_url` varchar(500) DEFAULT NULL,
+  `status` enum('Draft', 'Submitted', 'Approved', 'Needs Revision') DEFAULT 'Submitted',
+  `mentor_feedback` text DEFAULT NULL,
+  `mentor_rating` int(11) DEFAULT NULL,
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `student_id` (`student_id`),
+  CONSTRAINT `fk_weekly_journals_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 10. audit_logs
