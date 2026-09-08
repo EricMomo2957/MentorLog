@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import api from '../../services/api';
 import { getAdminSettings } from '../admin/AdminSettings';
 import { 
     CheckCircle2, Clock, XCircle, AlertCircle, 
@@ -31,13 +32,10 @@ const StudentRequest = () => {
     }, [toast]);
 
     const fetchMyRequests = useCallback(async () => {
-        const token = localStorage.getItem('token');
         setFetching(true);
         try {
-            const response = await fetch('http://localhost:5000/api/requests/my-requests', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const response = await api.get('/requests/my-requests');
+            const data = response.data;
             if (data.success) {
                 setMyRequests(data.data);
             }
@@ -63,8 +61,6 @@ const StudentRequest = () => {
             return;
         }
 
-        const token = localStorage.getItem('token');
-
         if (!subject || !message) {
             setToast({ message: "All fields are required.", type: 'error' });
             return;
@@ -72,18 +68,15 @@ const StudentRequest = () => {
 
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:5000/api/requests/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ subject, message, urgency })
+            const response = await api.post('/requests/submit', {
+                subject,
+                message,
+                urgency
             });
 
-            const data = await response.json();
+            const data = response.data;
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 setToast({ message: "Request filed successfully.", type: 'success' });
                 setSubject('');
                 setMessage('');
@@ -92,8 +85,8 @@ const StudentRequest = () => {
             } else {
                 setToast({ message: data.message || "Submission failed.", type: 'error' });
             }
-        } catch (error) {
-            setToast({ message: "Connection error.", type: 'error' });
+        } catch (error: any) {
+            setToast({ message: error.response?.data?.message || "Connection error.", type: 'error' });
         } finally {
             setLoading(false);
         }
