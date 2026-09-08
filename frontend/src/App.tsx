@@ -42,6 +42,7 @@ const StudentAnnouncements = lazy(() => import('./pages/student/StudentAnnouncem
 const StudentAsk = lazy(() => import('./pages/student/StudentAskQuestion'));
 const StudentSubmission = lazy(() => import('./pages/student/StudentSubmission'));
 const MyEvaluations = lazy(() => import('./pages/student/MyEvaluations'));
+const StudentWeeklyJournal = lazy(() => import('./pages/student/StudentWeeklyJournal'));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
@@ -115,6 +116,7 @@ function App() {
             { path: "/StudentAsk", element: <StudentAsk /> },
             { path: "/submissions", element: <StudentSubmission /> },
             { path: "/my-evaluations", element: <MyEvaluations /> },
+            { path: "/weekly-journal", element: <StudentWeeklyJournal /> },
           ].map((route) => (
             <Route 
               key={route.path}
