@@ -7,7 +7,7 @@ import {
     LayoutDashboard, CheckSquare, Users, FileText, CalendarCheck, 
     Megaphone, Inbox, HelpCircle, MessageSquare, Key, 
     Calendar, ShieldAlert, Code2, Settings, LogOut, Search,
-    ChevronLeft, ChevronRight, Award
+    ChevronLeft, ChevronRight, Award, BarChart3
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -103,6 +103,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         {
             title: "MANAGEMENT",
             items: [
+                { path: '/weekly-reports', label: 'Weekly Journals & Reports', icon: BarChart3 },
                 { path: '/admin/manage-submissions', label: 'Submissions', icon: FileText },
                 { path: '/manage-attendance', label: 'Attendance Logs', icon: CalendarCheck },
                 { path: '/manage-evaluations', label: 'Intern Evaluations', icon: Award },
