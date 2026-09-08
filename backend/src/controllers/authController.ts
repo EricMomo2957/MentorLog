@@ -637,6 +637,15 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         course, 
         year_level, 
         it_position,
+        supervisor_name,
+        supervisor_designation,
+        supervisor_email,
+        supervisor_phone,
+        supervisor_department,
+        emergency_contact_name,
+        emergency_contact_relationship,
+        emergency_contact_phone,
+        emergency_contact_address,
         current_password, 
         new_password 
     } = req.body;
@@ -690,6 +699,15 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
                  course = COALESCE(?, course), 
                  year_level = COALESCE(?, year_level),
                  it_position = COALESCE(?, it_position),
+                 supervisor_name = COALESCE(?, supervisor_name),
+                 supervisor_designation = COALESCE(?, supervisor_designation),
+                 supervisor_email = COALESCE(?, supervisor_email),
+                 supervisor_phone = COALESCE(?, supervisor_phone),
+                 supervisor_department = COALESCE(?, supervisor_department),
+                 emergency_contact_name = COALESCE(?, emergency_contact_name),
+                 emergency_contact_relationship = COALESCE(?, emergency_contact_relationship),
+                 emergency_contact_phone = COALESCE(?, emergency_contact_phone),
+                 emergency_contact_address = COALESCE(?, emergency_contact_address),
                  profile_pic = COALESCE(?, profile_pic)
              WHERE id = ?`,
             [
@@ -711,6 +729,15 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
                 course !== undefined ? course : null, 
                 year_level !== undefined ? year_level : null, 
                 it_position !== undefined ? it_position : null,
+                supervisor_name !== undefined ? supervisor_name : null,
+                supervisor_designation !== undefined ? supervisor_designation : null,
+                supervisor_email !== undefined ? supervisor_email : null,
+                supervisor_phone !== undefined ? supervisor_phone : null,
+                supervisor_department !== undefined ? supervisor_department : null,
+                emergency_contact_name !== undefined ? emergency_contact_name : null,
+                emergency_contact_relationship !== undefined ? emergency_contact_relationship : null,
+                emergency_contact_phone !== undefined ? emergency_contact_phone : null,
+                emergency_contact_address !== undefined ? emergency_contact_address : null,
                 profilePicUrl !== undefined ? profilePicUrl : null, 
                 userId
             ]
