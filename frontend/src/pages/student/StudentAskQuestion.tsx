@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { 
     MessageSquare, Send, ArrowLeft, Download, Plus, 
     CheckCircle2, Clock 
@@ -34,7 +34,7 @@ const StudentAskQuestion = () => {
     const fetchMyQuestions = useCallback(async () => {
         if (!studentId) return;
         try {
-            const response = await axios.get(`http://localhost:5000/api/questions/student/${studentId}`);
+            const response = await api.get(`/questions/student/${studentId}`);
             setMyQuestions(response.data);
         } catch (err) {
             console.error("Error fetching questions:", err);
@@ -50,7 +50,7 @@ const StudentAskQuestion = () => {
     const loadThread = useCallback(async (q: Question) => {
         try {
             setSelectedQ(q);
-            const res = await axios.get(`http://localhost:5000/api/questions/thread/${q.id}`);
+            const res = await api.get(`/questions/thread/${q.id}`);
             setThread(res.data);
         } catch (err) {
             console.error("Thread load error:", err);
@@ -66,7 +66,7 @@ const StudentAskQuestion = () => {
 
         setSubmitting(true);
         try {
-            await axios.post('http://localhost:5000/api/questions/ask', {
+            await api.post('/questions/ask', {
                 student_id: studentId,
                 subject,
                 message
@@ -87,7 +87,7 @@ const StudentAskQuestion = () => {
     const handleReply = async () => {
         if (!replyText.trim() || !selectedQ || !studentId) return;
         try {
-            await axios.post('http://localhost:5000/api/questions/reply', {
+            await api.post('/questions/reply', {
                 question_id: selectedQ.id,
                 sender_id: studentId,
                 sender_role: 'intern',
