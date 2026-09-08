@@ -91,7 +91,17 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   is_active BOOLEAN DEFAULT TRUE,
   required_hours INT DEFAULT 600,
-  profile_pic VARCHAR(255) DEFAULT NULL
+  profile_pic VARCHAR(255) DEFAULT NULL,
+  supervisor_signature TEXT DEFAULT NULL,
+  supervisor_name VARCHAR(255) DEFAULT NULL,
+  supervisor_designation VARCHAR(255) DEFAULT NULL,
+  supervisor_email VARCHAR(255) DEFAULT NULL,
+  supervisor_phone VARCHAR(50) DEFAULT NULL,
+  supervisor_department VARCHAR(255) DEFAULT NULL,
+  emergency_contact_name VARCHAR(255) DEFAULT NULL,
+  emergency_contact_relationship VARCHAR(100) DEFAULT NULL,
+  emergency_contact_phone VARCHAR(50) DEFAULT NULL,
+  emergency_contact_address TEXT DEFAULT NULL
 );
 
 -- 2. tasks
@@ -185,7 +195,29 @@ CREATE TABLE IF NOT EXISTS document_submissions (
   file_path VARCHAR(255) NOT NULL,
   status submission_status DEFAULT 'pending',
   submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  feedback TEXT DEFAULT NULL
+  feedback TEXT DEFAULT NULL,
+  notes TEXT DEFAULT NULL,
+  original_name VARCHAR(255) DEFAULT NULL
+);
+
+-- 9b. weekly_journals
+CREATE TABLE IF NOT EXISTS weekly_journals (
+  id SERIAL PRIMARY KEY,
+  student_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  week_number INT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  total_hours_rendered NUMERIC(5,2) DEFAULT 0.00,
+  tasks_completed TEXT NOT NULL,
+  skills_acquired TEXT DEFAULT NULL,
+  challenges_and_solutions TEXT DEFAULT NULL,
+  plan_next_week TEXT DEFAULT NULL,
+  attachment_url VARCHAR(500) DEFAULT NULL,
+  status VARCHAR(30) DEFAULT 'Submitted',
+  mentor_feedback TEXT DEFAULT NULL,
+  mentor_rating INT DEFAULT NULL,
+  submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 -- 10. audit_logs
