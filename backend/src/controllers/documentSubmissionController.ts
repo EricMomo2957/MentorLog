@@ -7,28 +7,55 @@ import { notifyAdmins, createNotification } from './notificationController';
 
 export const submitDocument = async (req: Request, res: Response) => {
     try {
-        const { student_id, student_name, document_type } = req.body;
+        const student_id = req.body.student_id || (req as any).user?.id;
+        const student_name = req.body.student_name || (req as any).user?.full_name || 'OJT Student';
+        const { document_type, notes } = req.body;
         const file_path = req.file?.path;
+        const original_name = req.file?.originalname;
 
         if (!file_path) {
             return res.status(400).json({ message: "No file uploaded" });
         }
 
-        const sql = "INSERT INTO document_submissions (student_id, student_name, document_type, file_path) VALUES (?, ?, ?, ?)";
-        await db.query(sql, [student_id, student_name, document_type, file_path]);
+        const sql = `
+            INSERT INTO document_submissions (student_id, student_name, document_type, file_path, status, notes, original_name) 
+            VALUES (?, ?, ?, ?, 'pending', ?, ?)
+        `;
+        await db.query(sql, [student_id, student_name, document_type, file_path, notes || null, original_name || null]);
 
-        await logAction(Number(student_id) || null, 'CREATE', 'Document Vault', `Uploaded ${document_type} file: ${req.file?.originalname || 'Document'}`);
+        await logAction(Number(student_id) || null, 'CREATE', 'Document Vault', `Uploaded ${document_type} file: ${original_name || 'Document'}`);
         
         await notifyAdmins(
             'New Document Submission',
-            `${student_name || 'An OJT Student'} submitted a document: ${document_type}`,
+            `${student_name} submitted an OJT document: ${document_type}`,
             'info'
         );
 
-        return res.status(201).json({ message: "Document submitted successfully!" });
+        return res.status(201).json({ success: true, message: "Document submitted successfully!" });
     } catch (err) {
         console.error("Submission Error:", err);
         return res.status(500).json({ message: "Internal Server Error", error: err });
+    }
+};
+
+export const getMySubmissions = async (req: Request, res: Response) => {
+    try {
+        const studentId = (req as any).user?.id;
+        if (!studentId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const sql = `
+            SELECT id, student_id, student_name, document_type, file_path, status, submitted_at, feedback, notes, original_name 
+            FROM document_submissions 
+            WHERE student_id = ? 
+            ORDER BY submitted_at DESC
+        `;
+        const [results] = await db.query(sql, [studentId]);
+        return res.json({ success: true, data: results });
+    } catch (err) {
+        console.error("Fetch My Submissions Error:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 };
 
