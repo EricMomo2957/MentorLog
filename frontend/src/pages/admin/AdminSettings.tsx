@@ -48,9 +48,9 @@ export interface AdminSettingsState {
 }
 
 export const DEFAULT_SETTINGS: AdminSettingsState = {
-    shiftStart: '08:00',
+    shiftStart: '07:30',
     shiftEnd: '17:00',
-    gracePeriod: 15,
+    gracePeriod: 30,
     requiredOjtHours: 400,
     allowWeekendAttendance: false,
 
