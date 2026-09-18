@@ -271,10 +271,10 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
         };
     }
 
-    const [startH, startM] = (shiftStartStr || '08:00').split(':').map(Number);
+    const [startH, startM] = (shiftStartStr || '07:30').split(':').map(Number);
     const shiftStartMinutes = startH * 60 + (startM || 0);
 
-    // Allow clock-in 30 mins before shiftStart
+    // Allow clock-in 30 mins before shiftStart (e.g. 7:00 AM)
     const earliestClockInMinutes = Math.max(0, shiftStartMinutes - 30);
 
     const [endH, endM] = (shiftEndStr || '17:00').split(':').map(Number);
@@ -317,12 +317,14 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
         }
 
         try {
+            const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Manila';
             const response = await api.post('/attendance/toggle', { 
                 action,
                 shiftStart: currentSettings.shiftStart,
                 shiftEnd: currentSettings.shiftEnd,
                 gracePeriod: currentSettings.gracePeriod,
                 allowWeekendAttendance: currentSettings.allowWeekendAttendance,
+                clientTimezone,
                 reason: overtimeReason
             });
 
@@ -333,7 +335,7 @@ const isWithinShiftHours = (shiftStartStr: string, shiftEndStr: string): { allow
                     const isLate = response.data.status === 'Late';
                     setToast({ 
                         message: isLate 
-                            ? `Shift started! (Marked as Late Arrival — Clocked in after grace period of ${currentSettings.gracePeriod} mins)` 
+                            ? `Shift started! (Marked as Late Arrival — Clocked in after 8:00 AM)` 
                             : "Shift started! (On-Time Present)", 
                         type: isLate ? 'warning' : 'success' 
                     });
