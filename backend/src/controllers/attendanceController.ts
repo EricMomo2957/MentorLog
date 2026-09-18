@@ -21,6 +21,37 @@ export const calculateCreditHours = (rawHours: number): number => {
     return Math.max(0, parseFloat(rawHours.toFixed(2)));
 };
 
+const getClientTime = (reqTimezone?: string) => {
+    const now = new Date();
+    const timeZone = reqTimezone || 'Asia/Manila';
+    try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        const p: Record<string, string> = {};
+        parts.forEach(({ type, value }) => { p[type] = value; });
+        
+        let hour = parseInt(p.hour, 10);
+        if (hour === 24) hour = 0;
+        const minute = parseInt(p.minute, 10);
+        
+        const dObj = new Date(`${p.year}-${p.month}-${p.day}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`);
+        const dayOfWeek = dObj.getDay();
+        
+        return { hour, minute, dayOfWeek, dateStr: `${p.year}-${p.month}-${p.day}` };
+    } catch (_e) {
+        return { hour: now.getHours(), minute: now.getMinutes(), dayOfWeek: now.getDay(), dateStr: now.toISOString().split('T')[0] };
+    }
+};
+
 export const toggleAttendance = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "User not authenticated" });
@@ -29,14 +60,14 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
 
     try {
         if (action === 'clock-in') {
-            const now = new Date();
-            const hour = now.getHours();
-            const minute = now.getMinutes();
-            const dayOfWeek = now.getDay(); // 0 = Sun, 6 = Sat
+            const clientTime = getClientTime(req.body.clientTimezone);
+            const hour = clientTime.hour;
+            const minute = clientTime.minute;
+            const dayOfWeek = clientTime.dayOfWeek; // 0 = Sun, 6 = Sat
 
-            const shiftStartStr = req.body.shiftStart || '08:00';
+            const shiftStartStr = req.body.shiftStart || '07:30';
             const shiftEndStr = req.body.shiftEnd || '17:00';
-            const gracePeriodMins = typeof req.body.gracePeriod === 'number' ? req.body.gracePeriod : 15;
+            const gracePeriodMins = typeof req.body.gracePeriod === 'number' ? req.body.gracePeriod : 30;
             const allowWeekend = req.body.allowWeekendAttendance !== undefined ? req.body.allowWeekendAttendance : false;
 
             // Weekend restriction check
@@ -46,7 +77,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 });
             }
 
-            // Duty hours restriction calculation: 30 mins before shiftStart to latest boundary
+            // Duty hours restriction calculation: 30 mins before shiftStart to latest boundary (6:00 PM / 18:00)
             const [startH, startM] = shiftStartStr.split(':').map(Number);
             const [endH, endM] = shiftEndStr.split(':').map(Number);
 
@@ -56,7 +87,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
             const currentMinutes = hour * 60 + minute;
             if (currentMinutes < earliestMins || currentMinutes >= latestMins) {
                 return res.status(400).json({ 
-                    message: `Clock-in is restricted outside official duty hours (${shiftStartStr} - ${shiftEndStr}).` 
+                    message: `Clock-in is restricted outside official duty hours (${shiftStartStr} - ${shiftEndStr}). Current server time: ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}.` 
                 });
             }
 
@@ -74,7 +105,7 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 return res.status(400).json({ message: "You are already clocked in." });
             }
 
-            // Late threshold calculation: shiftStart + gracePeriod (e.g., 08:00 + 15m = 08:15 AM)
+            // Late threshold calculation: shiftStart + gracePeriod (e.g., 07:30 + 30m grace = 08:00 AM)
             const lateThresholdMins = (startH * 60 + (startM || 0)) + gracePeriodMins;
             let status = 'Present';
 
@@ -82,7 +113,9 @@ export const toggleAttendance = async (req: AuthRequest, res: Response) => {
                 status = 'Late';
             }
 
+            const now = new Date();
             const clockInTime = now.toLocaleTimeString('en-US', { 
+                timeZone: req.body.clientTimezone || 'Asia/Manila',
                 hour12: true, 
                 hour: '2-digit', 
                 minute: '2-digit' 
